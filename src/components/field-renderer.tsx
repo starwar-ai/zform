@@ -1,0 +1,138 @@
+/**
+ * FieldRenderer
+ *
+ * 根据 FieldDef 动态渲染表单字段。
+ */
+
+import type { FieldDef } from "@/core/types"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
+interface FieldRendererProps {
+  field: FieldDef
+  value: unknown
+  onChange: (value: unknown) => void
+  disabled?: boolean
+}
+
+export function FieldRenderer({
+  field,
+  value,
+  onChange,
+  disabled,
+}: FieldRendererProps) {
+  const isDisabled = disabled || field.readOnly
+
+  const renderField = () => {
+    switch (field.type) {
+      case "text":
+        return (
+          <Input
+            value={(value as string) ?? ""}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={field.placeholder}
+            disabled={isDisabled}
+          />
+        )
+
+      case "number":
+        return (
+          <Input
+            type="number"
+            value={(value as number) ?? ""}
+            onChange={(e) =>
+              onChange(e.target.value === "" ? undefined : Number(e.target.value))
+            }
+            placeholder={field.placeholder}
+            disabled={isDisabled}
+          />
+        )
+
+      case "date":
+        return (
+          <Input
+            type="date"
+            value={(value as string) ?? ""}
+            onChange={(e) => onChange(e.target.value)}
+            disabled={isDisabled}
+          />
+        )
+
+      case "textarea":
+        return (
+          <Textarea
+            value={(value as string) ?? ""}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={field.placeholder}
+            disabled={isDisabled}
+          />
+        )
+
+      case "select":
+        return (
+          <Select
+            value={(value as string) ?? ""}
+            onValueChange={onChange}
+            disabled={isDisabled}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={field.placeholder ?? "请选择..."} />
+            </SelectTrigger>
+            <SelectContent>
+              {field.options?.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )
+
+      case "checkbox":
+        return (
+          <Checkbox
+            checked={(value as boolean) ?? false}
+            onCheckedChange={onChange}
+            disabled={isDisabled}
+          />
+        )
+
+      case "computed":
+        return (
+          <Input
+            value={String(value ?? "")}
+            disabled
+            className="bg-muted"
+          />
+        )
+
+      default:
+        return (
+          <Input
+            value={String(value ?? "")}
+            onChange={(e) => onChange(e.target.value)}
+            disabled={isDisabled}
+          />
+        )
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <Label className="text-sm font-medium">
+        {field.label}
+        {field.required && <span className="text-destructive ml-1">*</span>}
+      </Label>
+      {renderField()}
+    </div>
+  )
+}
