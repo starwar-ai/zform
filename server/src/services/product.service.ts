@@ -43,6 +43,9 @@ export class ProductService {
       brandId,
     } = params;
 
+    const pageNumber = Number(page) || 1;
+    const pageSizeNumber = Number(pageSize) || 20;
+
     const where: Prisma.ProductWhereInput = {
       deletedAt: null,
       ...(search && {
@@ -61,8 +64,8 @@ export class ProductService {
     const [products, total] = await Promise.all([
       prisma.product.findMany({
         where,
-        skip: (page - 1) * pageSize,
-        take: pageSize,
+        skip: (pageNumber - 1) * pageSizeNumber,
+        take: pageSizeNumber,
         include: {
           category: true,
           brand: true,
@@ -73,7 +76,7 @@ export class ProductService {
       prisma.product.count({ where }),
     ]);
 
-    return { products, total, page, pageSize };
+    return { products, total, page: pageNumber, pageSize: pageSizeNumber };
   }
 
   // 获取产品详情（含 BOM 和辅料）

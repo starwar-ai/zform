@@ -41,6 +41,9 @@ export class CustomerService {
       isForeign,
     } = params;
 
+    const pageNumber = Number(page) || 1;
+    const pageSizeNumber = Number(pageSize) || 20;
+
     const where: Prisma.CustomerWhereInput = {
       deletedAt: null,
       ...(search && {
@@ -60,8 +63,8 @@ export class CustomerService {
     const [customers, total] = await Promise.all([
       prisma.customer.findMany({
         where,
-        skip: (page - 1) * pageSize,
-        take: pageSize,
+        skip: (pageNumber - 1) * pageSizeNumber,
+        take: pageSizeNumber,
         include: {
           bankAccounts: {
             where: { isDefault: true },
@@ -77,7 +80,7 @@ export class CustomerService {
       prisma.customer.count({ where }),
     ]);
 
-    return { customers, total, page, pageSize };
+    return { customers, total, page: pageNumber, pageSize: pageSizeNumber };
   }
 
   // 获取客户详情（含银行账户和联系人）

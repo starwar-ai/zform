@@ -1,0 +1,279 @@
+### 销售合同 API 测试文件
+### 使用 VS Code REST Client 插件运行
+
+@baseUrl = http://localhost:3001/api
+@userId = test-user-123
+
+### ==================== 健康检查 ====================
+
+### 健康检查
+GET http://localhost:3001/health
+
+### ==================== 客户管理 ====================
+
+### 创建客户（用于测试）
+POST {{baseUrl}}/customers
+Content-Type: application/json
+X-User-Id: {{userId}}
+
+{
+  "code": "C001",
+  "name": "测试客户公司",
+  "shortName": "测试客户",
+  "stage": "FORMAL",
+  "isForeign": false,
+  "currency": "USD",
+  "email": "test@example.com"
+}
+
+### ==================== 销售合同 ====================
+
+### 1. 创建销售合同（带明细）
+POST {{baseUrl}}/sales-contracts
+Content-Type: application/json
+X-User-Id: {{userId}}
+
+{
+  "code": "SC202602001",
+  "customerId": "请替换为实际的客户ID",
+  "customerCode": "C001",
+  "customerName": "测试客户公司",
+  "customerPoNo": "PO-2026-001",
+  "currency": "USD",
+  "totalAmount": 50000.00,
+  "salesPerson": "张三",
+  "merchandiser": "李四",
+  "buyer": "王五",
+  "priceTerms": "FOB",
+  "transportMethod": "SEA",
+  "departurePortName": "上海港",
+  "destinationPortName": "洛杉矶港",
+  "contractType": "STANDARD",
+  "items": [
+    {
+      "productName": "产品A",
+      "productCode": "P001",
+      "productSpec": "规格A",
+      "quantity": 1000,
+      "unit": "PCS",
+      "unitPrice": 50.00,
+      "currency": "USD",
+      "amount": 50000.00,
+      "boxes": 20,
+      "grossWeight": 1000.5,
+      "netWeight": 900.0,
+      "volume": 10.5,
+      "deliveryDate": "2026-03-01"
+    }
+  ]
+}
+
+### 2. 获取销售合同列表（分页）
+GET {{baseUrl}}/sales-contracts?page=1&pageSize=20
+
+### 3. 搜索销售合同
+GET {{baseUrl}}/sales-contracts?search=SC2026&status=DRAFT
+
+### 4. 获取销售合同详情
+# @name getSalesContract
+GET {{baseUrl}}/sales-contracts/请替换为实际ID
+
+### 5. 根据编号获取销售合同
+GET {{baseUrl}}/sales-contracts/code/SC202602001
+
+### 6. 更新销售合同
+PUT {{baseUrl}}/sales-contracts/请替换为实际ID
+Content-Type: application/json
+X-User-Id: {{userId}}
+
+{
+  "totalAmount": 55000.00,
+  "remark": "客户要求增加数量",
+  "container20ft": 2,
+  "estimatedFreight": 3000.00
+}
+
+### 7. 审核销售合同（通过）
+POST {{baseUrl}}/sales-contracts/请替换为实际ID/approve
+Content-Type: application/json
+X-User-Id: manager-123
+
+{
+  "approved": true
+}
+
+### 8. 审核销售合同（拒绝）
+POST {{baseUrl}}/sales-contracts/请替换为实际ID/approve
+Content-Type: application/json
+X-User-Id: manager-123
+
+{
+  "approved": false
+}
+
+### 9. 确认销售合同
+POST {{baseUrl}}/sales-contracts/请替换为实际ID/confirm
+X-User-Id: {{userId}}
+
+### 10. 更新合同状态
+PUT {{baseUrl}}/sales-contracts/请替换为实际ID/status
+Content-Type: application/json
+X-User-Id: {{userId}}
+
+{
+  "status": "IN_PROGRESS"
+}
+
+### 11. 回签
+POST {{baseUrl}}/sales-contracts/请替换为实际ID/sign-back
+Content-Type: application/json
+X-User-Id: {{userId}}
+
+{
+  "signBackDate": "2026-02-08T10:00:00Z",
+  "signBackDescription": "客户已确认并回签",
+  "signBackAttachments": [
+    "https://example.com/签字文件.pdf"
+  ]
+}
+
+### 12. 打印合同
+POST {{baseUrl}}/sales-contracts/请替换为实际ID/print
+X-User-Id: {{userId}}
+
+### 13. 转采购计划
+POST {{baseUrl}}/sales-contracts/请替换为实际ID/to-purchase-plan
+X-User-Id: {{userId}}
+
+### 14. 删除销售合同（软删除）
+DELETE {{baseUrl}}/sales-contracts/请替换为实际ID
+X-User-Id: {{userId}}
+
+### ==================== 销售合同明细 ====================
+
+### 15. 获取明细列表
+GET {{baseUrl}}/sales-contracts/请替换为实际ID/items
+
+### 16. 添加明细行
+POST {{baseUrl}}/sales-contracts/请替换为实际ID/items
+Content-Type: application/json
+X-User-Id: {{userId}}
+
+{
+  "productName": "产品B",
+  "productCode": "P002",
+  "productSpec": "规格B",
+  "quantity": 500,
+  "unit": "PCS",
+  "unitPrice": 30.00,
+  "currency": "USD",
+  "amount": 15000.00,
+  "boxes": 10,
+  "grossWeight": 500.5,
+  "netWeight": 450.0,
+  "volume": 5.5,
+  "deliveryDate": "2026-03-15",
+  "remark": "新增产品"
+}
+
+### 17. 更新明细行
+PUT {{baseUrl}}/sales-contracts/请替换为合同ID/items/请替换为明细ID
+Content-Type: application/json
+X-User-Id: {{userId}}
+
+{
+  "quantity": 600,
+  "amount": 18000.00,
+  "remark": "数量调整"
+}
+
+### 18. 删除明细行
+DELETE {{baseUrl}}/sales-contracts/请替换为合同ID/items/请替换为明细ID
+X-User-Id: {{userId}}
+
+### ==================== 统计分析 ====================
+
+### 19. 获取统计数据
+GET {{baseUrl}}/sales-contracts/statistics?startDate=2026-01-01&endDate=2026-12-31
+
+### 20. 按客户统计
+GET {{baseUrl}}/sales-contracts/statistics?customerId=请替换为客户ID&startDate=2026-01-01&endDate=2026-12-31
+
+### ==================== 复杂查询示例 ====================
+
+### 查询已审核的标准合同
+GET {{baseUrl}}/sales-contracts?approvalStatus=APPROVED&contractType=STANDARD&page=1&pageSize=20
+
+### 查询特定日期范围的合同
+GET {{baseUrl}}/sales-contracts?startDate=2026-01-01&endDate=2026-03-31&page=1
+
+### 查询特定客户的所有合同
+GET {{baseUrl}}/sales-contracts?customerId=请替换为客户ID&page=1&pageSize=50
+
+### ==================== 完整业务流程示例 ====================
+
+### Step 1: 创建草稿
+# @name createContract
+POST {{baseUrl}}/sales-contracts
+Content-Type: application/json
+X-User-Id: sales-rep-001
+
+{
+  "code": "SC202602002",
+  "customerId": "customer-id-123",
+  "customerCode": "C001",
+  "customerName": "ABC公司",
+  "customerPoNo": "PO-2026-002",
+  "currency": "USD",
+  "totalAmount": 100000.00,
+  "salesPerson": "销售员A",
+  "merchandiser": "跟单员B",
+  "contractType": "STANDARD",
+  "status": "DRAFT",
+  "items": [
+    {
+      "productName": "主打产品",
+      "quantity": 2000,
+      "unitPrice": 50.00,
+      "amount": 100000.00
+    }
+  ]
+}
+
+### Step 2: 提交审核
+POST {{baseUrl}}/sales-contracts/{{createContract.response.body.data.id}}/approve
+Content-Type: application/json
+X-User-Id: manager-001
+
+{
+  "approved": true
+}
+
+### Step 3: 客户确认
+POST {{baseUrl}}/sales-contracts/{{createContract.response.body.data.id}}/confirm
+X-User-Id: sales-rep-001
+
+### Step 4: 开始执行
+PUT {{baseUrl}}/sales-contracts/{{createContract.response.body.data.id}}/status
+Content-Type: application/json
+X-User-Id: sales-rep-001
+
+{
+  "status": "IN_PROGRESS"
+}
+
+### Step 5: 客户回签
+POST {{baseUrl}}/sales-contracts/{{createContract.response.body.data.id}}/sign-back
+Content-Type: application/json
+X-User-Id: sales-rep-001
+
+{
+  "signBackDescription": "客户已确认"
+}
+
+### Step 6: 转采购计划
+POST {{baseUrl}}/sales-contracts/{{createContract.response.body.data.id}}/to-purchase-plan
+X-User-Id: sales-rep-001
+
+### Step 7: 查看最终状态
+GET {{baseUrl}}/sales-contracts/{{createContract.response.body.data.id}}

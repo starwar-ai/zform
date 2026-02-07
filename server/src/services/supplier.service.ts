@@ -40,6 +40,9 @@ export class SupplierService {
       isEnabled,
     } = params;
 
+    const pageNumber = Number(page) || 1;
+    const pageSizeNumber = Number(pageSize) || 20;
+
     const where: Prisma.SupplierWhereInput = {
       deletedAt: null,
       ...(search && {
@@ -59,8 +62,8 @@ export class SupplierService {
     const [suppliers, total] = await Promise.all([
       prisma.supplier.findMany({
         where,
-        skip: (page - 1) * pageSize,
-        take: pageSize,
+        skip: (pageNumber - 1) * pageSizeNumber,
+        take: pageSizeNumber,
         include: {
           bankAccounts: {
             where: { isDefault: true },
@@ -72,7 +75,7 @@ export class SupplierService {
       prisma.supplier.count({ where }),
     ]);
 
-    return { suppliers, total, page, pageSize };
+    return { suppliers, total, page: pageNumber, pageSize: pageSizeNumber };
   }
 
   // 获取供应商详情（含银行账户和报价）

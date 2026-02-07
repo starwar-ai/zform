@@ -49,6 +49,9 @@ export class SupplierQuotationService {
       validDateTo,
     } = params;
 
+    const pageNumber = Number(page) || 1;
+    const pageSizeNumber = Number(pageSize) || 20;
+
     const where: Prisma.SupplierQuotationWhereInput = {
       deletedAt: null,
       ...(search && {
@@ -69,8 +72,8 @@ export class SupplierQuotationService {
     const [quotations, total] = await Promise.all([
       prisma.supplierQuotation.findMany({
         where,
-        skip: (page - 1) * pageSize,
-        take: pageSize,
+        skip: (pageNumber - 1) * pageSizeNumber,
+        take: pageSizeNumber,
         include: {
           supplier: {
             select: {
@@ -86,7 +89,7 @@ export class SupplierQuotationService {
       prisma.supplierQuotation.count({ where }),
     ]);
 
-    return { quotations, total, page, pageSize };
+    return { quotations, total, page: pageNumber, pageSize: pageSizeNumber };
   }
 
   // 获取报价详情
