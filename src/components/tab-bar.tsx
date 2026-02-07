@@ -1,0 +1,135 @@
+import { useTabStore, type Tab } from "@/stores/tab-store"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import { X } from "lucide-react"
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core"
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  horizontalListSortingStrategy,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
+import { TabContextMenu } from "./tab-context-menu"
+
+interface SortableTabProps {
+  tab: Tab
+  isActive: boolean
+  onSwitch: () => void
+  onClose: () => void
+}
+
+function SortableTab({ tab, isActive, onSwitch, onClose }: SortableTabProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: tab.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  return (
+    <TabContextMenu tabId={tab.id}>
+      <div
+        ref={setNodeRef}
+        style={style}
+        className={cn(
+          "relative flex items-center gap-2 rounded-t-md border border-b-0 px-4 py-2 text-sm transition-colors",
+          isActive
+            ? "bg-background border-primary text-foreground"
+            : "bg-muted border-transparent text-muted-foreground hover:bg-muted/80",
+          isDragging && "opacity-50"
+        )}
+        {...attributes}
+        {...listeners}
+      >
+        <button
+          onClick={onSwitch}
+          className="flex-1 text-left cursor-pointer truncate max-w-[150px]"
+        >
+          {tab.title}
+        </button>
+        {tab.closable && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-4 w-4 p-0 hover:bg-transparent"
+            onClick={(e) => {
+              e.stopPropagation()
+              onClose()
+            }}
+          >
+            <X className="h-3 w-3" />
+          </Button>
+        )}
+      </div>
+    </TabContextMenu>
+  )
+}
+
+export function TabBar() {
+  const { tabs, activeTabId, switchTab, closeTab, moveTab } = useTabStore()
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+
+    if (over && active.id !== over.id) {
+      const oldIndex = tabs.findIndex((tab) => tab.id === active.id)
+      const newIndex = tabs.findIndex((tab) => tab.id === over.id)
+
+      moveTab(oldIndex, newIndex)
+    }
+  }
+
+  if (tabs.length === 0) {
+    return null
+  }
+
+  return (
+    <div className="flex h-12 items-end border-b bg-muted/50 px-2">
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={tabs.map((tab) => tab.id)}
+          strategy={horizontalListSortingStrategy}
+        >
+          <div className="flex gap-1 overflow-x-auto">
+            {tabs.map((tab) => (
+              <SortableTab
+                key={tab.id}
+                tab={tab}
+                isActive={tab.id === activeTabId}
+                onSwitch={() => switchTab(tab.id)}
+                onClose={() => closeTab(tab.id)}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
+    </div>
+  )
+}

@@ -5,7 +5,7 @@
  * 组合 MasterForm + DetailTable + TracePanel + ImpactDialog。
  */
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import type {
   DocumentData,
   ImpactAssessment,
@@ -13,6 +13,7 @@ import type {
 import { useDocumentStore, getTraceableStore } from "@/stores/document-store"
 import { useTraceability, usePushDown, useImpactAssessment } from "@/hooks/use-document"
 import { registry } from "@/core/registry"
+import { useTabStore } from "@/stores/tab-store"
 import { MasterForm } from "./master-form"
 import { DetailTable } from "./detail-table"
 import { TracePanel } from "./trace-panel"

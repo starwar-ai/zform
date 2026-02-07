@@ -991,3 +991,209 @@ model SalesContractItem {
   @@index([lineNumber])
   @@map("sales_contract_items")
 }
+
+// ==================== 采购计划相关枚举 ====================
+
+enum PurchasePlanStatus {
+  DRAFT         // 草稿
+  PENDING       // 待审核
+  APPROVED      // 已审核
+  IN_PROGRESS   // 执行中
+  COMPLETED     // 已完成
+  CLOSED        // 已结案
+  CANCELLED     // 已取消
+}
+
+enum SourceType {
+  SALES_CONTRACT    // 销售合同
+  PURCHASE_PLAN     // 采购计划
+  OTHER            // 其他
+}
+
+enum SalesType {
+  DOMESTIC     // 内销
+  EXPORT       // 外销
+  OTHER        // 其他
+}
+
+enum PurchaseType {
+  NORMAL           // 正常采购
+  URGENT           // 紧急采购
+  REPLENISHMENT    // 补单
+}
+
+enum PurchaseMode {
+  ORDER        // 订单采购
+  INVENTORY    // 库存采购
+  CONSIGNMENT  // 寄售
+}
+
+// ==================== 采购计划主表 ====================
+
+model PurchasePlan {
+  id                    String              @id @default(cuid())
+
+  // 基本信息
+  code                  String              @unique // 计划编号
+  planDate              DateTime            @map("plan_date") // 计划日期
+  expectedDeliveryDate  DateTime            @map("expected_delivery_date") // 预计交期
+  planStatus            PurchasePlanStatus  @default(DRAFT) @map("plan_status") // 计划状态
+  approvalStatus        ApprovalStatus      @default(PENDING) @map("approval_status") // 审核状态
+
+  // 来源信息
+  sourceType            SourceType?         @map("source_type") // 来源单类型
+  salesContractId       String?             @map("sales_contract_id") // 销售合同主键
+  salesContractCode     String?             @map("sales_contract_code") // 销售合同编号
+  sourcePlanCode        String?             @map("source_plan_code") // 来源计划编号
+  orderLinkCode         String?             @map("order_link_code") // 订单链路编号
+  orderPath             String?             @map("order_path") // 订单路径
+
+  // 客户信息
+  customerId            String?             @map("customer_id") // 客户ID
+  customerCode          String?             @map("customer_code") // 客户编号
+
+  // 采购主体与人员
+  purchasingEntity      String?             @map("purchasing_entity") // 采购主体
+  buyer                 String?             // 采购员
+  salesPerson           String?             @map("sales_person") // 业务员
+  salesRep              String?             @map("sales_rep") // 销售人员
+  merchandiser          String?             // 跟单员
+
+  // 辅料采购相关
+  isAccessoryPurchase   Boolean             @default(false) @map("is_accessory_purchase") // 是否辅料采购
+  accessoryBuyer        String?             @map("accessory_buyer") // 辅料采购员
+  accessorySalesPerson  String?             @map("accessory_sales_person") // 辅料销售员
+  accessoryMerchandiser String?             @map("accessory_merchandiser") // 辅料跟单员
+
+  // 其他信息
+  salesType             SalesType?          @map("sales_type") // 销售类型
+  splitFlag             Boolean             @default(false) @map("split_flag") // 拆分标识
+  creatorDepartment     String?             @map("creator_department") // 创建人部门
+
+  // 时间信息
+  closedTime            DateTime?           @map("closed_time") // 结案时间
+  completedTime         DateTime?           @map("completed_time") // 完成时间
+
+  // 备注与附件
+  remark                String?             // 备注
+  attachments           Json?               // 附件（JSON数组）
+
+  // 变更管理
+  isChanged             Boolean             @default(false) @map("is_changed")
+  changeStatus          ChangeStatus?       @map("change_status")
+  changeDeleted         Boolean             @default(false) @map("change_deleted")
+  version               Int                 @default(1)
+  impactScope           String?             @map("impact_scope")
+  processModelId        String?             @map("process_model_id")
+
+  // 时间戳
+  createdBy             String?             @map("created_by")
+  createdAt             DateTime            @default(now()) @map("created_at")
+  updatedBy             String?             @map("updated_by")
+  updatedAt             DateTime            @updatedAt @map("updated_at")
+  deletedAt             DateTime?           @map("deleted_at")
+
+  // 关联关系
+  items                 PurchasePlanItem[]  @relation("PurchasePlanItems")
+
+  @@index([code])
+  @@index([planStatus])
+  @@index([approvalStatus])
+  @@index([salesContractId])
+  @@index([customerId])
+  @@index([planDate])
+  @@index([expectedDeliveryDate])
+  @@map("purchase_plans")
+}
+
+// ==================== 采购计划明细表 ====================
+
+model PurchasePlanItem {
+  id                    String         @id @default(cuid())
+
+  // 关联采购计划
+  purchasePlanId        String         @map("purchase_plan_id")
+  purchasePlan          PurchasePlan   @relation("PurchasePlanItems", fields: [purchasePlanId], references: [id], onDelete: Cascade)
+
+  // 行号
+  lineNumber            Int            @map("line_number") // 行号
+
+  // 产品信息
+  productId             String?        @map("product_id") // 产品ID
+  productCode           String         @map("product_code") // SKU编号
+  productName           String         @map("product_name") // 产品名称
+  barcode               String?        // 条形码
+  customerProductNo     String?        @map("customer_product_no") // 客户货号
+  selfOwnedProductNo    String?        @map("self_owned_product_no") // 自营货号
+  factoryProductNo      String?        @map("factory_product_no") // 工厂货号
+  specification         String?        // 规格
+  specificationDesc     String?        @map("specification_desc") // 规格描述
+
+  // 数量信息
+  salesQuantity         Decimal?       @db.Decimal(10, 2) @map("sales_quantity") // 销售数量
+  contractQuantity      Decimal?       @db.Decimal(10, 2) @map("contract_quantity") // 合同数量
+  purchaseQuantity      Decimal        @db.Decimal(10, 2) @map("purchase_quantity") // 采购数量
+  pendingQuantity       Decimal?       @default(0) @db.Decimal(10, 2) @map("pending_quantity") // 待采购数量
+  convertedQuantity     Decimal?       @default(0) @db.Decimal(10, 2) @map("converted_quantity") // 已转合同数量
+  lockedInventory       Decimal?       @default(0) @db.Decimal(10, 2) @map("locked_inventory") // 锁定库存
+
+  // 供应商信息
+  supplierId            String?        @map("supplier_id") // 供应商ID
+  supplierCode          String?        @map("supplier_code") // 供应商编号
+  supplierName          String?        @map("supplier_name") // 供应商名称
+
+  // 价格信息
+  unitPrice             Decimal        @db.Decimal(15, 4) @map("unit_price") // 采购单价
+  totalAmount           Decimal?       @db.Decimal(15, 2) @map("total_amount") // 总价
+  taxRate               Decimal?       @default(0) @db.Decimal(5, 2) @map("tax_rate") // 税率
+  includeTax            Boolean        @default(false) @map("include_tax") // 是否含税
+  totalAmountWithTax    Decimal?       @db.Decimal(15, 2) @map("total_amount_with_tax") // 含税总价
+  currency              String         @default("CNY") // 币种
+  packagePrice          Decimal?       @db.Decimal(10, 2) @map("package_price") // 包装价
+
+  // 采购信息
+  deliveryDate          DateTime?      @map("delivery_date") // 交货日期
+  purchaseType          PurchaseType?  @map("purchase_type") // 采购类型
+  packageMethod         String?        @map("package_method") // 包装方式
+  includeShipping       Boolean        @default(false) @map("include_shipping") // 是否含运费
+  includePackage        Boolean        @default(false) @map("include_package") // 是否含包装
+  moq                   Int?           @map("moq") // 最小起购量
+  boxQuantity           Int?           @map("box_quantity") // 箱数
+
+  // 标识字段
+  isCommonAccessory     Boolean        @default(false) @map("is_common_accessory") // 是否通用辅料
+  isSelfBrand           Boolean        @default(false) @map("is_self_brand") // 是否自主品牌
+  isGift                Boolean        @default(false) @map("is_gift") // 是否赠品
+
+  // 其他信息
+  purchaseMode          PurchaseMode?  @map("purchase_mode") // 采购模式
+  purchaseLink          String?        @map("purchase_link") // 采购链接
+  thumbnail             String?        // 缩略图
+  images                Json?          // 图片（JSON数组）
+  remark                String?        // 备注
+  attachments           Json?          // 附件（JSON数组）
+
+  // 来源追溯
+  salesContractId       String?        @map("sales_contract_id") // 来源销售合同ID
+  salesContractItemId   String?        @map("sales_contract_item_id") // 来源销售合同明细ID
+  sourcePlanItemId      String?        @map("source_plan_item_id") // 来源计划明细ID
+
+  // 转采购合同标记
+  convertedToPurchase   Boolean        @default(false) @map("converted_to_purchase") // 转采购合同标记
+  convertedTime         DateTime?      @map("converted_time") // 转采购合同时间
+  purchaseContractCode  String?        @map("purchase_contract_code") // 采购合同编号
+
+  // 时间戳
+  createdBy             String?        @map("created_by")
+  createdAt             DateTime       @default(now()) @map("created_at")
+  updatedBy             String?        @map("updated_by")
+  updatedAt             DateTime       @updatedAt @map("updated_at")
+  deletedAt             DateTime?      @map("deleted_at")
+
+  @@index([purchasePlanId])
+  @@index([productId])
+  @@index([supplierId])
+  @@index([lineNumber])
+  @@index([salesContractId])
+  @@map("purchase_plan_items")
+}

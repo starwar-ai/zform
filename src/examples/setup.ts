@@ -8,8 +8,13 @@
 import { registry } from "@/core/registry"
 import {
   salesContractSchema,
+  salesContractChangeRule,
+} from "./sales-contract-schemas"
+import {
   purchaseContractSchema,
-} from "./schemas"
+  purchasePlanToPurchaseContractRule,
+  purchaseContractChangeRule,
+} from "./purchase-contract-schemas"
 import {
   standardProductSchema,
   customerProductSchema,
@@ -21,7 +26,6 @@ import {
 import {
   purchasePlanSchema,
   salesContractToPurchasePlanRule,
-  purchasePlanToPurchaseContractRule,
   salesContractChangeToPurchasePlanRule,
   purchasePlanChangeRule,
 } from "./purchase-plan-schemas"
@@ -37,7 +41,7 @@ export function setupExampleSchemas(): void {
   registry.registerSchema(customerProductSchema)
   registry.registerSchema(selfOwnedProductSchema)
 
-  // 注册采购下推规则
+  // 注册采购流程下推规则
   registry.registerPushDownRule(salesContractToPurchasePlanRule)
   registry.registerPushDownRule(purchasePlanToPurchaseContractRule)
 
@@ -45,9 +49,11 @@ export function setupExampleSchemas(): void {
   registry.registerPushDownRule(standardToCustomerProductRule)
   registry.registerPushDownRule(standardToSelfOwnedProductRule)
 
-  // 注册采购变更规则
+  // 注册采购流程变更规则
+  registry.registerChangeRule(salesContractChangeRule)
   registry.registerChangeRule(salesContractChangeToPurchasePlanRule)
   registry.registerChangeRule(purchasePlanChangeRule)
+  registry.registerChangeRule(purchaseContractChangeRule)
 
   // 注册产品变更规则
   registry.registerChangeRule(standardProductChangeRule)

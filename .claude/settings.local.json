@@ -7,7 +7,11 @@
       "Bash(npm install)",
       "Bash(npm run prisma:generate:*)",
       "Bash(npm run prisma:migrate:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(npm install:*)",
+      "Bash(timeout:*)",
+      "Bash(ping:*)",
+      "Bash(npm ls:*)"
     ]
   }
 }
