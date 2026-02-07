@@ -31,21 +31,17 @@ export function AppLayout() {
   }, [startPolling, stopPolling])
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      {/* 左侧导航栏 */}
-      <Sidebar />
+    <div className="flex h-screen flex-col overflow-hidden">
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar />
 
-      {/* 右侧内容区 */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* 标签栏 */}
-        <TabBar />
-
-        {/* 内容区 */}
-        <TabContent />
-
-        {/* 底部状态栏 */}
-        <StatusBar />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <TabBar />
+          <TabContent />
+        </div>
       </div>
+
+      <StatusBar />
     </div>
   )
 }
