@@ -83,7 +83,12 @@ export function TabBar() {
   const { tabs, activeTabId, switchTab, closeTab, moveTab } = useTabStore()
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      // Avoid swallowing click events when tabs are sortable.
+      activationConstraint: {
+        distance: 6,
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
