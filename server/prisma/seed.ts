@@ -590,11 +590,86 @@ async function main() {
     },
   });
 
+  // ===== Approval rule config seeds =====
+  const salesContractApprovalRule = await prisma.approvalRuleConfig.upsert({
+    where: { code: 'sales_contract_approval' },
+    update: {
+      name: '销售合同审核',
+      docType: 'sales_contract',
+      levels: [
+        { name: '业务经理审批', mode: 'any', roleIds: ['MANAGER'] },
+        { name: '总经理审批', mode: 'any', roleIds: ['ADMIN'] },
+      ],
+      condition: { field: 'totalAmount', operator: 'gt', value: 100000 },
+      enabled: true,
+    },
+    create: {
+      code: 'sales_contract_approval',
+      name: '销售合同审核',
+      docType: 'sales_contract',
+      levels: [
+        { name: '业务经理审批', mode: 'any', roleIds: ['MANAGER'] },
+        { name: '总经理审批', mode: 'any', roleIds: ['ADMIN'] },
+      ],
+      condition: { field: 'totalAmount', operator: 'gt', value: 100000 },
+      enabled: true,
+    },
+  });
+
+  const purchasePlanApprovalRule = await prisma.approvalRuleConfig.upsert({
+    where: { code: 'purchase_plan_approval' },
+    update: {
+      name: '采购计划审核',
+      docType: 'purchase_plan',
+      levels: [
+        { name: '业务经理审批', mode: 'any', roleIds: ['MANAGER'] },
+      ],
+      condition: null,
+      enabled: true,
+    },
+    create: {
+      code: 'purchase_plan_approval',
+      name: '采购计划审核',
+      docType: 'purchase_plan',
+      levels: [
+        { name: '业务经理审批', mode: 'any', roleIds: ['MANAGER'] },
+      ],
+      condition: null,
+      enabled: true,
+    },
+  });
+
+  const purchaseContractApprovalRule = await prisma.approvalRuleConfig.upsert({
+    where: { code: 'purchase_contract_approval' },
+    update: {
+      name: '采购合同审核',
+      docType: 'purchase_contract',
+      levels: [
+        { name: '业务经理审批', mode: 'any', roleIds: ['MANAGER'] },
+        { name: '管理层会签', mode: 'all', roleIds: ['ADMIN', 'MANAGER'] },
+      ],
+      condition: null,
+      enabled: true,
+    },
+    create: {
+      code: 'purchase_contract_approval',
+      name: '采购合同审核',
+      docType: 'purchase_contract',
+      levels: [
+        { name: '业务经理审批', mode: 'any', roleIds: ['MANAGER'] },
+        { name: '管理层会签', mode: 'all', roleIds: ['ADMIN', 'MANAGER'] },
+      ],
+      condition: null,
+      enabled: true,
+    },
+  });
+
   console.log('Seed completed.');
   console.log(`Customers: ${customerA.code}, ${customerB.code}`);
   console.log(`Suppliers: ${supplierA.code}, ${supplierB.code}`);
   console.log(`Products: ${standardProduct.code}, ${customerProduct.code}`);
   console.log(`Sales contract: ${salesContract.code}`);
+  console.log(`Approval rules: ${salesContractApprovalRule.code}, ${purchasePlanApprovalRule.code}, ${purchaseContractApprovalRule.code}`);
 }
 
 main()

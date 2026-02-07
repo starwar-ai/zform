@@ -258,3 +258,99 @@ export interface ChangeRule {
     downstreamDocs: DocumentData[]
   ) => ImpactItem[]
 }
+
+// ============================================================
+// 审核系统 (Approval System)
+// ============================================================
+
+/** 审核动作类型 */
+export type ApprovalAction = "submit" | "approve" | "reject" | "withdraw"
+
+/** 审批模式: single=单人审批, all=会签(所有人通过), any=或签(任一通过) */
+export type ApprovalMode = "single" | "all" | "any"
+
+/** 审核级别定义 */
+export interface ApprovalLevel {
+  /** 级别名称 (如 "部门主管审批") */
+  name: string
+  /** 审批模式 (默认 "any") */
+  mode?: ApprovalMode
+  /** 可审批的角色 ID 列表 */
+  roleIds?: string[]
+  /** 可审批的用户 ID 列表 */
+  userIds?: string[]
+}
+
+/** 审核规则 —— 定义单据类型的审核流程 */
+export interface ApprovalRule {
+  /** 规则 ID */
+  id: string
+  /** 适用的单据类型 */
+  typeId: DocumentTypeId
+  /** 规则名称 */
+  name: string
+  /** 审核级别定义 (按顺序审批) */
+  levels: ApprovalLevel[]
+  /** 触发条件 (可选, 返回 true 表示需要审批; 不设置则所有单据都需要审批) */
+  condition?: (doc: DocumentData) => boolean
+  /** 是否启用 (默认 true) */
+  enabled?: boolean
+}
+
+/** 审核记录 */
+export interface ApprovalRecord {
+  /** 记录 ID */
+  id: string
+  /** 单据 ID */
+  docId: DocumentId
+  /** 单据类型 */
+  typeId: DocumentTypeId
+  /** 审核规则 ID */
+  ruleId: string
+  /** 审核级别 (0=提交, 1+=审批级别) */
+  level: number
+  /** 审核动作 */
+  action: ApprovalAction
+  /** 操作人 ID */
+  userId: string
+  /** 操作人姓名 */
+  userName: string
+  /** 审批意见 */
+  comment?: string
+  /** 操作时间 */
+  timestamp: string
+}
+
+/** 审核状态 */
+export interface ApprovalStatus {
+  /** 单据 ID */
+  docId: DocumentId
+  /** 单据类型 */
+  typeId: DocumentTypeId
+  /** 审核规则 ID */
+  ruleId: string
+  /** 当前审核级别 (从 1 开始) */
+  currentLevel: number
+  /** 审核状态 */
+  status: "pending" | "in_progress" | "approved" | "rejected"
+  /** 提交人 ID */
+  submitterId: string
+  /** 提交时间 */
+  submittedAt?: string
+  /** 完成时间 */
+  completedAt?: string
+  /** 当前级别已审批的用户 ID 集合 (用于会签/或签) */
+  currentLevelApprovers: string[]
+}
+
+/** 审核操作结果 */
+export interface ApprovalResult {
+  /** 是否成功 */
+  success: boolean
+  /** 消息 */
+  message: string
+  /** 新的审核状态 */
+  status?: ApprovalStatus
+  /** 审核记录 */
+  record?: ApprovalRecord
+}

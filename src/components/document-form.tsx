@@ -5,7 +5,8 @@
  * 组合 MasterForm + DetailTable + TracePanel + ImpactDialog。
  */
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useCallback } from "react"
+import type { ImperativePanelHandle } from "react-resizable-panels"
 import type {
   DocumentData,
   ImpactAssessment,
@@ -13,17 +14,23 @@ import type {
 import { useDocumentStore, getTraceableStore } from "@/stores/document-store"
 import { useTraceability, usePushDown, useImpactAssessment } from "@/hooks/use-document"
 import { registry } from "@/core/registry"
-import { useTabStore } from "@/stores/tab-store"
 import { MasterForm } from "./master-form"
 import { DetailTable } from "./detail-table"
 import { TracePanel } from "./trace-panel"
 import { ImpactDialog } from "./impact-dialog"
+import { ApprovalHistory } from "./approval-history"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
-import { Save, Send, ArrowDownToLine, FileText } from "lucide-react"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable"
+import { Save, Send, ArrowDownToLine, FileText, PanelRightClose, PanelRightOpen } from "lucide-react"
 
 interface DocumentFormProps {
   docId: string
@@ -63,7 +70,19 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
 
   const [impactOpen, setImpactOpen] = useState(false)
   const [assessment, setAssessment] = useState<ImpactAssessment | null>(null)
+  const [isPanelCollapsed, setIsPanelCollapsed] = useState(false)
   const pendingSaveRef = useRef<DocumentData | null>(null)
+  const sidePanelRef = useRef<ImperativePanelHandle>(null)
+
+  const togglePanel = useCallback(() => {
+    const panel = sidePanelRef.current
+    if (!panel) return
+    if (panel.isCollapsed()) {
+      panel.expand()
+    } else {
+      panel.collapse()
+    }
+  }, [])
 
   if (!doc) {
     return (
@@ -131,9 +150,9 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col h-full">
       {/* 头部: 单据类型 + 编号 + 状态 + 操作 */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between px-1 pb-4">
         <div className="flex items-center gap-3">
           <FileText className="h-5 w-5 text-muted-foreground" />
           <div>
@@ -168,89 +187,128 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
               {rule.name}
             </Button>
           ))}
+          {isPanelCollapsed && (
+            <Button variant="ghost" size="icon" onClick={togglePanel} title="展开详情面板">
+              <PanelRightOpen className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
 
       <Separator />
 
-      <div className="grid grid-cols-4 gap-4">
-        {/* 主内容区 */}
-        <div className="col-span-3 space-y-4">
-          <Tabs defaultValue="master">
-            <TabsList>
-              <TabsTrigger value="master">主信息</TabsTrigger>
-              {schema.detailTables.map((t) => (
-                <TabsTrigger key={t.id} value={t.id}>
-                  {t.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+      {/* 可拖拽面板布局 */}
+      <ResizablePanelGroup direction="horizontal" className="flex-1 mt-4">
+        {/* 左侧主内容区 */}
+        <ResizablePanel defaultSize={75} minSize={50}>
+          <div className="h-full pr-2 overflow-auto">
+            <Tabs defaultValue="master">
+              <TabsList>
+                <TabsTrigger value="master">主信息</TabsTrigger>
+                {schema.detailTables.map((t) => (
+                  <TabsTrigger key={t.id} value={t.id}>
+                    {t.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
 
-            <TabsContent value="master">
-              <Card>
-                <CardContent className="pt-6">
-                  <MasterForm
-                    fields={schema.masterFields}
-                    data={doc.masterData}
-                    onChange={(fieldId, value) =>
-                      updateMasterField(docId, fieldId, value)
-                    }
-                    disabled={!isEditable}
+              <TabsContent value="master">
+                <Card>
+                  <CardContent className="pt-6">
+                    <MasterForm
+                      fields={schema.masterFields}
+                      data={doc.masterData}
+                      onChange={(fieldId, value) =>
+                        updateMasterField(docId, fieldId, value)
+                      }
+                      disabled={!isEditable}
+                    />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {schema.detailTables.map((tableDef) => {
+                const tableData = doc.detailTables.find(
+                  (t) => t.tableId === tableDef.id
+                )
+                return (
+                  <TabsContent key={tableDef.id} value={tableDef.id}>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <DetailTable
+                          tableDef={tableDef}
+                          rows={tableData?.rows ?? []}
+                          onAddRow={() => addDetailRow(docId, tableDef.id)}
+                          onDeleteRow={(rowId) =>
+                            deleteDetailRow(docId, tableDef.id, rowId)
+                          }
+                          onUpdateCell={(rowId, fieldId, value) =>
+                            updateDetailRow(
+                              docId,
+                              tableDef.id,
+                              rowId,
+                              fieldId,
+                              value
+                            )
+                          }
+                          disabled={!isEditable}
+                        />
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                )
+              })}
+            </Tabs>
+          </div>
+        </ResizablePanel>
+
+        <ResizableHandle withHandle />
+
+        {/* 右侧可折叠面板 */}
+        <ResizablePanel
+          ref={sidePanelRef}
+          defaultSize={25}
+          minSize={15}
+          collapsible
+          collapsedSize={0}
+          onCollapse={() => setIsPanelCollapsed(true)}
+          onExpand={() => setIsPanelCollapsed(false)}
+        >
+          <div className="h-full flex flex-col border-l">
+            {/* 面板标题栏 */}
+            <div className="flex items-center justify-between px-3 py-2 border-b">
+              <span className="text-sm font-semibold">详情</span>
+              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={togglePanel}>
+                <PanelRightClose className="h-4 w-4" />
+              </Button>
+            </div>
+            {/* 可滚动内容区 */}
+            <ScrollArea className="flex-1">
+              <div className="p-3 space-y-4">
+                {/* 关联单据 */}
+                <div>
+                  <h4 className="text-sm font-medium mb-2">关联单据</h4>
+                  <TracePanel
+                    upstream={upstream}
+                    downstream={downstream}
+                    onNavigate={(id) => onNavigate?.(id)}
                   />
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {schema.detailTables.map((tableDef) => {
-              const tableData = doc.detailTables.find(
-                (t) => t.tableId === tableDef.id
-              )
-              return (
-                <TabsContent key={tableDef.id} value={tableDef.id}>
-                  <Card>
-                    <CardContent className="pt-6">
-                      <DetailTable
-                        tableDef={tableDef}
-                        rows={tableData?.rows ?? []}
-                        onAddRow={() => addDetailRow(docId, tableDef.id)}
-                        onDeleteRow={(rowId) =>
-                          deleteDetailRow(docId, tableDef.id, rowId)
-                        }
-                        onUpdateCell={(rowId, fieldId, value) =>
-                          updateDetailRow(
-                            docId,
-                            tableDef.id,
-                            rowId,
-                            fieldId,
-                            value
-                          )
-                        }
-                        disabled={!isEditable}
-                      />
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              )
-            })}
-          </Tabs>
-        </div>
-
-        {/* 右侧追溯面板 */}
-        <div>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">关联单据</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <TracePanel
-                upstream={upstream}
-                downstream={downstream}
-                onNavigate={(id) => onNavigate?.(id)}
-              />
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+                </div>
+                <Separator />
+                {/* 审核记录 */}
+                <div>
+                  <h4 className="text-sm font-medium mb-2">审核记录</h4>
+                  <ApprovalHistory
+                    docType={doc.typeId}
+                    docId={docId}
+                    embedded
+                  />
+                </div>
+              </div>
+            </ScrollArea>
+          </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
 
       {/* 影响评估对话框 */}
       <ImpactDialog

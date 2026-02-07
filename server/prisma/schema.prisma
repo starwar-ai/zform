@@ -1197,3 +1197,79 @@ model PurchasePlanItem {
   @@index([salesContractId])
   @@map("purchase_plan_items")
 }
+
+// ==================== 审核规则配置表 ====================
+
+model ApprovalRuleConfig {
+  id          String   @id @default(cuid())
+  code        String   @unique              // 规则标识（如 "sales_contract_approval"）
+  name        String                        // 规则名称
+  docType     String   @map("doc_type")     // 适用的单据类型（如 "sales_contract"）
+  levels      Json                          // 审核级别定义 JSON（ApprovalLevel[]）
+  condition   Json?                         // 触发条件（JSON 配置，服务端解释执行）
+  enabled     Boolean  @default(true)
+
+  createdBy   String?  @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedBy   String?  @map("updated_by")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  instances   ApprovalInstance[]
+
+  @@index([docType])
+  @@index([enabled])
+  @@map("approval_rule_configs")
+}
+
+// ==================== 审核实例表 ====================
+
+model ApprovalInstance {
+  id                    String    @id @default(cuid())
+
+  ruleId                String    @map("rule_id")
+  rule                  ApprovalRuleConfig @relation(fields: [ruleId], references: [id])
+
+  docType               String    @map("doc_type")      // 单据类型
+  docId                 String    @map("doc_id")         // 单据 ID
+  docNumber             String?   @map("doc_number")     // 单据编号（冗余）
+
+  status                String    @default("in_progress") // pending | in_progress | approved | rejected
+  currentLevel          Int       @default(1) @map("current_level")
+  currentLevelApprovers Json      @default("[]") @map("current_level_approvers")
+
+  submitterId           String    @map("submitter_id")
+  submitterName         String?   @map("submitter_name")
+  submittedAt           DateTime  @default(now()) @map("submitted_at")
+  completedAt           DateTime? @map("completed_at")
+
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  records               ApprovalRecord[]
+
+  @@index([docType, docId])
+  @@index([status])
+  @@index([submitterId])
+  @@map("approval_instances")
+}
+
+// ==================== 审核记录表 ====================
+
+model ApprovalRecord {
+  id            String   @id @default(cuid())
+
+  instanceId    String   @map("instance_id")
+  instance      ApprovalInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  level         Int                          // 审核级别（0=提交, 1+=审批级别）
+  action        String                       // submit | approve | reject | withdraw
+  userId        String   @map("user_id")
+  userName      String   @map("user_name")
+  comment       String?                      // 审批意见
+
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([instanceId])
+  @@index([userId])
+  @@map("approval_records")
+}

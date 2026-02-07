@@ -31,7 +31,6 @@ import {
   salesContractChangeToPurchasePlanRule,
   purchasePlanChangeRule,
 } from "./purchase-plan-schemas"
-
 export function setupExampleSchemas(): void {
   // 注册单据 Schema
   registry.registerSchema(salesContractSchema)
@@ -62,6 +61,8 @@ export function setupExampleSchemas(): void {
 
   // 初始化默认用户和角色
   initializeDefaultData()
+
+  // 审核规则已迁移到服务端数据库，无需前端注册
 }
 
 /**
@@ -140,3 +141,4 @@ function initializeDefaultData(): void {
   console.log("   • demo (普通用户)")
   console.log("   • manager (业务经理)")
 }
+

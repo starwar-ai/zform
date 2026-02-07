@@ -10,12 +10,14 @@ import type {
   DocumentTypeId,
   PushDownRule,
   ChangeRule,
+  ApprovalRule,
 } from "./types"
 
 class DocumentRegistry {
   private schemas = new Map<DocumentTypeId, DocumentSchema>()
   private pushDownRules: PushDownRule[] = []
   private changeRules: ChangeRule[] = []
+  private approvalRules: ApprovalRule[] = []
 
   /** 注册单据 Schema */
   registerSchema(schema: DocumentSchema): void {
@@ -74,11 +76,34 @@ class DocumentRegistry {
       .map((r) => r.sourceTypeId)
   }
 
+  // ---- 审核规则 ----
+
+  /** 注册审核规则 */
+  registerApprovalRule(rule: ApprovalRule): void {
+    this.approvalRules.push(rule)
+  }
+
+  /** 获取某种单据类型的审核规则 */
+  getApprovalRules(typeId: DocumentTypeId): ApprovalRule[] {
+    return this.approvalRules.filter((r) => r.typeId === typeId)
+  }
+
+  /** 根据 ID 获取审核规则 */
+  getApprovalRule(ruleId: string): ApprovalRule | undefined {
+    return this.approvalRules.find((r) => r.id === ruleId)
+  }
+
+  /** 获取所有审核规则 */
+  getAllApprovalRules(): ApprovalRule[] {
+    return [...this.approvalRules]
+  }
+
   /** 清空所有注册 (用于测试) */
   clear(): void {
     this.schemas.clear()
     this.pushDownRules = []
     this.changeRules = []
+    this.approvalRules = []
   }
 }
 
