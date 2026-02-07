@@ -25,9 +25,9 @@ export function AppLayout() {
       {/* 左侧导航栏 */}
       <Sidebar />
 
-      {/* 右侧主内容区 */}
+      {/* 右侧内容区 */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* 顶部标签栏 */}
+        {/* 标签栏 */}
         <TabBar />
 
         {/* 内容区 */}

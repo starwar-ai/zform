@@ -48,7 +48,7 @@ function SortableTab({ tab, isActive, onSwitch, onClose }: SortableTabProps) {
         ref={setNodeRef}
         style={style}
         className={cn(
-          "relative flex items-center gap-2 rounded-t-md border border-b-0 px-4 py-2 text-sm transition-colors",
+          "relative flex items-center gap-2 rounded-t-md border border-b-0 px-4 py-2 text-sm transition-colors cursor-pointer",
           isActive
             ? "bg-background border-primary text-foreground"
             : "bg-muted border-transparent text-muted-foreground hover:bg-muted/80",
@@ -56,13 +56,11 @@ function SortableTab({ tab, isActive, onSwitch, onClose }: SortableTabProps) {
         )}
         {...attributes}
         {...listeners}
+        onClick={onSwitch}
       >
-        <button
-          onClick={onSwitch}
-          className="flex-1 text-left cursor-pointer truncate max-w-[150px]"
-        >
+        <span className="flex-1 truncate max-w-[150px]">
           {tab.title}
-        </button>
+        </span>
         {tab.closable && (
           <Button
             variant="ghost"
