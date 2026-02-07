@@ -2,11 +2,15 @@
  * MasterForm
  *
  * 渲染单据的主数据表单, 根据 Schema 动态生成字段。
- * 支持字段分组、栅格布局。
+ * 支持字段分组、栅格布局，列数根据容器宽度自适应。
  */
 
+import { useState, useEffect, useRef } from "react"
 import type { FieldDef } from "@/core/types"
 import { FieldRenderer } from "./field-renderer"
+
+/** 每列最小宽度（px），用于计算列数 */
+const COL_MIN_WIDTH = 240
 
 interface MasterFormProps {
   fields: FieldDef[]
@@ -21,11 +25,25 @@ export function MasterForm({
   onChange,
   disabled,
 }: MasterFormProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [cols, setCols] = useState(4)
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const observer = new ResizeObserver((entries) => {
+      const width = entries[0]!.contentRect.width
+      setCols(Math.max(2, Math.min(6, Math.floor(width / COL_MIN_WIDTH))))
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
   // 按 group 分组
   const groups = groupFields(fields)
 
   return (
-    <div className="space-y-6">
+    <div ref={containerRef} className="space-y-6">
       {groups.map((group) => (
         <div key={group.title ?? "__default"}>
           {group.title && (
@@ -33,7 +51,10 @@ export function MasterForm({
               {group.title}
             </h3>
           )}
-          <div className="grid grid-cols-4 gap-4">
+          <div
+            className="grid gap-4"
+            style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+          >
             {group.fields.map((field) => {
               // 计算值 (computed 字段)
               const value =
@@ -41,11 +62,12 @@ export function MasterForm({
                   ? field.compute(data)
                   : data[field.id]
 
+              const span = Math.min(field.span ?? 1, cols)
+
               return (
                 <div
                   key={field.id}
-                  className={`col-span-${field.span ?? 1}`}
-                  style={{ gridColumn: `span ${field.span ?? 1}` }}
+                  style={{ gridColumn: `span ${span}` }}
                 >
                   <FieldRenderer
                     field={field}

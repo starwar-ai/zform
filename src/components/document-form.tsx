@@ -6,7 +6,6 @@
  */
 
 import { useState, useRef, useCallback } from "react"
-import type { ImperativePanelHandle } from "react-resizable-panels"
 import type {
   DocumentData,
   ImpactAssessment,
@@ -29,6 +28,7 @@ import {
   ResizablePanelGroup,
   ResizablePanel,
   ResizableHandle,
+  usePanelRef,
 } from "@/components/ui/resizable"
 import { Save, Send, ArrowDownToLine, FileText, PanelRightClose, PanelRightOpen } from "lucide-react"
 
@@ -72,7 +72,7 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
   const [assessment, setAssessment] = useState<ImpactAssessment | null>(null)
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false)
   const pendingSaveRef = useRef<DocumentData | null>(null)
-  const sidePanelRef = useRef<ImperativePanelHandle>(null)
+  const sidePanelRef = usePanelRef()
 
   const togglePanel = useCallback(() => {
     const panel = sidePanelRef.current
@@ -198,7 +198,7 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
       <Separator />
 
       {/* 可拖拽面板布局 */}
-      <ResizablePanelGroup direction="horizontal" className="flex-1 mt-4">
+      <ResizablePanelGroup orientation="horizontal" className="flex-1 mt-4">
         {/* 左侧主内容区 */}
         <ResizablePanel defaultSize={75} minSize={50}>
           <div className="h-full pr-2 overflow-auto">
@@ -266,13 +266,14 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
 
         {/* 右侧可折叠面板 */}
         <ResizablePanel
-          ref={sidePanelRef}
+          panelRef={sidePanelRef}
           defaultSize={25}
           minSize={15}
           collapsible
           collapsedSize={0}
-          onCollapse={() => setIsPanelCollapsed(true)}
-          onExpand={() => setIsPanelCollapsed(false)}
+          onResize={(size) => {
+            setIsPanelCollapsed(size.asPercentage === 0)
+          }}
         >
           <div className="h-full flex flex-col border-l">
             {/* 面板标题栏 */}

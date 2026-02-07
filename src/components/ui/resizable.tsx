@@ -1,33 +1,39 @@
 import * as React from "react"
 import { GripVertical } from "lucide-react"
-import * as ResizablePrimitive from "react-resizable-panels"
+import {
+  Group,
+  Panel,
+  Separator,
+  usePanelRef,
+} from "react-resizable-panels"
+import type { PanelImperativeHandle } from "react-resizable-panels"
 import { cn } from "@/lib/utils"
 
 const ResizablePanelGroup = ({
   className,
   ...props
-}: React.ComponentProps<typeof ResizablePrimitive.PanelGroup>) => (
-  <ResizablePrimitive.PanelGroup
+}: React.ComponentProps<typeof Group>) => (
+  <Group
     className={cn(
-      "flex h-full w-full data-[panel-group-direction=vertical]:flex-col",
+      "flex h-full w-full data-[orientation=vertical]:flex-col",
       className
     )}
     {...props}
   />
 )
 
-const ResizablePanel = ResizablePrimitive.Panel
+const ResizablePanel = Panel
 
 const ResizableHandle = ({
   withHandle,
   className,
   ...props
-}: React.ComponentProps<typeof ResizablePrimitive.PanelResizeHandle> & {
+}: React.ComponentProps<typeof Separator> & {
   withHandle?: boolean
 }) => (
-  <ResizablePrimitive.PanelResizeHandle
+  <Separator
     className={cn(
-      "relative flex w-px items-center justify-center bg-border after:absolute after:inset-y-0 after:-left-1 after:-right-1 after:content-[''] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1 data-[panel-group-direction=vertical]:h-px data-[panel-group-direction=vertical]:w-full data-[panel-group-direction=vertical]:after:inset-x-0 data-[panel-group-direction=vertical]:after:-top-1 data-[panel-group-direction=vertical]:after:-bottom-1 data-[panel-group-direction=vertical]:after:left-auto data-[panel-group-direction=vertical]:after:right-auto [&[data-resize-handle-state=drag]]:bg-ring [&[data-resize-handle-state=hover]]:bg-ring",
+      "relative flex w-px items-center justify-center bg-border after:absolute after:inset-y-0 after:-left-1 after:-right-1 after:content-[''] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1 data-[orientation=vertical]:h-px data-[orientation=vertical]:w-full data-[orientation=vertical]:after:inset-x-0 data-[orientation=vertical]:after:-top-1 data-[orientation=vertical]:after:-bottom-1 data-[orientation=vertical]:after:left-auto data-[orientation=vertical]:after:right-auto [&[data-state=drag]]:bg-ring [&[data-state=hover]]:bg-ring",
       className
     )}
     {...props}
@@ -37,7 +43,8 @@ const ResizableHandle = ({
         <GripVertical className="h-2.5 w-2.5" />
       </div>
     )}
-  </ResizablePrimitive.PanelResizeHandle>
+  </Separator>
 )
 
-export { ResizablePanelGroup, ResizablePanel, ResizableHandle }
+export { ResizablePanelGroup, ResizablePanel, ResizableHandle, usePanelRef }
+export type { PanelImperativeHandle }
