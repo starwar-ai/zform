@@ -1,0 +1,734 @@
+// 数据源配置
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ==================== 枚举定义 ====================
+
+enum ProductType {
+  STANDARD      // 标准产品
+  CUSTOMER      // 客户产品
+  SELF_OWNED    // 自营产品
+}
+
+enum ProductStatus {
+  ACTIVE        // 活跃
+  INACTIVE      // 停用
+  DRAFT         // 草稿
+  DISCONTINUED  // 停产
+}
+
+enum ApprovalStatus {
+  PENDING       // 待审核
+  APPROVED      // 已审核
+  REJECTED      // 已拒绝
+}
+
+enum ChangeStatus {
+  PENDING       // 待变更
+  IN_PROGRESS   // 变更中
+  COMPLETED     // 已完成
+  CANCELLED     // 已取消
+}
+
+// ==================== 部门表 ====================
+
+model Department {
+  id        String    @id @default(cuid())
+  code      String    @unique
+  name      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  products  Product[]
+
+  @@map("departments")
+}
+
+// ==================== 品牌表 ====================
+
+model Brand {
+  id             String    @id @default(cuid())
+  code           String    @unique
+  name           String
+  nameEn         String?   @map("name_en")
+  customerId     String?   @map("customer_id")
+  customerCode   String?   @map("customer_code")
+  customerName   String?   @map("customer_name")
+  type           String?   // 品牌类型
+  serialLength   Int       @default(6) @map("serial_length")
+  description    String?
+  descriptionEn  String?   @map("description_en")
+  isSelfOwned    Boolean   @default(false) @map("is_self_owned")
+  createdBy      String?   @map("created_by")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedBy      String?   @map("updated_by")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  products       Product[]
+
+  @@map("brands")
+}
+
+// ==================== 产品分类表（支持多级）====================
+
+model ProductCategory {
+  id        String    @id @default(cuid())
+  code      String    @unique
+  name      String
+  level     Int       @default(1)
+  parentId  String?   @map("parent_id")
+  parent    ProductCategory? @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children  ProductCategory[] @relation("CategoryTree")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  products  Product[]
+
+  @@map("product_categories")
+}
+
+// ==================== 海关编码表 ====================
+
+model HsCode {
+  id           String    @id @default(cuid())
+  code         String    @unique
+  name         String
+  hsCode       String    @map("hs_code")
+  categoryCode String?   @map("category_code")
+  parentId     String?   @map("parent_id")
+  parent       HsCode?   @relation("HsCodeTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children     HsCode[]  @relation("HsCodeTree")
+  type         String?
+  level        Int       @default(1)
+  serialLength Int       @default(6) @map("serial_length")
+  createdBy    String?   @map("created_by")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedBy    String?   @map("updated_by")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  products     Product[]
+
+  @@map("hs_codes")
+}
+
+// ==================== 包装方式表 ====================
+
+model PackageMethod {
+  id        String    @id @default(cuid())
+  code      String    @unique
+  name      String
+  nameEn    String?   @map("name_en")
+  createdBy String?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedBy String?   @map("updated_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  products  Product[]
+
+  @@map("package_methods")
+}
+
+// ==================== 产品主表 ====================
+
+model Product {
+  id                String          @id @default(cuid())
+  code              String          @unique
+  barcode           String?
+  name              String
+  nameEn            String?         @map("name_en")
+
+  // 产品类型与继承关系
+  productType       ProductType     @default(STANDARD) @map("product_type")
+  baseProductId     String?         @map("base_product_id")
+  baseProduct       Product?        @relation("ProductInheritance", fields: [baseProductId], references: [id])
+  derivedProducts   Product[]       @relation("ProductInheritance")
+
+  // 客户信息（客户产品专用）
+  customerId        String?         @map("customer_id")
+  customerCode      String?         @map("customer_code")
+  customerProductNo String?         @map("customer_product_no")
+
+  // 自营产品信息
+  selfOwnedProductNo String?        @map("self_owned_product_no")
+
+  // 基本信息
+  status            ProductStatus   @default(ACTIVE)
+  description       String?
+  descriptionEn     String?         @map("description_en")
+  isSelfBrand       Boolean         @default(false) @map("is_self_brand")
+  isAdvantage       Boolean         @default(false) @map("is_advantage")
+  source            String?
+  material          String?
+  accessoryMaterial String?         @map("accessory_material")
+  unit              String          @default("PCS")
+
+  // 规格尺寸
+  length            Decimal?        @db.Decimal(10, 2)
+  width             Decimal?        @db.Decimal(10, 2)
+  height            Decimal?        @db.Decimal(10, 2)
+  netWeight         Decimal?        @db.Decimal(10, 3) @map("net_weight")
+
+  // 价格与加工
+  unitProcessingFee Decimal?        @db.Decimal(10, 2) @map("unit_processing_fee")
+  processingNote    String?         @map("processing_note")
+  salePrice         Decimal?        @db.Decimal(10, 2) @map("sale_price")
+  companyPrice      Decimal?        @db.Decimal(10, 2) @map("company_price")
+
+  // 报关信息
+  isCustomsInspection Boolean       @default(false) @map("is_customs_inspection")
+  customsNameCn     String?         @map("customs_name_cn")
+  customsNameEn     String?         @map("customs_name_en")
+
+  // 代理与通用辅料
+  isAgent           Boolean         @default(false) @map("is_agent")
+  isCommonAccessory Boolean         @default(false) @map("is_common_accessory")
+
+  // 审核状态
+  approvalStatus    ApprovalStatus  @default(PENDING) @map("approval_status")
+
+  // 变更管理
+  isChanged         Boolean         @default(false) @map("is_changed")
+  changeStatus      ChangeStatus?   @map("change_status")
+  changeDeleted     Boolean         @default(false) @map("change_deleted")
+  version           Int             @default(1)
+  impactScope       String?         @map("impact_scope")
+  processModelId    String?         @map("process_model_id")
+
+  // 附件与图片
+  thumbnail         String?
+  attachments       Json?           // JSON 数组存储附件 URL
+  images            Json?           // JSON 数组存储图片 URL
+
+  // 备注
+  remark            String?
+  autoCreated       Boolean         @default(false) @map("auto_created")
+  customerProductId String?         @map("customer_product_id")
+
+  // 关联关系
+  departmentId      String?         @map("department_id")
+  department        Department?     @relation(fields: [departmentId], references: [id])
+
+  brandId           String?         @map("brand_id")
+  brand             Brand?          @relation(fields: [brandId], references: [id])
+
+  categoryId        String?         @map("category_id")
+  category          ProductCategory? @relation(fields: [categoryId], references: [id])
+
+  hsCodeId          String?         @map("hs_code_id")
+  hsCode            HsCode?         @relation(fields: [hsCodeId], references: [id])
+
+  packageMethodId   String?         @map("package_method_id")
+  packageMethod     PackageMethod?  @relation(fields: [packageMethodId], references: [id])
+
+  // BOM 关系（作为父产品）
+  bomItems          ProductBom[]    @relation("ParentProduct")
+  // BOM 关系（作为子产品）
+  usedInBoms        ProductBom[]    @relation("ChildProduct")
+
+  // 辅料关系
+  accessories       ProductAccessory[] @relation("ProductAccessories")
+  usedAsAccessory   ProductAccessory[] @relation("AccessoryProduct")
+
+  // 变更记录
+  changeLogs        ProductChangeLog[]
+
+  // 时间戳
+  createdBy         String?         @map("created_by")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedBy         String?         @map("updated_by")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+  deletedAt         DateTime?       @map("deleted_at")
+
+  @@index([productType])
+  @@index([status])
+  @@index([baseProductId])
+  @@index([customerId])
+  @@index([categoryId])
+  @@index([brandId])
+  @@map("products")
+}
+
+// ==================== 产品 BOM 表 ====================
+
+model ProductBom {
+  id              String    @id @default(cuid())
+
+  parentProductId String    @map("parent_product_id")
+  parentProduct   Product   @relation("ParentProduct", fields: [parentProductId], references: [id], onDelete: Cascade)
+
+  childProductId  String    @map("child_product_id")
+  childProduct    Product   @relation("ChildProduct", fields: [childProductId], references: [id], onDelete: Cascade)
+
+  quantity        Decimal   @db.Decimal(10, 3)
+  version         Int       @default(1)
+  productType     String?   @map("product_type")
+
+  createdBy       String?   @map("created_by")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedBy       String?   @map("updated_by")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  @@unique([parentProductId, childProductId])
+  @@index([parentProductId])
+  @@index([childProductId])
+  @@map("product_boms")
+}
+
+// ==================== 产品辅料关联表 ====================
+
+model ProductAccessory {
+  id              String    @id @default(cuid())
+
+  productId       String    @map("product_id")
+  product         Product   @relation("ProductAccessories", fields: [productId], references: [id], onDelete: Cascade)
+
+  accessoryId     String    @map("accessory_id")
+  accessory       Product   @relation("AccessoryProduct", fields: [accessoryId], references: [id], onDelete: Cascade)
+
+  productRatio    Decimal?  @db.Decimal(10, 3) @map("product_ratio")
+  accessoryRatio  Decimal?  @db.Decimal(10, 3) @map("accessory_ratio")
+  description     String?
+  remark          String?
+
+  isActive        Boolean   @default(true) @map("is_active")
+
+  createdBy       String?   @map("created_by")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedBy       String?   @map("updated_by")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  @@unique([productId, accessoryId])
+  @@index([productId])
+  @@index([accessoryId])
+  @@map("product_accessories")
+}
+
+// ==================== 产品变更记录表 ====================
+
+model ProductChangeLog {
+  id          String    @id @default(cuid())
+
+  productId   String    @map("product_id")
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  version     Int
+  changeType  String    @map("change_type") // CREATE, UPDATE, DELETE, STATUS_CHANGE 等
+  fieldName   String?   @map("field_name")
+  oldValue    String?   @map("old_value")
+  newValue    String?   @map("new_value")
+  description String?
+  reason      String?
+
+  changedBy   String    @map("changed_by")
+  changedAt   DateTime  @default(now()) @map("changed_at")
+
+  @@index([productId])
+  @@index([changedAt])
+  @@map("product_change_logs")
+}
+
+// ==================== 供应商相关枚举 ====================
+
+enum SupplierType {
+  MANUFACTURER      // 生产商
+  TRADER           // 贸易商
+  SERVICE_PROVIDER // 服务商
+  LOGISTICS        // 物流商
+  OTHER            // 其他
+}
+
+enum SupplierLevel {
+  A  // A级
+  B  // B级
+  C  // C级
+  D  // D级
+}
+
+enum SupplierStage {
+  POTENTIAL  // 潜在供应商
+  FORMAL     // 正式供应商
+  RETIRED    // 退休供应商
+}
+
+enum InvoiceType {
+  VAT_GENERAL    // 增值税专用发票
+  VAT_SPECIAL    // 增值税普通发票
+  ORDINARY       // 普通发票
+  RECEIPT        // 收据
+}
+
+// ==================== 供应商主表 ====================
+
+model Supplier {
+  id                    String         @id @default(cuid())
+
+  // 基本信息
+  code                  String         @unique // 供应商编码
+  name                  String         // 供应商名称
+  nameEn                String?        @map("name_en") // 供应商英文名称
+  shortName             String?        @map("short_name") // 供应商简称
+  registeredCapital     Decimal?       @db.Decimal(15, 2) @map("registered_capital") // 注册资本
+  legalRepresentative   String?        @map("legal_representative") // 法定代表人
+  mainBusiness          String?        @map("main_business") // 主营业务
+  payableSupplierCode   String?        @map("payable_supplier_code") // 应付供应商编号
+
+  // 地址信息
+  companyCity           String?        @map("company_city") // 公司所在城市
+  factoryCity           String?        @map("factory_city") // 工厂所在城市
+  expressCity           String?        @map("express_city") // 快递所在城市
+  factoryAddress        String?        @map("factory_address") // 工厂地址
+  companyAddress        String?        @map("company_address") // 公司地址
+  expressAddress        String?        @map("express_address") // 快递地址
+
+  // 证照信息
+  businessLicenseNo     String?        @map("business_license_no") // 营业执照号
+  companyPhone          String?        @map("company_phone") // 企业电话
+  fax                   String?        // 传真
+
+  // 分类与等级
+  isOverseas            Boolean        @default(false) @map("is_overseas") // 是否境外供应商
+  supplierType          SupplierType   @default(OTHER) @map("supplier_type") // 供应商类型
+  supplierLevel         SupplierLevel? @map("supplier_level") // 供应商等级
+  stage                 SupplierStage  @default(POTENTIAL) // 客户阶段
+
+  // 财务信息
+  countryCode           String?        @map("country_code") // 国家编号
+  currency              String?        @default("CNY") // 币种
+  taxRate               Decimal?       @db.Decimal(5, 2) @map("tax_rate") // 税率
+  invoiceType           InvoiceType?   @map("invoice_type") // 发票类型
+
+  // 业务信息
+  buyerList             Json?          @map("buyer_list") // 采购员列表（JSON数组）
+  buyer                 String?        // 主采购员
+  adminSupplierType     String?        @map("admin_supplier_type") // 行政供应商类型
+
+  // 标识字段
+  isInternalEnterprise  Boolean        @default(false) @map("is_internal_enterprise") // 内部企业标识 0-否 1-是
+  internalEnterprisePk  String?        @map("internal_enterprise_pk") // 内部企业主键
+  isExpressCompany      Boolean        @default(false) @map("is_express_company") // 快递公司标记
+
+  // 关联与资质
+  qualificationIds      Json?          @map("qualification_ids") // 关联资质id（JSON数组）
+
+  // 状态管理
+  approvalStatus        ApprovalStatus @default(PENDING) @map("approval_status") // 审核状态
+  isFormal              Boolean        @default(false) @map("is_formal") // 转正标识
+  formalTime            DateTime?      @map("formal_time") // 转正时间
+  isEnabled             Boolean        @default(true) @map("is_enabled") // 是否启用
+
+  // 变更管理
+  isChanged             Boolean        @default(false) @map("is_changed") // 是否变更
+  changeStatus          ChangeStatus?  @map("change_status") // 变更状态
+  changeDeleted         Boolean        @default(false) @map("change_deleted") // 变更是否删除
+  version               Int            @default(1) // 版本号
+  impactScope           String?        @map("impact_scope") // 影响范围
+  processModelId        String?        @map("process_model_id") // 流程模型标识
+
+  // 附件与备注
+  attachments           Json?          // 附件（JSON数组）
+  remark                String?        // 备注
+
+  // 财务信息（JSON 对象）
+  financialInfo         Json?          @map("financial_info") // 财务信息
+
+  // 时间戳
+  createdBy             String?        @map("created_by")
+  createdAt             DateTime       @default(now()) @map("created_at")
+  updatedBy             String?        @map("updated_by")
+  updatedAt             DateTime       @updatedAt @map("updated_at")
+  deletedAt             DateTime?      @map("deleted_at")
+
+  // 关联关系
+  bankAccounts          SupplierBankAccount[]
+  quotations            SupplierQuotation[]
+
+  @@index([code])
+  @@index([stage])
+  @@index([supplierType])
+  @@index([approvalStatus])
+  @@map("suppliers")
+}
+
+// ==================== 供应商银行账户信息表 ====================
+
+model SupplierBankAccount {
+  id              String    @id @default(cuid())
+
+  supplierId      String    @map("supplier_id")
+  supplier        Supplier  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  supplierVersion Int       @map("supplier_version") // 供应商版本
+  bankName        String    @map("bank_name") // 银行
+  accountNumber   String    @map("account_number") // 银行账号
+  branchAddress   String?   @map("branch_address") // 开户行地址
+  branchContact   String?   @map("branch_contact") // 开户行联系人
+  bankCode        String?   @map("bank_code") // 银行行号
+  isDefault       Boolean   @default(false) @map("is_default") // 是否默认账号
+
+  version         Int       @default(1) // 版本
+
+  createdBy       String?   @map("created_by")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedBy       String?   @map("updated_by")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  @@index([supplierId])
+  @@index([isDefault])
+  @@map("supplier_bank_accounts")
+}
+
+// ==================== 供应商报价表 ====================
+
+model SupplierQuotation {
+  id                String         @id @default(cuid())
+
+  // 供应商信息
+  supplierId        String         @map("supplier_id")
+  supplier          Supplier       @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  // 产品信息
+  productId         String?        @map("product_id") // 产品ID（可关联Product表）
+  productCode       String?        @map("product_code") // 产品编码
+  productName       String         @map("product_name") // 产品名称
+  productSpec       String?        @map("product_spec") // 产品规格
+
+  // 报价信息
+  quotationNo       String         @unique @map("quotation_no") // 报价单号
+  quotationDate     DateTime       @map("quotation_date") // 报价日期
+  validFrom         DateTime       @map("valid_from") // 有效期开始
+  validTo           DateTime       @map("valid_to") // 有效期结束
+
+  // 价格信息
+  currency          String         @default("CNY") // 币种
+  unitPrice         Decimal        @db.Decimal(15, 4) @map("unit_price") // 单价
+  unit              String         @default("PCS") // 单位
+  moq               Int?           @map("moq") // 最小起订量（Minimum Order Quantity）
+  leadTime          Int?           @map("lead_time") // 交货周期（天）
+
+  // 税率与付款
+  taxRate           Decimal?       @db.Decimal(5, 2) @map("tax_rate") // 税率
+  paymentTerms      String?        @map("payment_terms") // 付款条款
+
+  // 状态
+  status            ApprovalStatus @default(PENDING) // 审核状态
+  isActive          Boolean        @default(true) @map("is_active") // 是否有效
+
+  // 备注
+  remark            String?
+  attachments       Json?          // 附件
+
+  // 时间戳
+  createdBy         String?        @map("created_by")
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedBy         String?        @map("updated_by")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+  deletedAt         DateTime?      @map("deleted_at")
+
+  @@index([supplierId])
+  @@index([quotationNo])
+  @@index([quotationDate])
+  @@index([status])
+  @@index([validFrom, validTo])
+  @@map("supplier_quotations")
+}
+
+// ==================== 客户相关枚举 ====================
+
+enum CustomerStage {
+  POTENTIAL  // 潜在客户
+  FORMAL     // 正式客户
+  RETIRED    // 退休客户
+}
+
+enum ShippingMethod {
+  SEA        // 海运
+  LAND       // 陆运
+  AIR        // 空运
+  SUPPLIER   // 供应商送货
+}
+
+enum PaymentMethod {
+  TT         // 电汇
+  LC         // 信用证
+  DP         // 付款交单
+  DA         // 承兑交单
+  OA         // 赊账
+  CASH       // 现金
+  OTHER      // 其他
+}
+
+// ==================== 客户主表 ====================
+
+model Customer {
+  id                    String          @id @default(cuid())
+
+  // 基本信息
+  code                  String          @unique // 客户编号
+  name                  String          // 企业名称
+  shortName             String?         @map("short_name") // 简称
+  countryCode           String?         @map("country_code") // 国家编码
+  website               String?         // 官网
+  email                 String?         // 电子邮件
+
+  // 客户阶段与分类
+  stage                 CustomerStage   @default(POTENTIAL) // 客户阶段（潜在客户，正式客户，退休客户）
+  isForeign             Boolean         @default(false) @map("is_foreign") // 国外客户标志
+  isAgent               Boolean         @default(false) @map("is_agent") // 是否是代理
+
+  // 业务信息
+  shippingMethod        ShippingMethod? @map("shipping_method") // 运输方式(海运、陆运、空运、供应商送货)
+  paymentMethodId       String?         @map("payment_method_id") // 收款方式id
+  currency              String?         @default("CNY") // 币种
+  salesRepList          Json?           @map("sales_rep_list") // 业务员列表（JSON数组）
+  salesRep              String?         @map("sales_rep") // 主业务员
+
+  // 地址信息
+  businessAddress       String?         @map("business_address") // 营业地址
+  mailingAddress        String?         @map("mailing_address") // 寄件地址
+  phone                 String?         // 联系电话
+
+  // 展会信息
+  exhibitionSeriesId    String?         @map("exhibition_series_id") // 展会系列id
+  exhibitionId          String?         @map("exhibition_id") // 展会id
+
+  // 唛头信息
+  frontMark             String?         @map("front_mark") // 正面唛头
+  sideMark              String?         @map("side_mark") // 侧面唛头
+
+  // 收货人/通知人
+  consignee             String?         // 收货人
+  notifyParty           String?         @map("notify_party") // 通知人
+
+  // 财务信息
+  enableCreditLimit     Boolean         @default(false) @map("enable_credit_limit") // 启用信用额度
+  creditLimit           Decimal?        @db.Decimal(15, 2) @map("credit_limit") // 信用额度
+  isSinosure            Boolean         @default(false) @map("is_sinosure") // 是否是中信保
+  paymentType           String?         @map("payment_type") // 收款类型
+  invoiceTitle          String?         @map("invoice_title") // 开票抬头
+  taxRate               Decimal?        @db.Decimal(5, 2) @map("tax_rate") // 税率
+
+  // 客户来源
+  customerSource        String?         @map("customer_source") // 客户来源
+
+  // 状态管理
+  approvalStatus        ApprovalStatus  @default(PENDING) @map("approval_status") // 审核状态
+  isFormal              Boolean         @default(false) @map("is_formal") // 转正标识
+  formalTime            DateTime?       @map("formal_time") // 转正时间
+  isEnabled             Boolean         @default(true) @map("is_enabled") // 是否启用
+
+  // 变更管理
+  isChanged             Boolean         @default(false) @map("is_changed") // 是否变更
+  changeStatus          ChangeStatus?   @map("change_status") // 变更状态
+  changeDeleted         Boolean         @default(false) @map("change_deleted") // 变更是否删除
+  version               Int             @default(1) // 版本号
+  impactScope           String?         @map("impact_scope") // 影响范围
+  processModelId        String?         @map("process_model_id") // 流程模型标识
+
+  // 内部标识
+  isInternalEnterprise  Boolean         @default(false) @map("is_internal_enterprise") // 内部企业标识 0-否 1-是
+  internalEnterprisePk  String?         @map("internal_enterprise_pk") // 内部企业主键
+
+  // 关联客户
+  relatedCustomerCode   String?         @map("related_customer_code") // 关联客户编号
+
+  // 附件与备注
+  attachments           Json?           // 附件（JSON数组）
+  images                Json?           // 图片（JSON数组）
+  remark                String?         // 备注信息
+
+  // 时间戳
+  createdBy             String?         @map("created_by")
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedBy             String?         @map("updated_by")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+  deletedAt             DateTime?       @map("deleted_at")
+
+  // 关联关系
+  bankAccounts          CustomerBankAccount[]
+  contacts              CustomerContact[]
+
+  @@index([code])
+  @@index([stage])
+  @@index([approvalStatus])
+  @@index([isForeign])
+  @@index([isAgent])
+  @@map("customers")
+}
+
+// ==================== 客户银行账户信息表 ====================
+
+model CustomerBankAccount {
+  id              String    @id @default(cuid())
+
+  customerId      String    @map("customer_id")
+  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  customerVersion Int       @default(1) @map("customer_version") // 客户版本
+  bankName        String    @map("bank_name") // 开户行
+  bankAccount     String?   @map("bank_account") // 银行账户
+  accountNumber   String    @map("account_number") // 银行账号
+  branchAddress   String?   @map("branch_address") // 开户行地址
+  branchContact   String?   @map("branch_contact") // 开户行联系人
+  isDefault       Boolean   @default(false) @map("is_default") // 是否默认账户 0-否，1-是
+
+  version         Int       @default(1) // 版本
+
+  createdBy       String?   @map("created_by")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedBy       String?   @map("updated_by")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  @@index([customerId])
+  @@index([isDefault])
+  @@map("customer_bank_accounts")
+}
+
+// ==================== 客户联系人表 ====================
+
+model CustomerContact {
+  id              String    @id @default(cuid())
+
+  customerId      String    @map("customer_id")
+  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  customerVersion Int       @default(1) @map("customer_version") // 客户版本
+  name            String    // 联系人姓名
+  position        String?   // 联系人职位
+  email           String?   // 电子邮件
+  mobile          String?   // 手机
+  phone           String?   // 座机
+  address         String?   // 住宅地址
+  wechat          String?   // 微信
+  qq              String?   // QQ
+  businessCard    String?   @map("business_card") // 名片
+  isDefault       Boolean   @default(false) @map("is_default") // 默认联系人
+  remark          String?   // 备注
+
+  version         Int       @default(1) // 版本
+
+  createdBy       String?   @map("created_by")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedBy       String?   @map("updated_by")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  @@index([customerId])
+  @@index([isDefault])
+  @@map("customer_contacts")
+}

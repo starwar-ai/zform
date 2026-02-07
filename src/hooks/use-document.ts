@@ -5,6 +5,7 @@
  */
 
 import { useCallback, useMemo } from "react"
+import { useShallow } from "zustand/react/shallow"
 import { useDocumentStore, getTraceableStore } from "@/stores/document-store"
 import { registry } from "@/core/registry"
 import { pushDown } from "@/core/push-down"
@@ -30,15 +31,19 @@ export function useDocument(docId: DocumentId) {
 
 /** 使用某类型的所有单据 */
 export function useDocumentsByType(typeId: DocumentTypeId) {
-  const documents = useDocumentStore((s) =>
-    Object.values(s.documents).filter((d) => d.typeId === typeId)
+  const documents = useDocumentStore(
+    useShallow((s) =>
+      Object.values(s.documents).filter((d) => d.typeId === typeId)
+    )
   )
   return documents
 }
 
 /** 使用所有单据 */
 export function useAllDocuments() {
-  const documents = useDocumentStore((s) => Object.values(s.documents))
+  const documents = useDocumentStore(
+    useShallow((s) => Object.values(s.documents))
+  )
   return documents
 }
 
@@ -81,19 +86,18 @@ export function useImpactAssessment() {
 /** 使用追溯 */
 export function useTraceability(docId: DocumentId) {
   const doc = useDocumentStore((s) => s.documents[docId])
-  const allDocs = useDocumentStore((s) => s.documents)
 
   const upstream = useMemo(() => {
     if (!doc) return []
     const store = getTraceableStore()
     return buildUpstreamChain(store, docId).slice(1) // 排除自身
-  }, [doc, docId, allDocs])
+  }, [doc, docId])
 
   const downstream = useMemo(() => {
     if (!doc) return []
     const store = getTraceableStore()
     return getAllDownstreamDocs(store, docId)
-  }, [doc, docId, allDocs])
+  }, [doc, docId])
 
   return { upstream, downstream }
 }
