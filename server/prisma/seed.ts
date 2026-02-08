@@ -14,6 +14,7 @@ import {
   SignBackStatus,
   ConfirmStatus,
 } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -664,12 +665,238 @@ async function main() {
     },
   });
 
+  // ==================== 系统管理种子数据 ====================
+  console.log('Seeding system management data...');
+
+  // -- 角色 --
+  const adminRole = await prisma.sysRole.upsert({
+    where: { code: 'ADMIN' },
+    update: { name: '系统管理员', description: '拥有全部权限', status: 'active' },
+    create: { code: 'ADMIN', name: '系统管理员', description: '拥有全部权限', status: 'active' },
+  });
+
+  const userRole = await prisma.sysRole.upsert({
+    where: { code: 'USER' },
+    update: { name: '普通用户', description: '基础操作权限', status: 'active' },
+    create: { code: 'USER', name: '普通用户', description: '基础操作权限', status: 'active' },
+  });
+
+  // -- 用户 --
+  const adminPassword = await bcrypt.hash('admin123', 10);
+  const demoPassword = await bcrypt.hash('123456', 10);
+
+  const adminUser = await prisma.sysUser.upsert({
+    where: { username: 'admin' },
+    update: { name: '管理员', password: adminPassword, status: 'active' },
+    create: {
+      username: 'admin',
+      password: adminPassword,
+      name: '管理员',
+      email: 'admin@zform.com',
+      department: '技术部',
+      status: 'active',
+    },
+  });
+
+  const demoUser = await prisma.sysUser.upsert({
+    where: { username: 'demo' },
+    update: { name: '演示用户', password: demoPassword, status: 'active' },
+    create: {
+      username: 'demo',
+      password: demoPassword,
+      name: '演示用户',
+      email: 'demo@zform.com',
+      department: '业务部',
+      status: 'active',
+    },
+  });
+
+  // -- 用户-角色关联 --
+  await prisma.sysUserRole.deleteMany({ where: { userId: adminUser.id } });
+  await prisma.sysUserRole.deleteMany({ where: { userId: demoUser.id } });
+  await prisma.sysUserRole.createMany({
+    data: [
+      { userId: adminUser.id, roleId: adminRole.id },
+      { userId: demoUser.id, roleId: userRole.id },
+    ],
+  });
+
+  // -- 菜单 --
+  // 先清空旧菜单数据（避免重复）
+  await prisma.sysRoleMenu.deleteMany({});
+  await prisma.sysMenu.deleteMany({});
+
+  // 顶级菜单：单据管理
+  const docMenu = await prisma.sysMenu.create({
+    data: {
+      title: '单据管理',
+      icon: 'FileText',
+      path: null,
+      parentId: null,
+      orderNum: 1,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  // 单据管理子菜单
+  const salesContractMenu = await prisma.sysMenu.create({
+    data: {
+      title: '销售合同',
+      icon: 'ClipboardList',
+      path: '/type-list/sales_contract',
+      parentId: docMenu.id,
+      orderNum: 1,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  const purchasePlanMenu = await prisma.sysMenu.create({
+    data: {
+      title: '采购计划',
+      icon: 'ShoppingCart',
+      path: '/type-list/purchase_plan',
+      parentId: docMenu.id,
+      orderNum: 2,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  const stdProductMenu = await prisma.sysMenu.create({
+    data: {
+      title: '标准产品',
+      icon: 'Package',
+      path: '/type-list/standard_product',
+      parentId: docMenu.id,
+      orderNum: 3,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  const custProductMenu = await prisma.sysMenu.create({
+    data: {
+      title: '客户产品',
+      icon: 'Package',
+      path: '/type-list/customer_product',
+      parentId: docMenu.id,
+      orderNum: 4,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  const selfProductMenu = await prisma.sysMenu.create({
+    data: {
+      title: '自营产品',
+      icon: 'Package',
+      path: '/type-list/self_owned_product',
+      parentId: docMenu.id,
+      orderNum: 5,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  // 顶级菜单：系统管理
+  const sysMenu = await prisma.sysMenu.create({
+    data: {
+      title: '系统管理',
+      icon: 'Settings',
+      path: null,
+      parentId: null,
+      orderNum: 2,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  const userMgmtMenu = await prisma.sysMenu.create({
+    data: {
+      title: '用户管理',
+      icon: 'Users',
+      path: '/user-management',
+      parentId: sysMenu.id,
+      orderNum: 1,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  const roleMgmtMenu = await prisma.sysMenu.create({
+    data: {
+      title: '角色管理',
+      icon: 'Shield',
+      path: '/role-management',
+      parentId: sysMenu.id,
+      orderNum: 2,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  const menuMgmtMenu = await prisma.sysMenu.create({
+    data: {
+      title: '菜单管理',
+      icon: 'Menu',
+      path: '/menu-management',
+      parentId: sysMenu.id,
+      orderNum: 3,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  // -- 角色-菜单关联 --
+  // 管理员角色：拥有全部菜单
+  const allMenuIds = [
+    docMenu.id,
+    salesContractMenu.id,
+    purchasePlanMenu.id,
+    stdProductMenu.id,
+    custProductMenu.id,
+    selfProductMenu.id,
+    sysMenu.id,
+    userMgmtMenu.id,
+    roleMgmtMenu.id,
+    menuMgmtMenu.id,
+  ];
+
+  await prisma.sysRoleMenu.createMany({
+    data: allMenuIds.map((menuId) => ({
+      roleId: adminRole.id,
+      menuId,
+    })),
+  });
+
+  // 普通用户角色：只有单据管理菜单
+  const userMenuIds = [
+    docMenu.id,
+    salesContractMenu.id,
+    purchasePlanMenu.id,
+    stdProductMenu.id,
+    custProductMenu.id,
+    selfProductMenu.id,
+  ];
+
+  await prisma.sysRoleMenu.createMany({
+    data: userMenuIds.map((menuId) => ({
+      roleId: userRole.id,
+      menuId,
+    })),
+  });
+
   console.log('Seed completed.');
   console.log(`Customers: ${customerA.code}, ${customerB.code}`);
   console.log(`Suppliers: ${supplierA.code}, ${supplierB.code}`);
   console.log(`Products: ${standardProduct.code}, ${customerProduct.code}`);
   console.log(`Sales contract: ${salesContract.code}`);
   console.log(`Approval rules: ${salesContractApprovalRule.code}, ${purchasePlanApprovalRule.code}, ${purchaseContractApprovalRule.code}`);
+  console.log(`Roles: ${adminRole.code}, ${userRole.code}`);
+  console.log(`Users: admin (password: admin123), demo (password: 123456)`);
+  console.log(`Menus: ${allMenuIds.length} menus created`);
 }
 
 main()

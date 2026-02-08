@@ -1,6 +1,6 @@
 /**
  * User types
- * 用户管理相关类型定义
+ * 用户管理相关类型定义（与后端 SysUser 模型对齐）
  */
 
 export type UserStatus = "active" | "inactive"
@@ -9,30 +9,34 @@ export interface User {
   id: string
   username: string // 用户名（登录名）
   name: string // 姓名
-  email: string // 邮箱
-  phone: string // 电话
-  roleIds: string[] // 关联的角色ID列表
-  department?: string // 部门
+  email?: string | null // 邮箱
+  phone?: string | null // 电话
+  department?: string | null // 部门
+  roleIds: string[] // 关联的角色ID列表（来自 SysUserRole 关联）
   status: UserStatus // 状态
-  createdAt: number // 创建时间
-  updatedAt: number // 更新时间
+  createdBy?: string | null
+  createdAt: string // ISO 日期字符串
+  updatedBy?: string | null
+  updatedAt: string
+  deletedAt?: string | null
 }
 
 export interface CreateUserInput {
   username: string
+  password?: string
   name: string
-  email: string
-  phone: string
-  roleIds: string[]
+  email?: string
+  phone?: string
+  roleIds?: string[]
   department?: string
   status?: UserStatus
 }
 
 export interface UpdateUserInput {
   name?: string
+  password?: string
   email?: string
   phone?: string
-  roleIds?: string[]
   department?: string
   status?: UserStatus
 }

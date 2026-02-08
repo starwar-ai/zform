@@ -1,9 +1,9 @@
 /**
  * UserManagement
- * 用户管理组件
+ * 用户管理组件（接入后端 API）
  */
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useUserStore } from "@/stores/user-store"
 import { useRoleStore } from "@/stores/role-store"
 import type { User, CreateUserInput, UpdateUserInput } from "@/types/user"
@@ -45,7 +45,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Plus, Edit, Trash2, Users } from "lucide-react"
+import { Plus, Edit, Trash2, Users, Loader2, RefreshCw } from "lucide-react"
 
 const statusLabels = {
   active: "激活",
@@ -58,16 +58,27 @@ const statusColors: Record<string, "default" | "secondary" | "outline"> = {
 }
 
 export function UserManagement() {
-  const { users, createUser, updateUser, deleteUser, getAllUsers } =
-    useUserStore()
-  const { getAllRoles } = useRoleStore()
+  const {
+    users,
+    loading,
+    error,
+    fetchUsers,
+    createUser,
+    updateUser,
+    deleteUser,
+    assignRoles,
+    getAllUsers,
+  } = useUserStore()
+  const { roles, fetchRoles, getAllRoles } = useRoleStore()
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([])
 
-  const [formData, setFormData] = useState<CreateUserInput>({
+  const [formData, setFormData] = useState<CreateUserInput & { password?: string }>({
     username: "",
     name: "",
     email: "",
@@ -75,7 +86,14 @@ export function UserManagement() {
     roleIds: [],
     department: "",
     status: "active",
+    password: "",
   })
+
+  // 加载数据
+  useEffect(() => {
+    fetchUsers()
+    fetchRoles()
+  }, [fetchUsers, fetchRoles])
 
   const allUsers = getAllUsers()
   const allRoles = getAllRoles()
@@ -90,7 +108,9 @@ export function UserManagement() {
       roleIds: [],
       department: "",
       status: "active",
+      password: "",
     })
+    setSelectedRoleIds([])
     setDialogOpen(true)
   }
 
@@ -99,12 +119,14 @@ export function UserManagement() {
     setFormData({
       username: user.username,
       name: user.name,
-      email: user.email,
-      phone: user.phone,
+      email: user.email || "",
+      phone: user.phone || "",
       roleIds: user.roleIds,
-      department: user.department,
+      department: user.department || "",
       status: user.status,
+      password: "",
     })
+    setSelectedRoleIds(user.roleIds)
     setDialogOpen(true)
   }
 
@@ -113,31 +135,50 @@ export function UserManagement() {
     setDeleteDialogOpen(true)
   }
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (deletingUserId) {
-      deleteUser(deletingUserId)
-      setDeleteDialogOpen(false)
-      setDeletingUserId(null)
+      setSaving(true)
+      try {
+        await deleteUser(deletingUserId)
+      } catch (err) {
+        console.error("删除失败:", err)
+      } finally {
+        setSaving(false)
+        setDeleteDialogOpen(false)
+        setDeletingUserId(null)
+      }
     }
   }
 
-  const handleSubmit = () => {
-    if (editingUser) {
-      // 更新用户
-      const updateData: UpdateUserInput = {
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        roleIds: formData.roleIds,
-        department: formData.department,
-        status: formData.status,
+  const handleSubmit = async () => {
+    setSaving(true)
+    try {
+      if (editingUser) {
+        // 更新用户
+        await updateUser(editingUser.id, {
+          name: formData.name,
+          email: formData.email || undefined,
+          phone: formData.phone || undefined,
+          department: formData.department || undefined,
+          status: formData.status,
+          password: formData.password || undefined,
+        })
+        // 更新角色分配
+        await assignRoles(editingUser.id, selectedRoleIds)
+      } else {
+        // 创建用户
+        await createUser({
+          ...formData,
+          roleIds: selectedRoleIds,
+          password: formData.password || undefined,
+        })
       }
-      updateUser(editingUser.id, updateData)
-    } else {
-      // 创建用户
-      createUser(formData)
+      setDialogOpen(false)
+    } catch (err) {
+      console.error("保存失败:", err)
+    } finally {
+      setSaving(false)
     }
-    setDialogOpen(false)
   }
 
   const getRoleNames = (roleIds: string[]) => {
@@ -155,11 +196,29 @@ export function UserManagement() {
           <Users className="h-5 w-5" />
           用户管理
         </h1>
-        <Button onClick={handleCreate}>
-          <Plus className="h-4 w-4 mr-1" />
-          新建用户
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fetchUsers()}
+            disabled={loading}
+          >
+            <RefreshCw className={`h-4 w-4 mr-1 ${loading ? "animate-spin" : ""}`} />
+            刷新
+          </Button>
+          <Button onClick={handleCreate}>
+            <Plus className="h-4 w-4 mr-1" />
+            新建用户
+          </Button>
+        </div>
       </div>
+
+      {/* 错误提示 */}
+      {error && (
+        <div className="bg-destructive/10 text-destructive text-sm rounded-md p-3">
+          {error}
+        </div>
+      )}
 
       {/* 用户列表 */}
       <Card>
@@ -172,7 +231,12 @@ export function UserManagement() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {allUsers.length > 0 ? (
+          {loading && users.length === 0 ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-sm text-muted-foreground">加载中...</span>
+            </div>
+          ) : allUsers.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -195,10 +259,10 @@ export function UserManagement() {
                     </TableCell>
                     <TableCell>{user.name}</TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {user.email}
+                      {user.email || "-"}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {user.phone}
+                      {user.phone || "-"}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {user.department || "-"}
@@ -210,7 +274,7 @@ export function UserManagement() {
                     </TableCell>
                     <TableCell>
                       <Badge variant={statusColors[user.status]}>
-                        {statusLabels[user.status]}
+                        {statusLabels[user.status as keyof typeof statusLabels] || user.status}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
@@ -273,6 +337,20 @@ export function UserManagement() {
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="password">
+                {editingUser ? "密码（留空不修改）" : "密码"}
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                value={formData.password || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
+                placeholder={editingUser ? "留空不修改" : "默认 123456"}
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="name">姓名 *</Label>
               <Input
                 id="name"
@@ -284,7 +362,7 @@ export function UserManagement() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">邮箱 *</Label>
+              <Label htmlFor="email">邮箱</Label>
               <Input
                 id="email"
                 type="email"
@@ -296,7 +374,7 @@ export function UserManagement() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">电话 *</Label>
+              <Label htmlFor="phone">电话</Label>
               <Input
                 id="phone"
                 value={formData.phone}
@@ -338,17 +416,18 @@ export function UserManagement() {
               <Label>角色</Label>
               <div className="flex flex-wrap gap-2">
                 {allRoles.map((role) => {
-                  const isSelected = formData.roleIds.includes(role.id)
+                  const isSelected = selectedRoleIds.includes(role.id)
                   return (
                     <Badge
                       key={role.id}
                       variant={isSelected ? "default" : "outline"}
                       className="cursor-pointer"
                       onClick={() => {
-                        const newRoleIds = isSelected
-                          ? formData.roleIds.filter((id) => id !== role.id)
-                          : [...formData.roleIds, role.id]
-                        setFormData({ ...formData, roleIds: newRoleIds })
+                        setSelectedRoleIds((prev) =>
+                          isSelected
+                            ? prev.filter((id) => id !== role.id)
+                            : [...prev, role.id]
+                        )
                       }}
                     >
                       {role.name}
@@ -367,7 +446,11 @@ export function UserManagement() {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               取消
             </Button>
-            <Button onClick={handleSubmit}>
+            <Button
+              onClick={handleSubmit}
+              disabled={saving || !formData.username || !formData.name}
+            >
+              {saving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
               {editingUser ? "保存" : "创建"}
             </Button>
           </DialogFooter>
@@ -385,7 +468,8 @@ export function UserManagement() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete}>
+            <AlertDialogAction onClick={handleConfirmDelete} disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
               删除
             </AlertDialogAction>
           </AlertDialogFooter>

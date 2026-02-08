@@ -1,7 +1,7 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import type { User } from "@/types/user"
-import { useUserStore } from "./user-store"
+import { loginApi } from "@/lib/user-api"
 
 interface AuthStoreState {
   currentUser: User | null
@@ -23,37 +23,22 @@ export const useAuthStore = create<AuthStoreState>()(
       isAuthenticated: false,
 
       login: async (username: string, password: string) => {
-        // 简化版登录：仅验证用户名存在且用户状态为激活
-        // 实际项目中应该调用后端 API 验证密码
-        const userStore = useUserStore.getState()
-        const allUsers = userStore.getAllUsers()
+        try {
+          const user = await loginApi(username, password)
 
-        const user = allUsers.find((u) => u.username === username)
+          set({
+            currentUser: user,
+            isAuthenticated: true,
+          })
 
-        if (!user) {
+          return {
+            success: true,
+          }
+        } catch (error) {
           return {
             success: false,
-            message: "用户名不存在",
+            message: error instanceof Error ? error.message : "登录失败",
           }
-        }
-
-        if (user.status !== "active") {
-          return {
-            success: false,
-            message: "用户已被停用",
-          }
-        }
-
-        // 简化版：不验证密码（实际项目中需要验证）
-        // 这里假设密码正确
-
-        set({
-          currentUser: user,
-          isAuthenticated: true,
-        })
-
-        return {
-          success: true,
         }
       },
 

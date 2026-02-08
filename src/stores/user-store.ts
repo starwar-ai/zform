@@ -1,85 +1,104 @@
 import { create } from "zustand"
 import { immer } from "zustand/middleware/immer"
-import { persist } from "zustand/middleware"
-import { nanoid } from "nanoid"
 import type { User, CreateUserInput, UpdateUserInput } from "@/types/user"
+import {
+  fetchUsersApi,
+  createUserApi,
+  updateUserApi,
+  deleteUserApi,
+  assignUserRolesApi,
+} from "@/lib/user-api"
 
 interface UserStoreState {
-  users: Record<string, User>
+  users: User[]
+  loading: boolean
+  error: string | null
 
-  // CRUD 操作
-  createUser: (input: CreateUserInput) => User
-  updateUser: (id: string, input: UpdateUserInput) => void
-  deleteUser: (id: string) => void
+  // 异步操作
+  fetchUsers: () => Promise<void>
+  createUser: (input: CreateUserInput) => Promise<User>
+  updateUser: (id: string, input: UpdateUserInput) => Promise<void>
+  deleteUser: (id: string) => Promise<void>
+  assignRoles: (userId: string, roleIds: string[]) => Promise<void>
+
+  // 辅助方法
   getUser: (id: string) => User | undefined
   getAllUsers: () => User[]
   getUsersByRole: (roleId: string) => User[]
 }
 
 export const useUserStore = create<UserStoreState>()(
-  persist(
-    immer((set, get) => ({
-      users: {},
+  immer((set, get) => ({
+    users: [],
+    loading: false,
+    error: null,
 
-      createUser: (input) => {
-        const user: User = {
-          id: nanoid(),
-          username: input.username,
-          name: input.name,
-          email: input.email,
-          phone: input.phone,
-          roleIds: input.roleIds,
-          department: input.department,
-          status: input.status ?? "active",
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        }
-
+    fetchUsers: async () => {
+      set((draft) => {
+        draft.loading = true
+        draft.error = null
+      })
+      try {
+        const users = await fetchUsersApi()
         set((draft) => {
-          draft.users[user.id] = user
+          draft.users = users
+          draft.loading = false
         })
-
-        return user
-      },
-
-      updateUser: (id, input) => {
+      } catch (err) {
         set((draft) => {
-          const user = draft.users[id]
-          if (!user) return
-
-          if (input.name !== undefined) user.name = input.name
-          if (input.email !== undefined) user.email = input.email
-          if (input.phone !== undefined) user.phone = input.phone
-          if (input.roleIds !== undefined) user.roleIds = input.roleIds
-          if (input.department !== undefined) user.department = input.department
-          if (input.status !== undefined) user.status = input.status
-
-          user.updatedAt = Date.now()
+          draft.error = err instanceof Error ? err.message : "获取用户失败"
+          draft.loading = false
         })
-      },
+      }
+    },
 
-      deleteUser: (id) => {
-        set((draft) => {
-          delete draft.users[id]
-        })
-      },
+    createUser: async (input) => {
+      const user = await createUserApi({
+        username: input.username,
+        password: input.password,
+        name: input.name,
+        email: input.email,
+        phone: input.phone,
+        roleIds: input.roleIds,
+        department: input.department,
+        status: input.status,
+      })
+      await get().fetchUsers()
+      return user
+    },
 
-      getUser: (id) => {
-        return get().users[id]
-      },
+    updateUser: async (id, input) => {
+      await updateUserApi(id, {
+        name: input.name,
+        password: input.password,
+        email: input.email,
+        phone: input.phone,
+        department: input.department,
+        status: input.status,
+      })
+      await get().fetchUsers()
+    },
 
-      getAllUsers: () => {
-        return Object.values(get().users)
-      },
+    deleteUser: async (id) => {
+      await deleteUserApi(id)
+      await get().fetchUsers()
+    },
 
-      getUsersByRole: (roleId) => {
-        return Object.values(get().users).filter((user) =>
-          user.roleIds.includes(roleId)
-        )
-      },
-    })),
-    {
-      name: "zform-user-storage",
-    }
-  )
+    assignRoles: async (userId, roleIds) => {
+      await assignUserRolesApi(userId, roleIds)
+      await get().fetchUsers()
+    },
+
+    getUser: (id) => {
+      return get().users.find((u) => u.id === id)
+    },
+
+    getAllUsers: () => {
+      return get().users
+    },
+
+    getUsersByRole: (roleId) => {
+      return get().users.filter((user) => user.roleIds.includes(roleId))
+    },
+  }))
 )

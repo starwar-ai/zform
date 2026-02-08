@@ -1273,3 +1273,124 @@ model ApprovalRecord {
   @@index([userId])
   @@map("approval_records")
 }
+
+// ==================== 系统管理：菜单表 ====================
+
+model SysMenu {
+  id          String    @id @default(cuid())
+  title       String                        // 菜单标题
+  icon        String?                       // 图标名称（lucide-react 图标名）
+  path        String?                       // 路由路径
+  parentId    String?   @map("parent_id")   // 父菜单ID，null表示顶级菜单
+  parent      SysMenu?  @relation("MenuTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children    SysMenu[] @relation("MenuTree")
+  orderNum    Int       @default(0) @map("order_num") // 排序顺序
+  menuType    String    @default("menu") @map("menu_type") // 类型：menu | button
+  permission  String?                       // 权限标识
+  status      String    @default("visible") // 状态：visible | hidden
+
+  // 角色关联
+  roleMenus   SysRoleMenu[]
+
+  // 时间戳
+  createdBy   String?   @map("created_by")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedBy   String?   @map("updated_by")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  @@index([parentId])
+  @@index([orderNum])
+  @@index([status])
+  @@map("sys_menus")
+}
+
+// ==================== 系统管理：角色表 ====================
+
+model SysRole {
+  id          String    @id @default(cuid())
+  code        String    @unique             // 角色编码
+  name        String                        // 角色名称
+  description String?                       // 描述
+  status      String    @default("active")  // 状态：active | inactive
+
+  // 关联关系
+  userRoles   SysUserRole[]
+  roleMenus   SysRoleMenu[]
+
+  // 时间戳
+  createdBy   String?   @map("created_by")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedBy   String?   @map("updated_by")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  @@index([code])
+  @@index([status])
+  @@map("sys_roles")
+}
+
+// ==================== 系统管理：用户表 ====================
+
+model SysUser {
+  id          String    @id @default(cuid())
+  username    String    @unique             // 用户名（登录名）
+  password    String                        // 密码（bcrypt 哈希）
+  name        String                        // 姓名
+  email       String?                       // 邮箱
+  phone       String?                       // 电话
+  department  String?                       // 部门
+  status      String    @default("active")  // 状态：active | inactive
+
+  // 关联关系
+  userRoles   SysUserRole[]
+
+  // 时间戳
+  createdBy   String?   @map("created_by")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedBy   String?   @map("updated_by")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  @@index([username])
+  @@index([status])
+  @@map("sys_users")
+}
+
+// ==================== 系统管理：用户-角色关联表 ====================
+
+model SysUserRole {
+  id      String  @id @default(cuid())
+
+  userId  String  @map("user_id")
+  user    SysUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  roleId  String  @map("role_id")
+  role    SysRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+  @@map("sys_user_roles")
+}
+
+// ==================== 系统管理：角色-菜单关联表 ====================
+
+model SysRoleMenu {
+  id      String  @id @default(cuid())
+
+  roleId  String  @map("role_id")
+  role    SysRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  menuId  String  @map("menu_id")
+  menu    SysMenu @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([roleId, menuId])
+  @@index([roleId])
+  @@index([menuId])
+  @@map("sys_role_menus")
+}

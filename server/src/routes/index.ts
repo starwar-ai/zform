@@ -6,12 +6,20 @@ import customerRoutes from './customers';
 import salesContractRoutes from './sales-contracts';
 import purchasePlanRoutes from './purchase-plans';
 import approvalRoutes from './approvals';
+import menuRoutes from './menus';
+import roleRoutes from './roles';
+import userRoutes from './users';
 import documentRoutes from '../documents/document.routes';
 
 const router = Router();
 
 // ---- 统一单据 API (新) ----
 router.use('/documents', documentRoutes);
+
+// ---- 系统管理 API ----
+router.use('/menus', menuRoutes);
+router.use('/roles', roleRoutes);
+router.use('/users', userRoutes);
 
 // ---- 旧路由 (保留兼容) ----
 router.use('/products', productRoutes);
