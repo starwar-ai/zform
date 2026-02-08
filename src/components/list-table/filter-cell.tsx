@@ -50,14 +50,20 @@ export function FilterCell({
   onFilterChange,
 }: FilterCellProps) {
   const [operatorOpen, setOperatorOpen] = useState(false)
+  // 本地维护选中的操作符，即使还没有输入值
+  const [selectedOperator, setSelectedOperator] = useState<FilterOperator | null>(null)
 
   const availableOperators = getOperatorsByFieldType(fieldType)
-  const currentOperator = filter?.operator ?? getDefaultOperator(fieldType)
+  // 优先使用 filter 中的 operator，其次是本地选择的，最后是默认值
+  const currentOperator = filter?.operator ?? selectedOperator ?? getDefaultOperator(fieldType)
   const currentMeta = getOperatorMeta(currentOperator)
 
   const handleOperatorChange = useCallback(
     (op: FilterOperator) => {
       const meta = getOperatorMeta(op)
+      // 更新本地选择的操作符
+      setSelectedOperator(op)
+      
       if (!meta.needsValue) {
         // 无需值的操作符 (如 isEmpty)，直接生效
         onFilterChange({ columnId, operator: op, value: null })
@@ -69,10 +75,9 @@ export function FilterCell({
           value: filter.value,
           secondValue: meta.needsSecondValue ? filter.secondValue : undefined,
         })
-      } else {
-        // 清空筛选
-        onFilterChange(undefined)
       }
+      // 如果没有值，只更新本地状态，等待用户输入值后再触发筛选
+      
       setOperatorOpen(false)
     },
     [columnId, filter, onFilterChange]
@@ -82,6 +87,8 @@ export function FilterCell({
     (value: unknown) => {
       if (value === "" || value === null || value === undefined) {
         onFilterChange(undefined)
+        // 清空筛选时也重置本地操作符选择
+        setSelectedOperator(null)
       } else {
         onFilterChange({
           columnId,

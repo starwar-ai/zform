@@ -23,7 +23,7 @@ import {
   Download,
   Settings2,
 } from "lucide-react"
-import type { ListTableColumn } from "./types"
+import type { ListTableColumn, ModeConfig } from "./types"
 
 interface TableToolbarProps<T> {
   /** 表格标题 */
@@ -44,6 +44,8 @@ interface TableToolbarProps<T> {
   isLoading?: boolean
   /** 额外的操作按钮 */
   extraActions?: React.ReactNode
+  /** 模式配置 */
+  modeConfig?: ModeConfig
 }
 
 export function TableToolbar<T>({
@@ -56,14 +58,21 @@ export function TableToolbar<T>({
   onExport,
   isLoading,
   extraActions,
+  modeConfig,
 }: TableToolbarProps<T>) {
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [currentMode, setCurrentMode] = useState(() => modeConfig?.defaultMode ?? "")
 
   const handleToggleColumn = (columnId: string, visible: boolean) => {
     onColumnVisibilityChange({
       ...columnVisibility,
       [columnId]: visible,
     })
+  }
+
+  const handleModeChange = (mode: string) => {
+    setCurrentMode(mode)
+    modeConfig?.onModeChange(mode)
   }
 
   return (
@@ -80,6 +89,23 @@ export function TableToolbar<T>({
 
       {/* 右侧：操作按钮 */}
       <div className="flex items-center gap-1">
+        {/* 模式切换按钮组 */}
+        {modeConfig && modeConfig.modes.length > 1 && (
+          <div className="flex items-center gap-1 mr-2">
+            {modeConfig.modes.map((mode) => (
+              <Button
+                key={mode.value}
+                variant={currentMode === mode.value ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleModeChange(mode.value)}
+              >
+                {mode.icon}
+                {mode.label}
+              </Button>
+            ))}
+          </div>
+        )}
+
         {/* 额外操作 */}
         {extraActions}
 

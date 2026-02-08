@@ -1,23 +1,28 @@
 /**
  * DocumentListTable
  *
- * 单据列表适配组件。将 DocumentSchema + Zustand Store 适配为 ListTable。
- * 模拟服务端分页/筛选/排序 (实际从 Zustand 内存数据中查询)。
+ * 单据列表适配组件。将 DocumentSchema + 服务端 API 适配为 ListTable。
+ * 分页/筛选/排序均由服务端处理。
  */
 
-import { useCallback, useMemo } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { registry } from "@/core/registry"
-import { useDocumentStore } from "@/stores/document-store"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Plus, FileText } from "lucide-react"
-import type { DocumentTypeId, DocumentData } from "@/core/types"
-import type { FetchParams, FetchResult, ListTableColumn, ColumnFilter, FilterOperator } from "./types"
+import type { DocumentTypeId } from "@/core/types"
+import type { FetchParams, FetchResult, ListTableColumn } from "./types"
 import { ListTable } from "./list-table"
+import { fetchDocumentListApi, createDocumentApi } from "@/lib/document-api"
+import type { FlatDocumentRow, ListMode } from "@/lib/document-api"
 
 interface DocumentListTableProps {
   typeId: DocumentTypeId
   onOpenDocument: (docId: string) => void
+  /** 默认列表模式: document=单据模式(默认), detail=明细模式 */
+  defaultMode?: ListMode
+  /** 明细模式下需要指定展示哪个明细表 */
+  detailTableId?: string
 }
 
 /** 单据状态配色 */
@@ -37,21 +42,17 @@ const statusVariants: Record<string, "default" | "secondary" | "destructive" | "
   cancelled: "destructive",
 }
 
-/** 扁平化的单据行数据 (masterData 字段展开到顶层) */
-type FlatDocumentRow = Record<string, unknown> & {
-  _id: string
-  _docNumber: string
-  _status: string
-  _createdAt: string
-  _sourceTypeId?: string
-}
-
 export function DocumentListTable({
   typeId,
   onOpenDocument,
+  defaultMode = "document",
+  detailTableId,
 }: DocumentListTableProps) {
   const schema = registry.getSchema(typeId)
-  const createDocument = useDocumentStore((s) => s.createDocument)
+  
+  // 内部管理模式状态
+  const [mode, setMode] = useState<ListMode>(defaultMode)
+  const isDetailMode = mode === "detail"
 
   // 构建列定义
   const columns = useMemo<ListTableColumn<FlatDocumentRow>[]>(() => {
@@ -110,6 +111,27 @@ export function DocumentListTable({
       })
     }
 
+    // 明细模式: 追加指定明细表的字段列
+    if (isDetailMode && detailTableId) {
+      const detailTableDef = schema.detailTables.find(
+        (t) => t.id === detailTableId
+      )
+      if (detailTableDef) {
+        const detailFields = detailTableDef.fields.filter(
+          (f) => f.type !== "textarea" && f.type !== "computed"
+        )
+        for (const field of detailFields) {
+          cols.push({
+            id: field.id,
+            label: field.label,
+            type: field.type,
+            options: field.options,
+            minWidth: 80,
+          })
+        }
+      }
+    }
+
     // 追加固定列
     cols.push({
       id: "_createdAt",
@@ -140,71 +162,26 @@ export function DocumentListTable({
     })
 
     return cols
-  }, [schema])
+  }, [schema, isDetailMode, detailTableId])
 
-  // 扁平化单据数据
-  const flattenDoc = useCallback((doc: DocumentData): FlatDocumentRow => {
-    return {
-      _id: doc.id,
-      _docNumber: doc.docNumber,
-      _status: doc.status,
-      _createdAt: doc.createdAt,
-      _sourceTypeId: doc.sourceRef?.sourceTypeId,
-      ...doc.masterData,
-    }
-  }, [])
-
-  // queryFn: 从 Zustand store 中读取并模拟服务端查询
+  // queryFn: 从服务端 API 获取数据 (分页/筛选/排序均由服务端处理)
   const queryFn = useCallback(
     async (params: FetchParams): Promise<FetchResult<FlatDocumentRow>> => {
-      // 从 store 获取数据 (直接读 getState 而非 hook)
-      const allDocs = Object.values(useDocumentStore.getState().documents)
-      let filtered = allDocs.filter((doc) => doc.typeId === typeId)
-
-      // 扁平化
-      let rows = filtered.map(flattenDoc)
-
-      // 应用筛选
-      if (params.filters.length > 0) {
-        rows = rows.filter((row) =>
-          params.filters.every((filter) => matchFilter(row, filter))
-        )
-      }
-
-      // 应用排序
-      if (params.sorting.length > 0) {
-        rows.sort((a, b) => {
-          for (const sort of params.sorting) {
-            const aVal = a[sort.id]
-            const bVal = b[sort.id]
-            const cmp = compareValues(aVal, bVal)
-            if (cmp !== 0) return sort.desc ? -cmp : cmp
-          }
-          return 0
-        })
-      } else {
-        // 默认按创建时间倒序
-        rows.sort((a, b) =>
-          String(b._createdAt).localeCompare(String(a._createdAt))
-        )
-      }
-
-      const total = rows.length
-
-      // 应用分页
-      const { pageIndex, pageSize } = params.pagination
-      const paged = rows.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize)
-
-      return { data: paged, total }
+      return fetchDocumentListApi(typeId, params, mode, detailTableId)
     },
-    [typeId, flattenDoc]
+    [typeId, mode, detailTableId]
   )
 
-  // 新建单据
-  const handleCreate = useCallback(() => {
-    const doc = createDocument(typeId)
-    onOpenDocument(doc.id)
-  }, [createDocument, typeId, onOpenDocument])
+  // 新建单据 (调用服务端 API)
+  const handleCreate = useCallback(async () => {
+    const result = await createDocumentApi(typeId)
+    onOpenDocument(result.id)
+  }, [typeId, onOpenDocument])
+
+  // 模式变更回调
+  const handleModeChange = useCallback((newMode: ListMode) => {
+    setMode(newMode)
+  }, [])
 
   // 行点击
   const handleRowClick = useCallback(
@@ -223,10 +200,10 @@ export function DocumentListTable({
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="flex flex-col h-full p-6">
       <ListTable<FlatDocumentRow>
         columns={columns}
-        queryKey={["documents", typeId]}
+        queryKey={["documents", typeId, mode, detailTableId ?? ""]}
         queryFn={queryFn}
         title={schema.typeName}
         titleIcon={<FileText className="h-5 w-5" />}
@@ -238,83 +215,17 @@ export function DocumentListTable({
         }
         onRowClick={handleRowClick}
         defaultPageSize={20}
-        rowKey={(row) => row._id as string}
+        rowKey={(row) =>
+          isDetailMode
+            ? (row._detailRowId as string)
+            : (row._id as string)
+        }
         exportFilename={schema.typeName}
+        enableStandardMode={schema.detailTables.length > 0}
+        onStandardModeChange={handleModeChange}
+        defaultStandardMode={mode}
       />
     </div>
   )
 }
 
-// ============================================================
-// 内存筛选工具函数
-// ============================================================
-
-/** 在内存中匹配单个筛选条件 */
-function matchFilter(row: Record<string, unknown>, filter: ColumnFilter): boolean {
-  const value = row[filter.columnId]
-  const filterVal = filter.value
-
-  return applyOperator(filter.operator, value, filterVal, filter.secondValue)
-}
-
-/** 应用操作符进行比较 */
-function applyOperator(
-  operator: FilterOperator,
-  cellValue: unknown,
-  filterValue: unknown,
-  secondValue?: unknown
-): boolean {
-  const strCell = cellValue != null ? String(cellValue).toLowerCase() : ""
-  const strFilter = filterValue != null ? String(filterValue).toLowerCase() : ""
-
-  switch (operator) {
-    case "eq":
-      return strCell === strFilter
-    case "neq":
-      return strCell !== strFilter
-    case "contains":
-      return strCell.includes(strFilter)
-    case "startsWith":
-      return strCell.startsWith(strFilter)
-    case "endsWith":
-      return strCell.endsWith(strFilter)
-    case "gt":
-      return Number(cellValue) > Number(filterValue)
-    case "gte":
-      return Number(cellValue) >= Number(filterValue)
-    case "lt":
-      return Number(cellValue) < Number(filterValue)
-    case "lte":
-      return Number(cellValue) <= Number(filterValue)
-    case "between":
-      return (
-        Number(cellValue) >= Number(filterValue) &&
-        Number(cellValue) <= Number(secondValue)
-      )
-    case "before":
-      return String(cellValue) < String(filterValue)
-    case "after":
-      return String(cellValue) > String(filterValue)
-    case "in":
-      return strFilter.split(",").map((s) => s.trim()).includes(strCell)
-    case "isEmpty":
-      return cellValue == null || cellValue === ""
-    case "isNotEmpty":
-      return cellValue != null && cellValue !== ""
-    default:
-      return true
-  }
-}
-
-/** 比较两个值 (用于排序) */
-function compareValues(a: unknown, b: unknown): number {
-  if (a == null && b == null) return 0
-  if (a == null) return -1
-  if (b == null) return 1
-
-  if (typeof a === "number" && typeof b === "number") {
-    return a - b
-  }
-
-  return String(a).localeCompare(String(b))
-}

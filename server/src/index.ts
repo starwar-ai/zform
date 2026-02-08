@@ -6,8 +6,12 @@ import routes from './routes';
 import { errorHandler } from './middleware/error-handler';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './config/swagger';
+import { registerAllAdapters } from './documents';
 
 dotenv.config();
+
+// 注册所有单据类型适配器 (统一 Document API)
+registerAllAdapters();
 
 const app = express();
 const PORT = process.env.PORT || 3001;

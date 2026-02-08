@@ -5,7 +5,7 @@
  * 支持服务端分页/筛选/排序、操作工具栏、列设置、CSV 导出。
  */
 
-import { useMemo, useState, useCallback } from "react"
+import { useMemo, useState, useCallback, useEffect } from "react"
 import {
   useReactTable,
   getCoreRowModel,
@@ -13,6 +13,7 @@ import {
   type ColumnDef,
   type SortingState,
   type VisibilityState,
+  type ColumnSizingState,
 } from "@tanstack/react-table"
 import { useQuery } from "@tanstack/react-query"
 import {
@@ -23,7 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { ArrowDown, ArrowUp, ArrowUpDown, Loader2 } from "lucide-react"
+import { ArrowDown, ArrowUp, ArrowUpDown, Loader2, List, Table2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type {
   ListTableProps,
@@ -31,6 +32,7 @@ import type {
   ColumnFilter,
   PaginationState,
   FetchParams,
+  StandardMode,
 } from "./types"
 import { TableToolbar } from "./toolbar"
 import { FilterRow } from "./filter-row"
@@ -48,10 +50,40 @@ export function ListTable<T>({
   defaultPageSize = 20,
   rowKey,
   exportFilename,
+  modeConfig,
+  enableStandardMode = false,
+  onStandardModeChange,
+  defaultStandardMode = "document",
 }: ListTableProps<T>) {
   // ============================================================
   // 状态管理
   // ============================================================
+
+  // 生成存储键
+  const storageKey = useMemo(() => {
+    return `list-table-column-sizing-${queryKey.join('-')}`
+  }, [queryKey])
+
+  // 从 localStorage 加载列宽
+  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>(() => {
+    try {
+      const saved = localStorage.getItem(storageKey)
+      return saved ? JSON.parse(saved) : {}
+    } catch {
+      return {}
+    }
+  })
+
+  // 保存列宽到 localStorage
+  useEffect(() => {
+    if (Object.keys(columnSizing).length > 0) {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(columnSizing))
+      } catch (error) {
+        console.error('Failed to save column sizing:', error)
+      }
+    }
+  }, [columnSizing, storageKey])
 
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -166,9 +198,12 @@ export function ListTable<T>({
     state: {
       sorting,
       columnVisibility,
+      columnSizing,
     },
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
+    onColumnSizingChange: setColumnSizing,
+    columnResizeMode: "onChange",
     getCoreRowModel: getCoreRowModel(),
     getRowId: rowKey
       ? (row) => rowKey(row)
@@ -202,11 +237,44 @@ export function ListTable<T>({
   }, [refetch])
 
   // ============================================================
+  // 标准模式配置 (单据/明细)
+  // ============================================================
+
+  const finalModeConfig = useMemo(() => {
+    // 如果已经提供了 modeConfig，优先使用
+    if (modeConfig) return modeConfig
+
+    // 如果启用标准模式，生成标准配置
+    if (enableStandardMode && onStandardModeChange) {
+      return {
+        modes: [
+          {
+            value: "document",
+            label: "",
+            icon: <List className="h-4 w-4" />,
+          },
+          {
+            value: "detail",
+            label: "",
+            icon: <Table2 className="h-4 w-4" />,
+          },
+        ],
+        defaultMode: defaultStandardMode,
+        onModeChange: (mode: string) => {
+          onStandardModeChange(mode as StandardMode)
+        },
+      }
+    }
+
+    return undefined
+  }, [modeConfig, enableStandardMode, onStandardModeChange, defaultStandardMode])
+
+  // ============================================================
   // 渲染
   // ============================================================
 
   return (
-    <div className="space-y-0">
+    <div className="flex flex-col h-full">
       {/* 工具栏 */}
       <TableToolbar
         title={title}
@@ -218,10 +286,11 @@ export function ListTable<T>({
         onExport={handleExport}
         isLoading={isFetching}
         extraActions={toolbarActions}
+        modeConfig={finalModeConfig}
       />
 
       {/* 表格 */}
-      <div className="border rounded-md relative">
+      <div className="border rounded-md relative flex-1 overflow-auto">
         {/* 加载遮罩 */}
         {isFetching && !isLoading && (
           <div className="absolute inset-0 bg-background/50 z-10 flex items-center justify-center">
@@ -240,6 +309,7 @@ export function ListTable<T>({
                     style={{
                       width: header.getSize(),
                       minWidth: header.column.columnDef.minSize,
+                      position: 'relative',
                     }}
                   >
                     {header.isPlaceholder
@@ -248,6 +318,15 @@ export function ListTable<T>({
                           header.column.columnDef.header,
                           header.getContext()
                         )}
+                    {/* Resize Handle */}
+                    <div
+                      onMouseDown={header.getResizeHandler()}
+                      onTouchStart={header.getResizeHandler()}
+                      className={cn(
+                        "absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none hover:bg-primary/50",
+                        header.column.getIsResizing() && "bg-primary"
+                      )}
+                    />
                   </TableHead>
                 ))}
               </TableRow>

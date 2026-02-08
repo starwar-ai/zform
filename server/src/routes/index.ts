@@ -6,9 +6,14 @@ import customerRoutes from './customers';
 import salesContractRoutes from './sales-contracts';
 import purchasePlanRoutes from './purchase-plans';
 import approvalRoutes from './approvals';
+import documentRoutes from '../documents/document.routes';
 
 const router = Router();
 
+// ---- 统一单据 API (新) ----
+router.use('/documents', documentRoutes);
+
+// ---- 旧路由 (保留兼容) ----
 router.use('/products', productRoutes);
 router.use('/suppliers', supplierRoutes);
 router.use('/quotations', supplierQuotationRoutes);
