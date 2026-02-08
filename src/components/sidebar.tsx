@@ -35,7 +35,7 @@ export function Sidebar() {
     id: "home",
     label: "首页",
     icon: Home,
-    onClick: () => openTab("document-list", {}, "单据列表"),
+    onClick: () => openTab("dashboard", {}, "首页"),
   }
 
   // 单据管理分组

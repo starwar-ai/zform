@@ -27,6 +27,24 @@ interface SortableTabProps {
   onClose: () => void
 }
 
+function PinnedTab({ tab, isActive, onSwitch }: Omit<SortableTabProps, "onClose">) {
+  return (
+    <TabContextMenu tabId={tab.id}>
+      <div
+        className={cn(
+          "relative flex items-center gap-2 rounded-t-md border border-b-0 px-4 py-2 text-sm transition-colors cursor-pointer shrink-0",
+          isActive
+            ? "bg-background border-primary text-foreground"
+            : "bg-muted border-transparent text-muted-foreground hover:bg-muted/80"
+        )}
+        onClick={onSwitch}
+      >
+        <span className="truncate">{tab.title}</span>
+      </div>
+    </TabContextMenu>
+  )
+}
+
 function SortableTab({ tab, isActive, onSwitch, onClose }: SortableTabProps) {
   const {
     attributes,
@@ -48,7 +66,7 @@ function SortableTab({ tab, isActive, onSwitch, onClose }: SortableTabProps) {
         ref={setNodeRef}
         style={style}
         className={cn(
-          "relative flex items-center gap-2 rounded-t-md border border-b-0 px-4 py-2 text-sm transition-colors cursor-pointer",
+          "relative flex items-center gap-2 rounded-t-md border border-b-0 px-4 py-2 text-sm transition-colors cursor-pointer min-w-0",
           isActive
             ? "bg-background border-primary text-foreground"
             : "bg-muted border-transparent text-muted-foreground hover:bg-muted/80",
@@ -58,14 +76,14 @@ function SortableTab({ tab, isActive, onSwitch, onClose }: SortableTabProps) {
         {...listeners}
         onClick={onSwitch}
       >
-        <span className="flex-1 truncate max-w-[150px]">
+        <span className="truncate">
           {tab.title}
         </span>
         {tab.closable && (
           <Button
             variant="ghost"
             size="icon"
-            className="h-4 w-4 p-0 hover:bg-transparent"
+            className="h-4 w-4 shrink-0 p-0 hover:bg-transparent"
             onClick={(e) => {
               e.stopPropagation()
               onClose()
@@ -81,6 +99,10 @@ function SortableTab({ tab, isActive, onSwitch, onClose }: SortableTabProps) {
 
 export function TabBar() {
   const { tabs, activeTabId, switchTab, closeTab, moveTab } = useTabStore()
+
+  // 首页标签始终排在最左面，不参与拖拽排序
+  const homeTab = tabs.find((tab) => tab.type === "dashboard")
+  const sortableTabs = tabs.filter((tab) => tab.type !== "dashboard")
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -110,18 +132,25 @@ export function TabBar() {
   }
 
   return (
-    <div className="flex h-12 items-end border-b bg-muted/50 px-2">
+    <div className="flex h-12 items-end gap-1 border-b bg-muted/50 px-2 overflow-hidden">
+      {homeTab && (
+        <PinnedTab
+          tab={homeTab}
+          isActive={homeTab.id === activeTabId}
+          onSwitch={() => switchTab(homeTab.id)}
+        />
+      )}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
       >
         <SortableContext
-          items={tabs.map((tab) => tab.id)}
+          items={sortableTabs.map((tab) => tab.id)}
           strategy={horizontalListSortingStrategy}
         >
-          <div className="flex gap-1 overflow-x-auto">
-            {tabs.map((tab) => (
+          <div className="flex gap-1 min-w-0 overflow-hidden">
+            {sortableTabs.map((tab) => (
               <SortableTab
                 key={tab.id}
                 tab={tab}

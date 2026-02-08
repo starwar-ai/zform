@@ -5,6 +5,7 @@ import { nanoid } from "nanoid"
 
 // 标签类型
 export type TabType =
+  | "dashboard"
   | "document-list"
   | "document-form"
   | "type-list"
@@ -87,13 +88,20 @@ export const useTabStore = create<TabStoreState>()(
           id: nanoid(),
           type,
           title,
-          closable: type !== "document-list" || Object.keys(params).length > 0, // 首页不可关闭
+          closable:
+            (type !== "dashboard" && type !== "document-list") ||
+            Object.keys(params).length > 0, // 首页不可关闭
           params,
           createdAt: Date.now(),
         }
 
         set((draft) => {
-          draft.tabs.push(newTab)
+          // 首页标签始终插入到第一个位置
+          if (type === "dashboard") {
+            draft.tabs.unshift(newTab)
+          } else {
+            draft.tabs.push(newTab)
+          }
           draft.activeTabId = newTab.id
         })
 
@@ -214,6 +222,12 @@ export const useTabStore = create<TabStoreState>()(
           ) {
             return
           }
+
+          // 首页标签不可移动
+          if (draft.tabs[fromIndex].type === "dashboard") return
+
+          // 不允许移动到首页标签之前
+          if (toIndex === 0 && draft.tabs[0]?.type === "dashboard") return
 
           const [movedTab] = draft.tabs.splice(fromIndex, 1)
           draft.tabs.splice(toIndex, 0, movedTab)

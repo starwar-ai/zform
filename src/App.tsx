@@ -1,7 +1,7 @@
 import { AppLayout } from "@/components/app-layout"
 import { LoginPage } from "@/components/login-page"
 import { useAuthStore } from "@/stores/auth-store"
-import { setupExampleSchemas } from "@/examples/setup"
+import { setupExampleSchemas } from "@/extrade/setup"
 
 // 初始化注册
 setupExampleSchemas()

@@ -20,7 +20,7 @@ export function AppLayout() {
   // 初始化：如果没有任何标签，打开首页
   useEffect(() => {
     if (tabs.length === 0) {
-      openTab("document-list", {}, "单据列表")
+      openTab("dashboard", {}, "首页")
     }
   }, []) // 仅在组件挂载时执行一次
 

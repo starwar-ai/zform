@@ -11,6 +11,7 @@ import { TypeFilteredList } from "@/components/type-filtered-list"
 import { UserManagement } from "@/components/user-management"
 import { RoleManagement } from "@/components/role-management"
 import { MenuManagement } from "@/components/menu-management"
+import { DashboardHome } from "@/components/dashboard-home"
 
 export function TabContent() {
   const { tabs, activeTabId, openTab } = useTabStore()
@@ -38,6 +39,16 @@ export function TabContent() {
           <div className="p-6">
             <DocumentList onOpenDocument={handleOpenDocument} />
           </div>
+        )
+
+      case "dashboard":
+        return (
+          <DashboardHome
+            onOpenDocument={handleOpenDocument}
+            onOpenTypeList={(typeId, title) =>
+              openTab("type-list", { typeId }, title)
+            }
+          />
         )
 
       case "document-form":
