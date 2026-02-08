@@ -30,6 +30,14 @@ import {
   salesContractChangeToPurchasePlanRule,
   purchasePlanChangeRule,
 } from "./purchase-plan-schemas"
+import {
+  customerSchema,
+  customerChangeRule,
+} from "./customer-schemas"
+import {
+  supplierSchema,
+  supplierChangeRule,
+} from "./supplier-schemas"
 
 // ============================================================
 // 单据列表操作配置
@@ -149,6 +157,46 @@ const selfOwnedProductActionConfig: DocumentListActionConfig = {
   ],
   toolbarActions: [
     { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "self_owned_product:create" },
+  ],
+}
+
+/** 客户 - 列表操作 */
+const customerActionConfig: DocumentListActionConfig = {
+  typeId: "customer",
+  rowActions: [
+    { id: "open", label: "打开" },
+    { id: "copy-id", label: "复制ID" },
+    {
+      id: "delete",
+      label: "删除",
+      danger: true,
+      modes: ["document"],
+      visible: (row) => row._status === "draft",
+      permission: "customer:delete",
+    },
+  ],
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "customer:create" },
+  ],
+}
+
+/** 供应商 - 列表操作 */
+const supplierActionConfig: DocumentListActionConfig = {
+  typeId: "supplier",
+  rowActions: [
+    { id: "open", label: "打开" },
+    { id: "copy-id", label: "复制ID" },
+    {
+      id: "delete",
+      label: "删除",
+      danger: true,
+      modes: ["document"],
+      visible: (row) => row._status === "draft",
+      permission: "supplier:delete",
+    },
+  ],
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "supplier:create" },
   ],
 }
 
@@ -322,6 +370,56 @@ const selfOwnedProductFormActions: DocumentFormActionConfig = {
   ],
 }
 
+/** 客户 - 表单操作 */
+const customerFormActions: DocumentFormActionConfig = {
+  typeId: "customer",
+  actions: [
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["draft"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["draft"], permission: "customer:submit", order: 2 },
+    {
+      id: "approve", label: "审批", icon: "Check", allowedStatuses: ["submitted"],
+      permission: "customer:approve", order: 3,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "reject", label: "拒绝", icon: "X", variant: "destructive", allowedStatuses: ["submitted"],
+      permission: "customer:approve", order: 4,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "withdraw", label: "撤回", icon: "Undo2", variant: "outline", allowedStatuses: ["submitted"], order: 5,
+      visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
+    },
+    { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["approved"], permission: "customer:close", order: 6 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["draft"], order: 7 },
+  ],
+}
+
+/** 供应商 - 表单操作 */
+const supplierFormActions: DocumentFormActionConfig = {
+  typeId: "supplier",
+  actions: [
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["draft"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["draft"], permission: "supplier:submit", order: 2 },
+    {
+      id: "approve", label: "审批", icon: "Check", allowedStatuses: ["submitted"],
+      permission: "supplier:approve", order: 3,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "reject", label: "拒绝", icon: "X", variant: "destructive", allowedStatuses: ["submitted"],
+      permission: "supplier:approve", order: 4,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "withdraw", label: "撤回", icon: "Undo2", variant: "outline", allowedStatuses: ["submitted"], order: 5,
+      visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
+    },
+    { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["approved"], permission: "supplier:close", order: 6 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["draft"], order: 7 },
+  ],
+}
+
 export function setupExampleSchemas(): void {
   // 注册单据 Schema
   registry.registerSchema(salesContractSchema)
@@ -332,6 +430,12 @@ export function setupExampleSchemas(): void {
   registry.registerSchema(standardProductSchema)
   registry.registerSchema(customerProductSchema)
   registry.registerSchema(selfOwnedProductSchema)
+
+  // 注册客户 Schema
+  registry.registerSchema(customerSchema)
+
+  // 注册供应商 Schema
+  registry.registerSchema(supplierSchema)
 
   // 注册采购流程下推规则
   registry.registerPushDownRule(salesContractToPurchasePlanRule)
@@ -350,6 +454,12 @@ export function setupExampleSchemas(): void {
   // 注册产品变更规则
   registry.registerChangeRule(standardProductChangeRule)
 
+  // 注册客户变更规则
+  registry.registerChangeRule(customerChangeRule)
+
+  // 注册供应商变更规则
+  registry.registerChangeRule(supplierChangeRule)
+
   // 注册列表操作配置
   registry.registerActionConfig(salesContractActionConfig)
   registry.registerActionConfig(purchasePlanActionConfig)
@@ -357,6 +467,8 @@ export function setupExampleSchemas(): void {
   registry.registerActionConfig(standardProductActionConfig)
   registry.registerActionConfig(customerProductActionConfig)
   registry.registerActionConfig(selfOwnedProductActionConfig)
+  registry.registerActionConfig(customerActionConfig)
+  registry.registerActionConfig(supplierActionConfig)
 
   // 注册表单操作配置
   registry.registerFormActionConfig(salesContractFormActions)
@@ -365,6 +477,8 @@ export function setupExampleSchemas(): void {
   registry.registerFormActionConfig(standardProductFormActions)
   registry.registerFormActionConfig(customerProductFormActions)
   registry.registerFormActionConfig(selfOwnedProductFormActions)
+  registry.registerFormActionConfig(customerFormActions)
+  registry.registerFormActionConfig(supplierFormActions)
 
   // 用户和角色数据已迁移到后端数据库，通过 seed 初始化
   // 审核规则已迁移到服务端数据库，无需前端注册

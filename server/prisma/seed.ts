@@ -851,6 +851,32 @@ async function main() {
     },
   });
 
+  // 客户管理菜单
+  const customerMenu = await prisma.sysMenu.create({
+    data: {
+      title: '客户管理',
+      icon: 'Users',
+      path: '/type-list/customer',
+      parentId: docMenu.id,
+      orderNum: 7,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  // 供应商管理菜单
+  const supplierMenu = await prisma.sysMenu.create({
+    data: {
+      title: '供应商管理',
+      icon: 'Truck',
+      path: '/type-list/supplier',
+      parentId: docMenu.id,
+      orderNum: 8,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
   // ---- 按钮级权限菜单 (menuType = 'button') ----
   // 这些不会在侧边栏显示，仅用于权限标识
 
@@ -908,6 +934,14 @@ async function main() {
   ]);
   const custProductBtnIds = await createDocPermButtons(custProductMenu.id, 'customer_product', basicDocActions);
   const selfProductBtnIds = await createDocPermButtons(selfProductMenu.id, 'self_owned_product', basicDocActions);
+  const customerBtnIds = await createDocPermButtons(customerMenu.id, 'customer', [
+    ...basicDocActions,
+    { perm: 'close', title: '关闭' },
+  ]);
+  const supplierBtnIds = await createDocPermButtons(supplierMenu.id, 'supplier', [
+    ...basicDocActions,
+    { perm: 'close', title: '关闭' },
+  ]);
 
   // 所有按钮权限 ID 汇总
   const allBtnIds = [
@@ -917,6 +951,8 @@ async function main() {
     ...stdProductBtnIds,
     ...custProductBtnIds,
     ...selfProductBtnIds,
+    ...customerBtnIds,
+    ...supplierBtnIds,
   ];
 
   // 顶级菜单：系统管理
@@ -1031,6 +1067,8 @@ async function main() {
     roleMgmtMenu.id,
     menuMgmtMenu.id,
     deptMgmtMenu.id,
+    customerMenu.id,
+    supplierMenu.id,
     ...allBtnIds,
   ];
 
