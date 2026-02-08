@@ -160,44 +160,7 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
     }
   }, [doc])
 
-  // 加载中状态
-  if (loading) {
-    return (
-      <div className="p-8 text-center text-muted-foreground">
-        加载中...
-      </div>
-    )
-  }
-
-  // 错误状态
-  if (error) {
-    return (
-      <div className="p-8 text-center text-destructive">
-        加载失败: {error}
-      </div>
-    )
-  }
-
-  if (!doc) {
-    return (
-      <div className="p-8 text-center text-muted-foreground">
-        单据不存在
-      </div>
-    )
-  }
-
-  const schema = registry.getSchema(doc.typeId)
-  if (!schema) {
-    return (
-      <div className="p-8 text-center text-muted-foreground">
-        未找到单据类型定义: {doc.typeId}
-      </div>
-    )
-  }
-
-  const isEditable = doc.status === "draft"
-  const isNew = Boolean(doc._isNew)
-
+  // resolveDocCode 必须在所有条件返回之前定义（Hooks 规则）
   const resolveDocCode = useCallback((value: unknown) => {
     if (typeof value === "string") {
       const trimmed = value.trim()
@@ -209,8 +172,13 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
     return ""
   }, [])
 
+  // 更新 tab title 的 useEffect 必须在所有条件返回之前（Hooks 规则）
   useEffect(() => {
-    if (!activeTabId) return
+    if (!activeTabId || !doc) return
+    const schema = registry.getSchema(doc.typeId)
+    if (!schema) return
+    
+    const isNew = Boolean(doc._isNew)
     const candidateCode = resolveDocCode(
       (doc.masterData as Record<string, unknown> | undefined)?.code 
     )
@@ -223,11 +191,7 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
     activeTabId,
     updateTabTitle,
     resolveDocCode,
-    isNew,
-    schema.typeName,
-    doc.masterData?.code,
-    doc.docNumber,
-    doc.id,
+    doc,
   ])
 
   /** 持久化到服务端: 新建文档调用 create, 已有文档调用 update */
@@ -272,6 +236,7 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
 
   // 处理未保存变更对话框的操作
   const handleUnsavedSave = useCallback(async () => {
+    if (!doc) return
     try {
       // 保存文档
       await persistToServer(doc)
@@ -321,6 +286,44 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
       unregisterBeforeCloseHook(activeTabId)
     }
   }, [activeTabId, hasChanges, registerBeforeCloseHook, unregisterBeforeCloseHook])
+
+  // 加载中状态
+  if (loading) {
+    return (
+      <div className="p-8 text-center text-muted-foreground">
+        加载中...
+      </div>
+    )
+  }
+
+  // 错误状态
+  if (error) {
+    return (
+      <div className="p-8 text-center text-destructive">
+        加载失败: {error}
+      </div>
+    )
+  }
+
+  if (!doc) {
+    return (
+      <div className="p-8 text-center text-muted-foreground">
+        单据不存在
+      </div>
+    )
+  }
+
+  const schema = registry.getSchema(doc.typeId)
+  if (!schema) {
+    return (
+      <div className="p-8 text-center text-muted-foreground">
+        未找到单据类型定义: {doc.typeId}
+      </div>
+    )
+  }
+
+  const isEditable = doc.status === "draft"
+  const isNew = Boolean(doc._isNew)
 
   const handleSave = () => {
     // 构建新文档用于影响评估
