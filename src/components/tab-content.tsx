@@ -5,9 +5,8 @@
  */
 
 import { useTabStore } from "@/stores/tab-store"
-import { DocumentList } from "@/components/document-list"
 import { DocumentForm } from "@/components/document-form"
-import { TypeFilteredList } from "@/components/type-filtered-list"
+import { DocumentListTable } from "@/components/list-table"
 import { UserManagement } from "@/components/user-management"
 import { RoleManagement } from "@/components/role-management"
 import { MenuManagement } from "@/components/menu-management"
@@ -34,13 +33,6 @@ export function TabContent() {
   // 根据标签类型渲染内容
   const renderContent = () => {
     switch (activeTab.type) {
-      case "document-list":
-        return (
-          <div className="p-6">
-            <DocumentList onOpenDocument={handleOpenDocument} />
-          </div>
-        )
-
       case "dashboard":
         return (
           <DashboardHome
@@ -77,7 +69,7 @@ export function TabContent() {
           )
         }
         return (
-          <TypeFilteredList
+          <DocumentListTable
             typeId={activeTab.params.typeId as string}
             onOpenDocument={handleOpenDocument}
           />

@@ -18,6 +18,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { ExternalLink, Plus, Settings2 } from "lucide-react"
 import type { DocumentTypeId } from "@/core/types"
 
@@ -127,7 +135,7 @@ export function DashboardHome({
     <div className="space-y-6 p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold">首页</h1>
+          <h1 className="text-l">首页</h1>
 
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
@@ -135,7 +143,6 @@ export function DashboardHome({
             <Button
               key={schema.typeId}
               variant="outline"
-              size="sm"
               onClick={() => handleCreate(schema.typeId)}
             >
               <Plus className="h-4 w-4 mr-1" />
@@ -234,12 +241,11 @@ export function DashboardHome({
             )
 
             return (
-              <Card key={schema.typeId}>
-                <CardHeader className="space-y-3">
+              <Card key={schema.typeId} className="p-3">
+                <CardHeader className="space-y-2 pb-2 p-0">
                   <div className="flex items-center justify-between gap-2">
-                    <CardTitle className="text-base">{schema.typeName}</CardTitle>
+                    <CardTitle className="text-sm font-medium">{schema.typeName}</CardTitle>
                     <div className="flex items-center gap-1">
-                      <Badge variant="secondary">{filteredDocs.length}</Badge>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -252,39 +258,69 @@ export function DashboardHome({
                       </Button>
                     </div>
                   </div>
-                  <Input
-                    value={filters[schema.typeId] ?? ""}
-                    onChange={(event) =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        [schema.typeId]: event.target.value,
-                      }))
-                    }
-                    placeholder="输入单据编号自动筛选"
-                  />
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {filteredDocs.length > 0 ? (
-                      filteredDocs.slice(0, 8).map((doc) => (
-                        <button
-                          key={doc.id}
-                          type="button"
-                          className="w-full rounded border px-3 py-2 text-left hover:bg-muted/60 transition-colors"
-                          onClick={() => onOpenDocument(doc.id)}
-                        >
-                          <div className="font-medium text-sm">{doc.docNumber}</div>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {new Date(doc.createdAt).toLocaleString("zh-CN")}
-                          </div>
-                        </button>
-                      ))
-                    ) : (
-                      <p className="text-sm text-muted-foreground py-2">
-                        暂无匹配单据
-                      </p>
-                    )}
+                  <div className="flex gap-2">
+                    <Input
+                      value={filters[schema.typeId] ?? ""}
+                      onChange={(event) =>
+                        setFilters((prev) => ({
+                          ...prev,
+                          [schema.typeId]: event.target.value,
+                        }))
+                      }
+                      placeholder="输入单据编号自动筛选"
+                      className="flex-1 h-8 text-sm"
+                    />
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        const newDoc = createDocument(schema.typeId)
+                        onOpenDocument(newDoc.id)
+                      }}
+                      variant="outline"
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      新增
+                    </Button>
                   </div>
+                </CardHeader>
+                <CardContent className="pt-2 p-0">
+                  {filteredDocs.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>单据编号</TableHead>
+                          <TableHead>创建时间</TableHead>
+                          <TableHead className="w-[80px]"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredDocs.slice(0, 5).map((doc) => (
+                          <TableRow key={doc.id} className="h-10">
+                            <TableCell className="font-medium text-sm py-2">
+                              {doc.docNumber}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground text-xs py-2">
+                              {new Date(doc.createdAt).toLocaleString("zh-CN")}
+                            </TableCell>
+                            <TableCell className="py-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onOpenDocument(doc.id)}
+                                className="h-7 text-xs"
+                              >
+                                打开
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <p className="text-xs text-muted-foreground text-center py-3">
+                      暂无匹配单据
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             )
