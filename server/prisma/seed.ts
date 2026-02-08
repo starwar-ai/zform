@@ -51,6 +51,201 @@ async function main() {
     create: { code: 'PKG001', name: 'Standard Carton', nameEn: 'Standard Carton' },
   });
 
+  // ==================== 分类管理 Seed ====================
+
+  // ---- 客户分类（树形结构）----
+  const customerCategoryA = await prisma.customerCategory.upsert({
+    where: { code: 'CC001' },
+    update: { name: 'A类客户' },
+    create: { code: 'CC001', name: 'A类客户' },
+  });
+
+  const customerCategoryA1 = await prisma.customerCategory.upsert({
+    where: { code: 'CC001-1' },
+    update: { name: 'A1级客户', parentId: customerCategoryA.id },
+    create: { code: 'CC001-1', name: 'A1级客户', parentId: customerCategoryA.id },
+  });
+
+  const customerCategoryA2 = await prisma.customerCategory.upsert({
+    where: { code: 'CC001-2' },
+    update: { name: 'A2级客户', parentId: customerCategoryA.id },
+    create: { code: 'CC001-2', name: 'A2级客户', parentId: customerCategoryA.id },
+  });
+
+  const customerCategoryB = await prisma.customerCategory.upsert({
+    where: { code: 'CC002' },
+    update: { name: 'B类客户' },
+    create: { code: 'CC002', name: 'B类客户' },
+  });
+
+  const customerCategoryB1 = await prisma.customerCategory.upsert({
+    where: { code: 'CC002-1' },
+    update: { name: 'B1级客户', parentId: customerCategoryB.id },
+    create: { code: 'CC002-1', name: 'B1级客户', parentId: customerCategoryB.id },
+  });
+
+  const customerCategoryC = await prisma.customerCategory.upsert({
+    where: { code: 'CC003' },
+    update: { name: 'C类客户' },
+    create: { code: 'CC003', name: 'C类客户' },
+  });
+
+  // ---- 产品分类 / 海关编码（树形结构）----
+  // 一级分类
+  const hsCodeElectronics = await prisma.hsCode.upsert({
+    where: { code: 'HS-ELEC' },
+    update: {
+      name: '电子产品',
+      hsCode: '85',
+      categoryCode: 'P-ELEC',
+      level: 1,
+      serialLength: 6,
+    },
+    create: {
+      code: 'HS-ELEC',
+      name: '电子产品',
+      hsCode: '85',
+      categoryCode: 'P-ELEC',
+      level: 1,
+      serialLength: 6,
+      type: '成品',
+    },
+  });
+
+  // 二级分类：手机配件
+  const hsCodePhoneAccessories = await prisma.hsCode.upsert({
+    where: { code: 'HS-PHONE-ACC' },
+    update: {
+      name: '手机配件',
+      hsCode: '8517',
+      categoryCode: 'P-PHONE-ACC',
+      parentId: hsCodeElectronics.id,
+      level: 2,
+      serialLength: 6,
+    },
+    create: {
+      code: 'HS-PHONE-ACC',
+      name: '手机配件',
+      hsCode: '8517',
+      categoryCode: 'P-PHONE-ACC',
+      parentId: hsCodeElectronics.id,
+      level: 2,
+      serialLength: 6,
+      type: '成品',
+    },
+  });
+
+  // 三级分类：手机壳
+  const hsCodePhoneCase = await prisma.hsCode.upsert({
+    where: { code: 'HS-PHONE-CASE' },
+    update: {
+      name: '手机壳',
+      hsCode: '85177090',
+      categoryCode: 'P-PHONE-CASE',
+      parentId: hsCodePhoneAccessories.id,
+      level: 3,
+      serialLength: 6,
+    },
+    create: {
+      code: 'HS-PHONE-CASE',
+      name: '手机壳',
+      hsCode: '85177090',
+      categoryCode: 'P-PHONE-CASE',
+      parentId: hsCodePhoneAccessories.id,
+      level: 3,
+      serialLength: 6,
+      type: '成品',
+    },
+  });
+
+  // 一级分类：塑料制品
+  const hsCodePlastic = await prisma.hsCode.upsert({
+    where: { code: 'HS-PLASTIC' },
+    update: {
+      name: '塑料制品',
+      hsCode: '39',
+      categoryCode: 'P-PLASTIC',
+      level: 1,
+      serialLength: 6,
+    },
+    create: {
+      code: 'HS-PLASTIC',
+      name: '塑料制品',
+      hsCode: '39',
+      categoryCode: 'P-PLASTIC',
+      level: 1,
+      serialLength: 6,
+      type: '成品',
+    },
+  });
+
+  // 二级分类：塑料包装
+  const hsCodePlasticPackaging = await prisma.hsCode.upsert({
+    where: { code: 'HS-PLASTIC-PKG' },
+    update: {
+      name: '塑料包装',
+      hsCode: '3923',
+      categoryCode: 'P-PLASTIC-PKG',
+      parentId: hsCodePlastic.id,
+      level: 2,
+      serialLength: 6,
+    },
+    create: {
+      code: 'HS-PLASTIC-PKG',
+      name: '塑料包装',
+      hsCode: '3923',
+      categoryCode: 'P-PLASTIC-PKG',
+      parentId: hsCodePlastic.id,
+      level: 2,
+      serialLength: 6,
+      type: '成品',
+    },
+  });
+
+  // ---- 展会分类（扁平列表）----
+  // 由于 ExhibitionCategory 没有唯一字段，使用 findFirst + create 模式
+  const exhibitionCategory1 =
+    (await prisma.exhibitionCategory.findFirst({
+      where: { name: '广交会', deletedAt: null },
+    })) ||
+    (await prisma.exhibitionCategory.create({
+      data: { name: '广交会', isDomestic: true },
+    }));
+
+  const exhibitionCategory2 =
+    (await prisma.exhibitionCategory.findFirst({
+      where: { name: '华交会', deletedAt: null },
+    })) ||
+    (await prisma.exhibitionCategory.create({
+      data: { name: '华交会', isDomestic: true },
+    }));
+
+  const exhibitionCategory3 =
+    (await prisma.exhibitionCategory.findFirst({
+      where: { name: '香港电子展', deletedAt: null },
+    })) ||
+    (await prisma.exhibitionCategory.create({
+      data: { name: '香港电子展', isDomestic: false },
+    }));
+
+  const exhibitionCategory4 =
+    (await prisma.exhibitionCategory.findFirst({
+      where: { name: 'CES国际消费电子展', deletedAt: null },
+    })) ||
+    (await prisma.exhibitionCategory.create({
+      data: { name: 'CES国际消费电子展', isDomestic: false },
+    }));
+
+  const exhibitionCategory5 =
+    (await prisma.exhibitionCategory.findFirst({
+      where: { name: '深圳高交会', deletedAt: null },
+    })) ||
+    (await prisma.exhibitionCategory.create({
+      data: { name: '深圳高交会', isDomestic: true },
+    }));
+
+  // ==================== 分类管理 Seed 结束 ====================
+
   const standardProduct = await prisma.product.upsert({
     where: { code: 'STD001' },
     update: {
@@ -1016,6 +1211,18 @@ async function main() {
     },
   });
 
+  const categoryMgmtMenu = await prisma.sysMenu.create({
+    data: {
+      title: '分类管理',
+      icon: 'Tags',
+      path: '/category-management',
+      parentId: sysMenu.id,
+      orderNum: 5,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
   // -- 数据权限种子数据 --
   await prisma.sysDataPermission.deleteMany({});
 
@@ -1067,6 +1274,7 @@ async function main() {
     roleMgmtMenu.id,
     menuMgmtMenu.id,
     deptMgmtMenu.id,
+    categoryMgmtMenu.id,
     customerMenu.id,
     supplierMenu.id,
     ...allBtnIds,
@@ -1137,7 +1345,11 @@ async function main() {
   console.log(`Roles: ${adminRole.code}, ${managerRole.code}, ${userRole.code}`);
   console.log(`Users: admin (password: admin123, dept: ${techDept.code}), demo (password: 123456, dept: ${salesDept.code})`);
   console.log(`Menus: ${allMenuIds.length} menus (incl. ${allBtnIds.length} button permissions)`);
+  console.log(`System management menus: ${userMgmtMenu.title}, ${roleMgmtMenu.title}, ${menuMgmtMenu.title}, ${deptMgmtMenu.title}, ${categoryMgmtMenu.title}`);
   console.log(`Data permissions: admin=all, manager=department, user=personal`);
+  console.log(`Customer categories: ${customerCategoryA.code} (${customerCategoryA1.code}, ${customerCategoryA2.code}), ${customerCategoryB.code} (${customerCategoryB1.code}), ${customerCategoryC.code}`);
+  console.log(`Product categories (HsCode): ${hsCodeElectronics.code} -> ${hsCodePhoneAccessories.code} -> ${hsCodePhoneCase.code}, ${hsCodePlastic.code} -> ${hsCodePlasticPackaging.code}`);
+  console.log(`Exhibition categories: ${exhibitionCategory1.name}, ${exhibitionCategory2.name}, ${exhibitionCategory3.name}, ${exhibitionCategory4.name}, ${exhibitionCategory5.name}`);
 }
 
 main()
