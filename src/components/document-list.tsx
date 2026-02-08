@@ -79,26 +79,7 @@ export function DocumentList({ onOpenDocument }: DocumentListProps) {
         </div>
       </div>
 
-      {/* 流程概览 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">业务流程</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-2 flex-wrap">
-            {schemas.map((schema, index) => (
-              <div key={schema.typeId} className="flex items-center gap-2">
-                <Badge variant="outline" className="px-3 py-1">
-                  {schema.typeName}
-                </Badge>
-                {index < schemas.length - 1 && (
-                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                )}
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+   
 
       {/* 单据列表 */}
       {schemas.map((schema) => {

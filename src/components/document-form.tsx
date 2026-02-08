@@ -149,12 +149,11 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
   return (
     <div className="flex flex-col h-full">
       {/* 头部: 单据类型 + 编号 + 状态 + 操作 */}
-      <div className="flex items-center justify-between px-1 pb-4">
+      <div className="flex items-center justify-between px-1 pb-2">
         <div className="flex items-center gap-3">
           <FileText className="h-5 w-5 text-muted-foreground" />
           <div>
-            <h2 className="text-lg font-semibold">{schema.typeName}</h2>
-            <p className="text-sm text-muted-foreground">{doc.docNumber}</p>
+            <h2 className="text-lg ">{schema.typeName}</h2>
           </div>
           <Badge variant={statusColors[doc.status] ?? "outline"}>
             {statusLabels[doc.status] ?? doc.status}
