@@ -1,17 +1,7 @@
 import { useSidebarStore } from "@/stores/sidebar-store"
 import { useTabStore } from "@/stores/tab-store"
-import { useAuthStore } from "@/stores/auth-store"
 import { registry } from "@/core"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 import {
   ChevronLeft,
@@ -21,9 +11,6 @@ import {
   Users,
   Shield,
   Menu,
-  User,
-  LogOut,
-  Settings,
   type LucideIcon,
 } from "lucide-react"
 
@@ -42,7 +29,6 @@ interface NavGroup {
 export function Sidebar() {
   const { isExpanded, toggle } = useSidebarStore()
   const { openTab } = useTabStore()
-  const { currentUser, logout } = useAuthStore()
 
   // 生成导航菜单项
   const homeItem: NavItem = {
@@ -88,12 +74,6 @@ export function Sidebar() {
     { title: "单据管理", items: documentItems },
     { title: "系统管理", items: systemItems },
   ]
-
-  const handleLogout = () => {
-    if (confirm("确定要退出登录吗？")) {
-      logout()
-    }
-  }
 
   return (
     <aside
@@ -170,58 +150,6 @@ export function Sidebar() {
         ))}
       </nav>
 
-      {/* 底部用户信息 */}
-      {currentUser && (
-        <div className="border-t bg-sidebar p-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                className={cn(
-                  "w-full text-sidebar-foreground hover:bg-sidebar-accent",
-                  isExpanded ? "justify-start" : "justify-center"
-                )}
-              >
-                <User className={cn("h-4 w-4", isExpanded && "mr-2")} />
-                {isExpanded && (
-                  <div className="flex-1 flex items-center justify-between min-w-0">
-                    <span className="truncate">{currentUser.name}</span>
-
-                  </div>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align={isExpanded ? "end" : "start"}
-              side="top"
-              className="w-56"
-            >
-              <DropdownMenuLabel>我的账号</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <div className="px-2 py-2 text-sm">
-                <p className="font-medium">{currentUser.name}</p>
-                <p className="text-muted-foreground text-xs">
-                  {currentUser.email}
-                </p>
-                {currentUser.department && (
-                  <p className="text-muted-foreground text-xs mt-1">
-                    部门: {currentUser.department}
-                  </p>
-                )}
-              </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem disabled>
-                <Settings className="h-4 w-4 mr-2" />
-                个人设置
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleLogout}>
-                <LogOut className="h-4 w-4 mr-2" />
-                退出登录
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      )}
     </aside>
   )
 }
