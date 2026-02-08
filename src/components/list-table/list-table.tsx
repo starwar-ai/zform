@@ -147,13 +147,13 @@ export function ListTable<T>({
       header: ({ column }) => {
         const isSortable = col.sortable !== false
         if (!isSortable) {
-          return <span>{col.label}</span>
+          return <span className="whitespace-nowrap">{col.label}</span>
         }
 
         const sorted = column.getIsSorted()
         return (
           <button
-            className="flex items-center gap-1 hover:text-foreground -ml-1 px-1 py-0.5 rounded transition-colors"
+            className="flex items-center gap-1 hover:text-foreground -ml-1 px-1 py-0.5 rounded transition-colors whitespace-nowrap"
             onClick={() => column.toggleSorting()}
           >
             {col.label}
@@ -231,6 +231,10 @@ export function ListTable<T>({
     refetch()
   }, [refetch])
 
+  const handleClearFilters = useCallback(() => {
+    setFilters([])
+  }, [])
+
   // ============================================================
   // 渲染
   // ============================================================
@@ -248,6 +252,8 @@ export function ListTable<T>({
         onExport={handleExport}
         isLoading={isFetching}
         extraActions={toolbarActions}
+        filters={filters}
+        onClearFilters={handleClearFilters}
       />
 
       {/* 表格 */}

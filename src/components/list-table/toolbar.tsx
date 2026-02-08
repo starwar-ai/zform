@@ -22,8 +22,9 @@ import {
   RefreshCw,
   Download,
   Settings2,
+  FilterX,
 } from "lucide-react"
-import type { ListTableColumn } from "./types"
+import type { ListTableColumn, ColumnFilter } from "./types"
 
 interface TableToolbarProps<T> {
   /** 表格标题 */
@@ -44,6 +45,10 @@ interface TableToolbarProps<T> {
   isLoading?: boolean
   /** 额外的操作按钮 */
   extraActions?: React.ReactNode
+  /** 当前筛选条件 */
+  filters?: ColumnFilter[]
+  /** 清除筛选回调 */
+  onClearFilters?: () => void
 }
 
 export function TableToolbar<T>({
@@ -56,6 +61,8 @@ export function TableToolbar<T>({
   onExport,
   isLoading,
   extraActions,
+  filters = [],
+  onClearFilters,
 }: TableToolbarProps<T>) {
   const [settingsOpen, setSettingsOpen] = useState(false)
 
@@ -65,6 +72,9 @@ export function TableToolbar<T>({
       [columnId]: visible,
     })
   }
+
+  // 是否有活动的筛选条件
+  const hasActiveFilters = filters.length > 0
 
   return (
     <div className="flex items-center justify-between gap-2 pb-3">
@@ -84,6 +94,25 @@ export function TableToolbar<T>({
         {extraActions}
 
         <TooltipProvider delayDuration={300}>
+          {/* 清除筛选按钮 */}
+          {onClearFilters && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onClearFilters}
+                  disabled={!hasActiveFilters}
+                >
+                  <FilterX className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                清除筛选 {hasActiveFilters && `(${filters.length})`}
+              </TooltipContent>
+            </Tooltip>
+          )}
+
           {/* 刷新按钮 */}
           <Tooltip>
             <TooltipTrigger asChild>

@@ -93,18 +93,16 @@ export function DocumentListTable({
     const listableFields = schema.masterFields.filter(
       (f) => f.type !== "textarea" && f.type !== "computed"
     )
-    // 最多显示 6 个字段，避免列太多
-    const displayFields = listableFields.slice(0, 6)
 
-    for (const field of displayFields) {
+    for (const field of listableFields) {
       cols.push({
         id: field.id,
         label: field.label,
         type: field.type,
         options: field.options,
         minWidth: 80,
-        // 超过 4 个字段的默认隐藏
-        defaultHidden: displayFields.indexOf(field) >= 4,
+        // 超过 8 个字段的默认隐藏
+        defaultHidden: listableFields.indexOf(field) >= 8,
       })
     }
 
