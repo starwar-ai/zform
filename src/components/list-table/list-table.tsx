@@ -24,7 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { ArrowDown, ArrowUp, ArrowUpDown, Loader2, List, Table2 } from "lucide-react"
+import { ArrowDown, ArrowUp, ArrowUpDown, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type {
   ListTableProps,
@@ -32,7 +32,6 @@ import type {
   ColumnFilter,
   PaginationState,
   FetchParams,
-  StandardMode,
 } from "./types"
 import { TableToolbar } from "./toolbar"
 import { FilterRow } from "./filter-row"
@@ -50,10 +49,6 @@ export function ListTable<T>({
   defaultPageSize = 20,
   rowKey,
   exportFilename,
-  modeConfig,
-  enableStandardMode = false,
-  onStandardModeChange,
-  defaultStandardMode = "document",
 }: ListTableProps<T>) {
   // ============================================================
   // 状态管理
@@ -237,39 +232,6 @@ export function ListTable<T>({
   }, [refetch])
 
   // ============================================================
-  // 标准模式配置 (单据/明细)
-  // ============================================================
-
-  const finalModeConfig = useMemo(() => {
-    // 如果已经提供了 modeConfig，优先使用
-    if (modeConfig) return modeConfig
-
-    // 如果启用标准模式，生成标准配置
-    if (enableStandardMode && onStandardModeChange) {
-      return {
-        modes: [
-          {
-            value: "document",
-            label: "",
-            icon: <List className="h-4 w-4" />,
-          },
-          {
-            value: "detail",
-            label: "",
-            icon: <Table2 className="h-4 w-4" />,
-          },
-        ],
-        defaultMode: defaultStandardMode,
-        onModeChange: (mode: string) => {
-          onStandardModeChange(mode as StandardMode)
-        },
-      }
-    }
-
-    return undefined
-  }, [modeConfig, enableStandardMode, onStandardModeChange, defaultStandardMode])
-
-  // ============================================================
   // 渲染
   // ============================================================
 
@@ -286,7 +248,6 @@ export function ListTable<T>({
         onExport={handleExport}
         isLoading={isFetching}
         extraActions={toolbarActions}
-        modeConfig={finalModeConfig}
       />
 
       {/* 表格 */}

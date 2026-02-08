@@ -145,37 +145,6 @@ export interface FetchResult<T> {
 // 组件 Props
 // ============================================================
 
-// ============================================================
-// 模式选项
-// ============================================================
-
-/** 模式选项定义 */
-export interface ModeOption {
-  /** 模式唯一标识 */
-  value: string
-  /** 显示标签 */
-  label: string
-  /** 图标 */
-  icon?: React.ReactNode
-}
-
-/** 模式配置 */
-export interface ModeConfig {
-  /** 可用的模式列表 */
-  modes: ModeOption[]
-  /** 默认模式 */
-  defaultMode: string
-  /** 模式变更回调 */
-  onModeChange: (mode: string) => void
-}
-
-/** 标准模式类型: document=单据模式, detail=明细模式 */
-export type StandardMode = "document" | "detail"
-
-// ============================================================
-// 组件 Props
-// ============================================================
-
 /** ListTable 组件 Props */
 export interface ListTableProps<T> {
   /** 列定义 */
@@ -198,12 +167,4 @@ export interface ListTableProps<T> {
   rowKey?: (row: T) => string
   /** 导出文件名 (不含扩展名) */
   exportFilename?: string
-  /** 模式配置 (可选) */
-  modeConfig?: ModeConfig
-  /** 启用标准模式切换 (单据/明细) - 需配合 onStandardModeChange 使用 */
-  enableStandardMode?: boolean
-  /** 标准模式变更回调 */
-  onStandardModeChange?: (mode: StandardMode) => void
-  /** 默认标准模式 */
-  defaultStandardMode?: StandardMode
 }

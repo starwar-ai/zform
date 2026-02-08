@@ -5,7 +5,7 @@
  * 分页/筛选/排序均由服务端处理。
  */
 
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useMemo } from "react"
 import { registry } from "@/core/registry"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -19,8 +19,8 @@ import type { FlatDocumentRow, ListMode } from "@/lib/document-api"
 interface DocumentListTableProps {
   typeId: DocumentTypeId
   onOpenDocument: (docId: string) => void
-  /** 默认列表模式: document=单据模式(默认), detail=明细模式 */
-  defaultMode?: ListMode
+  /** 列表模式: document=单据模式(默认), detail=明细模式 */
+  mode?: ListMode
   /** 明细模式下需要指定展示哪个明细表 */
   detailTableId?: string
 }
@@ -45,13 +45,10 @@ const statusVariants: Record<string, "default" | "secondary" | "destructive" | "
 export function DocumentListTable({
   typeId,
   onOpenDocument,
-  defaultMode = "document",
+  mode = "document",
   detailTableId,
 }: DocumentListTableProps) {
   const schema = registry.getSchema(typeId)
-  
-  // 内部管理模式状态
-  const [mode, setMode] = useState<ListMode>(defaultMode)
   const isDetailMode = mode === "detail"
 
   // 构建列定义
@@ -178,11 +175,6 @@ export function DocumentListTable({
     onOpenDocument(result.id)
   }, [typeId, onOpenDocument])
 
-  // 模式变更回调
-  const handleModeChange = useCallback((newMode: ListMode) => {
-    setMode(newMode)
-  }, [])
-
   // 行点击
   const handleRowClick = useCallback(
     (row: FlatDocumentRow) => {
@@ -221,9 +213,6 @@ export function DocumentListTable({
             : (row._id as string)
         }
         exportFilename={schema.typeName}
-        enableStandardMode={schema.detailTables.length > 0}
-        onStandardModeChange={handleModeChange}
-        defaultStandardMode={mode}
       />
     </div>
   )
