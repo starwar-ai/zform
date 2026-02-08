@@ -67,6 +67,9 @@ export interface ColumnFilter {
 // 列定义
 // ============================================================
 
+/** 列来源类型 */
+export type ColumnSource = "master" | "detail" | "system"
+
 /** ListTable 列定义 */
 export interface ListTableColumn<T = unknown> {
   /** 列标识 (对应数据字段名) */
@@ -75,6 +78,8 @@ export interface ListTableColumn<T = unknown> {
   label: string
   /** 字段类型 (决定筛选操作符和渲染方式) */
   type: FieldType
+  /** 字段来源: master=主数据, detail=明细, system=系统字段 */
+  source?: ColumnSource
   /** 是否可排序 (默认 true) */
   sortable?: boolean
   /** 是否可筛选 (默认 true) */

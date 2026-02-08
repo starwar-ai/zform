@@ -14,6 +14,9 @@ import {
   type SortingState,
   type VisibilityState,
   type ColumnSizingState,
+  type ColumnPinningState as TanStackColumnPinningState,
+  type Header,
+  type Cell,
 } from "@tanstack/react-table"
 import { useQuery } from "@tanstack/react-query"
 import {
@@ -34,6 +37,7 @@ import type {
   FetchParams,
 } from "./types"
 import { TableToolbar } from "./toolbar"
+import type { ColumnPinningState } from "./column-settings"
 import { FilterRow } from "./filter-row"
 import { TablePagination } from "./pagination"
 import { exportToCsv } from "./export-utils"
@@ -54,31 +58,71 @@ export function ListTable<T>({
   // 状态管理
   // ============================================================
 
-  // 生成存储键
-  const storageKey = useMemo(() => {
-    return `list-table-column-sizing-${queryKey.join('-')}`
+  // 生成存储键前缀
+  const storageKeyPrefix = useMemo(() => {
+    return `list-table-${queryKey.join('-')}`
   }, [queryKey])
 
-  // 从 localStorage 加载列宽
+  // ---- 从 localStorage 加载持久化状态 ----
+
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>(() => {
     try {
-      const saved = localStorage.getItem(storageKey)
+      const saved = localStorage.getItem(`${storageKeyPrefix}-sizing`)
       return saved ? JSON.parse(saved) : {}
     } catch {
       return {}
     }
   })
 
-  // 保存列宽到 localStorage
+  const [columnOrder, setColumnOrder] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(`${storageKeyPrefix}-order`)
+      return saved ? JSON.parse(saved) : []
+    } catch {
+      return []
+    }
+  })
+
+  const [columnPinning, setColumnPinning] = useState<ColumnPinningState>(() => {
+    try {
+      const saved = localStorage.getItem(`${storageKeyPrefix}-pinning`)
+      return saved ? JSON.parse(saved) : { left: [], right: [] }
+    } catch {
+      return { left: [], right: [] }
+    }
+  })
+
+  // ---- 保存到 localStorage ----
+
   useEffect(() => {
     if (Object.keys(columnSizing).length > 0) {
       try {
-        localStorage.setItem(storageKey, JSON.stringify(columnSizing))
+        localStorage.setItem(`${storageKeyPrefix}-sizing`, JSON.stringify(columnSizing))
       } catch (error) {
         console.error('Failed to save column sizing:', error)
       }
     }
-  }, [columnSizing, storageKey])
+  }, [columnSizing, storageKeyPrefix])
+
+  useEffect(() => {
+    if (columnOrder.length > 0) {
+      try {
+        localStorage.setItem(`${storageKeyPrefix}-order`, JSON.stringify(columnOrder))
+      } catch (error) {
+        console.error('Failed to save column order:', error)
+      }
+    }
+  }, [columnOrder, storageKeyPrefix])
+
+  useEffect(() => {
+    if (columnPinning.left.length > 0 || columnPinning.right.length > 0) {
+      try {
+        localStorage.setItem(`${storageKeyPrefix}-pinning`, JSON.stringify(columnPinning))
+      } catch (error) {
+        console.error('Failed to save column pinning:', error)
+      }
+    }
+  }, [columnPinning, storageKeyPrefix])
 
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -187,6 +231,15 @@ export function ListTable<T>({
   // TanStack Table 实例
   // ============================================================
 
+  // 将 ColumnPinningState 转为 TanStack 的类型
+  const tanstackPinning: TanStackColumnPinningState = useMemo(
+    () => ({
+      left: columnPinning.left,
+      right: columnPinning.right,
+    }),
+    [columnPinning]
+  )
+
   const table = useReactTable({
     data: tableData,
     columns: tableColumns,
@@ -194,10 +247,21 @@ export function ListTable<T>({
       sorting,
       columnVisibility,
       columnSizing,
+      columnOrder: columnOrder.length > 0 ? columnOrder : undefined,
+      columnPinning: tanstackPinning,
     },
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
     onColumnSizingChange: setColumnSizing,
+    onColumnOrderChange: setColumnOrder,
+    onColumnPinningChange: (updater) => {
+      const newPinning =
+        typeof updater === "function" ? updater(tanstackPinning) : updater
+      setColumnPinning({
+        left: newPinning.left ?? [],
+        right: newPinning.right ?? [],
+      })
+    },
     columnResizeMode: "onChange",
     getCoreRowModel: getCoreRowModel(),
     getRowId: rowKey
@@ -248,6 +312,10 @@ export function ListTable<T>({
         columns={columns}
         columnVisibility={columnVisibility as Record<string, boolean>}
         onColumnVisibilityChange={setColumnVisibility}
+        columnOrder={columnOrder}
+        onColumnOrderChange={setColumnOrder}
+        columnPinning={columnPinning}
+        onColumnPinningChange={setColumnPinning}
         onRefresh={handleRefresh}
         onExport={handleExport}
         isLoading={isFetching}
@@ -268,36 +336,51 @@ export function ListTable<T>({
         <Table>
           <TableHeader>
             {/* 表头行 */}
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    style={{
-                      width: header.getSize(),
-                      minWidth: header.column.columnDef.minSize,
-                      position: 'relative',
-                    }}
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
+            {table.getHeaderGroups().map((headerGroup) => {
+              const headers = headerGroup.headers
+              return (
+                <TableRow key={headerGroup.id}>
+                  {headers.map((header) => {
+                    const isPinned = header.column.getIsPinned()
+                    const pinnedStyle = getPinnedStyle(header, headers)
+                    const lastLeft = isLastLeftPinned(header, headers)
+                    const firstRight = isFirstRightPinned(header, headers)
+
+                    return (
+                      <TableHead
+                        key={header.id}
+                        style={{
+                          width: header.getSize(),
+                          minWidth: header.column.columnDef.minSize,
+                          ...pinnedStyle,
+                        }}
+                        className={cn(
+                          isPinned && "bg-background",
+                          lastLeft && "shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]",
+                          firstRight && "shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.1)]"
                         )}
-                    {/* Resize Handle */}
-                    <div
-                      onMouseDown={header.getResizeHandler()}
-                      onTouchStart={header.getResizeHandler()}
-                      className={cn(
-                        "absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none hover:bg-primary/50",
-                        header.column.getIsResizing() && "bg-primary"
-                      )}
-                    />
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
+                      >
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                        {/* Resize Handle */}
+                        <div
+                          onMouseDown={header.getResizeHandler()}
+                          onTouchStart={header.getResizeHandler()}
+                          className={cn(
+                            "absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none hover:bg-primary/50",
+                            header.column.getIsResizing() && "bg-primary"
+                          )}
+                        />
+                      </TableHead>
+                    )
+                  })}
+                </TableRow>
+              )
+            })}
 
             {/* 筛选行 */}
             <FilterRow
@@ -322,24 +405,42 @@ export function ListTable<T>({
                 </TableCell>
               </TableRow>
             ) : table.getRowModel().rows.length > 0 ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  className={cn(
-                    onRowClick && "cursor-pointer hover:bg-muted/50"
-                  )}
-                  onClick={() => onRowClick?.(row.original)}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
+              table.getRowModel().rows.map((row) => {
+                const cells = row.getVisibleCells()
+                return (
+                  <TableRow
+                    key={row.id}
+                    className={cn(
+                      onRowClick && "cursor-pointer hover:bg-muted/50"
+                    )}
+                    onClick={() => onRowClick?.(row.original)}
+                  >
+                    {cells.map((cell) => {
+                      const isPinned = cell.column.getIsPinned()
+                      const pinnedStyle = getPinnedStyle(cell, cells)
+                      const lastLeft = isLastLeftPinned(cell, cells)
+                      const firstRight = isFirstRightPinned(cell, cells)
+
+                      return (
+                        <TableCell
+                          key={cell.id}
+                          style={pinnedStyle}
+                          className={cn(
+                            isPinned && "bg-background",
+                            lastLeft && "shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]",
+                            firstRight && "shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.1)]"
+                          )}
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </TableCell>
+                      )
+                    })}
+                  </TableRow>
+                )
+              })
             ) : (
               <TableRow>
                 <TableCell
@@ -368,6 +469,86 @@ export function ListTable<T>({
       />
     </div>
   )
+}
+
+// ============================================================
+// 固定列样式计算
+// ============================================================
+
+/** 计算固定列的 sticky 定位样式 */
+function getPinnedStyle<TData>(
+  headerOrCell: Header<TData, unknown> | Cell<TData, unknown>,
+  allItems: (Header<TData, unknown> | Cell<TData, unknown>)[]
+): React.CSSProperties {
+  const column = headerOrCell.column
+  const isPinned = column.getIsPinned()
+  if (!isPinned) return { position: "relative" }
+
+  if (isPinned === "left") {
+    let offset = 0
+    for (const item of allItems) {
+      if (item.column.id === column.id) break
+      if (item.column.getIsPinned() === "left") {
+        offset += item.column.getSize()
+      }
+    }
+    return {
+      position: "sticky",
+      left: offset,
+      zIndex: 1,
+    }
+  }
+
+  if (isPinned === "right") {
+    let offset = 0
+    const currentIndex = allItems.findIndex(
+      (item) => item.column.id === column.id
+    )
+    for (let i = allItems.length - 1; i > currentIndex; i--) {
+      if (allItems[i].column.getIsPinned() === "right") {
+        offset += allItems[i].column.getSize()
+      }
+    }
+    return {
+      position: "sticky",
+      right: offset,
+      zIndex: 1,
+    }
+  }
+
+  return {}
+}
+
+/** 判断是否是最后一个左固定列 */
+function isLastLeftPinned<TData>(
+  headerOrCell: Header<TData, unknown> | Cell<TData, unknown>,
+  allItems: (Header<TData, unknown> | Cell<TData, unknown>)[]
+): boolean {
+  const column = headerOrCell.column
+  if (column.getIsPinned() !== "left") return false
+  const currentIndex = allItems.findIndex(
+    (item) => item.column.id === column.id
+  )
+  for (let i = currentIndex + 1; i < allItems.length; i++) {
+    if (allItems[i].column.getIsPinned() === "left") return false
+  }
+  return true
+}
+
+/** 判断是否是第一个右固定列 */
+function isFirstRightPinned<TData>(
+  headerOrCell: Header<TData, unknown> | Cell<TData, unknown>,
+  allItems: (Header<TData, unknown> | Cell<TData, unknown>)[]
+): boolean {
+  const column = headerOrCell.column
+  if (column.getIsPinned() !== "right") return false
+  const currentIndex = allItems.findIndex(
+    (item) => item.column.id === column.id
+  )
+  for (let i = 0; i < currentIndex; i++) {
+    if (allItems[i].column.getIsPinned() === "right") return false
+  }
+  return true
 }
 
 // ============================================================

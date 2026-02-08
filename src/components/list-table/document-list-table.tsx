@@ -60,6 +60,7 @@ export function DocumentListTable({
         id: "_docNumber",
         label: "单据编号",
         type: "text",
+        source: "system",
         width: 160,
         render: (value) => (
           <span className="font-medium">{String(value)}</span>
@@ -69,6 +70,7 @@ export function DocumentListTable({
         id: "_status",
         label: "状态",
         type: "select",
+        source: "system",
         width: 100,
         options: [
           { label: "草稿", value: "draft" },
@@ -99,6 +101,7 @@ export function DocumentListTable({
         id: field.id,
         label: field.label,
         type: field.type,
+        source: "master",
         options: field.options,
         minWidth: 80,
         // 超过 8 个字段的默认隐藏
@@ -120,6 +123,7 @@ export function DocumentListTable({
             id: field.id,
             label: field.label,
             type: field.type,
+            source: "detail",
             options: field.options,
             minWidth: 80,
           })
@@ -132,6 +136,7 @@ export function DocumentListTable({
       id: "_createdAt",
       label: "创建时间",
       type: "date",
+      source: "system",
       width: 160,
       render: (value) => (
         <span className="text-muted-foreground text-sm">
@@ -144,6 +149,7 @@ export function DocumentListTable({
       id: "_sourceTypeId",
       label: "来源",
       type: "text",
+      source: "system",
       width: 100,
       render: (value) => {
         if (!value) return "-"

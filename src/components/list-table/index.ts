@@ -5,6 +5,7 @@
 export { ListTable } from "./list-table"
 export { DocumentListTable } from "./document-list-table"
 export { TableToolbar } from "./toolbar"
+export { ColumnSettings } from "./column-settings"
 export { TablePagination } from "./pagination"
 export { FilterRow } from "./filter-row"
 export { FilterCell } from "./filter-cell"
@@ -15,6 +16,7 @@ export type {
   ListTableProps,
   ListTableColumn,
   ColumnFilter,
+  ColumnSource,
   FilterOperator,
   OperatorMeta,
   SortingItem,
@@ -22,3 +24,5 @@ export type {
   FetchParams,
   FetchResult,
 } from "./types"
+
+export type { ColumnPinningState } from "./column-settings"
