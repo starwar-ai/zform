@@ -11,6 +11,7 @@ import { UserManagement } from "@/components/user-management"
 import { RoleManagement } from "@/components/role-management"
 import { MenuManagement } from "@/components/menu-management"
 import { DepartmentManagement } from "@/components/department-management"
+import { CategoryManagement } from "@/components/category-management"
 import { DashboardHome } from "@/components/dashboard-home"
 
 export function TabContent() {
@@ -88,6 +89,9 @@ export function TabContent() {
 
       case "department-management":
         return <DepartmentManagement />
+
+      case "category-management":
+        return <CategoryManagement />
 
       default:
         return (

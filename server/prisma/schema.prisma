@@ -128,6 +128,42 @@ model HsCode {
   @@map("hs_codes")
 }
 
+// ==================== 客户分类表（支持多级）====================
+
+model CustomerCategory {
+  id        String    @id @default(cuid())
+  code      String    @unique                       // 分类编号
+  name      String                                  // 名称
+  parentId  String?   @map("parent_id")
+  parent    CustomerCategory?  @relation("CustomerCategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children  CustomerCategory[] @relation("CustomerCategoryTree")
+
+  createdBy String?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedBy String?   @map("updated_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")            // 删除标志：null=有效
+
+  @@index([parentId])
+  @@map("customer_categories")
+}
+
+// ==================== 展会分类表 ====================
+
+model ExhibitionCategory {
+  id          String    @id @default(cuid())
+  name        String                                // 名称
+  isDomestic  Boolean   @default(false) @map("is_domestic")  // 是否国内系列（false：否 true：是）
+
+  createdBy   String?   @map("created_by")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedBy   String?   @map("updated_by")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")          // 删除标志：null=有效
+
+  @@map("exhibition_categories")
+}
+
 // ==================== 包装方式表 ====================
 
 model PackageMethod {

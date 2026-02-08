@@ -13,6 +13,7 @@ export type TabType =
   | "role-management"
   | "menu-management"
   | "department-management"
+  | "category-management"
 
 // 标签数据结构
 export interface Tab {

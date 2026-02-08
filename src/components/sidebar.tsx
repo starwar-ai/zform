@@ -95,6 +95,7 @@ function parseMenuPath(path?: string | null): {
     "/role-management": "role-management",
     "/menu-management": "menu-management",
     "/department-management": "department-management",
+    "/category-management": "category-management",
   }
 
   const tabType = pathToTabType[path]
