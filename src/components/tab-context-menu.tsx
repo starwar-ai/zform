@@ -36,29 +36,29 @@ export function TabContextMenu({ tabId, children }: TabContextMenuProps) {
       <ContextMenuContent className="w-48">
         {tab.closable && (
           <>
-            <ContextMenuItem onClick={() => closeTab(tabId)}>
+            <ContextMenuItem onClick={() => void closeTab(tabId)}>
               关闭
             </ContextMenuItem>
             <ContextMenuSeparator />
           </>
         )}
         {hasOtherTabs && (
-          <ContextMenuItem onClick={() => closeOtherTabs(tabId)}>
+          <ContextMenuItem onClick={() => void closeOtherTabs(tabId)}>
             关闭其他
           </ContextMenuItem>
         )}
         {hasLeftTabs && (
-          <ContextMenuItem onClick={() => closeLeftTabs(tabId)}>
+          <ContextMenuItem onClick={() => void closeLeftTabs(tabId)}>
             关闭左侧
           </ContextMenuItem>
         )}
         {hasRightTabs && (
-          <ContextMenuItem onClick={() => closeRightTabs(tabId)}>
+          <ContextMenuItem onClick={() => void closeRightTabs(tabId)}>
             关闭右侧
           </ContextMenuItem>
         )}
         {hasOtherTabs && <ContextMenuSeparator />}
-        <ContextMenuItem onClick={() => closeAllTabs()}>
+        <ContextMenuItem onClick={() => void closeAllTabs()}>
           关闭全部
         </ContextMenuItem>
       </ContextMenuContent>

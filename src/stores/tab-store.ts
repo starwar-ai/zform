@@ -23,9 +23,13 @@ export interface Tab {
   createdAt: number // 创建时间
 }
 
+// 关闭前钩子：返回 true 允许关闭，false 阻止关闭
+export type BeforeCloseHook = (tabId: string) => boolean | Promise<boolean>
+
 interface TabStoreState {
   tabs: Tab[]
   activeTabId: string | null
+  beforeCloseHooks: Record<string, BeforeCloseHook>
 
   // 核心方法
   openTab: (
@@ -33,14 +37,18 @@ interface TabStoreState {
     params?: Record<string, unknown>,
     title?: string
   ) => string
-  closeTab: (tabId: string) => void
-  closeAllTabs: () => void
-  closeOtherTabs: (tabId: string) => void
-  closeLeftTabs: (tabId: string) => void
-  closeRightTabs: (tabId: string) => void
+  closeTab: (tabId: string) => Promise<void>
+  closeAllTabs: () => Promise<void>
+  closeOtherTabs: (tabId: string) => Promise<void>
+  closeLeftTabs: (tabId: string) => Promise<void>
+  closeRightTabs: (tabId: string) => Promise<void>
   switchTab: (tabId: string) => void
   moveTab: (fromIndex: number, toIndex: number) => void
   updateTabTitle: (tabId: string, title: string) => void
+  
+  // 钩子管理
+  registerBeforeCloseHook: (tabId: string, hook: BeforeCloseHook) => void
+  unregisterBeforeCloseHook: (tabId: string) => void
 }
 
 // 判断两个标签是否相同（基于 type 和 params）
@@ -66,6 +74,7 @@ export const useTabStore = create<TabStoreState>()(
     immer((set, get) => ({
       tabs: [],
       activeTabId: null,
+      beforeCloseHooks: {},
 
       openTab: (type, params = {}, title = "新标签") => {
         const state = get()
@@ -108,15 +117,26 @@ export const useTabStore = create<TabStoreState>()(
         return newTab.id
       },
 
-      closeTab: (tabId) => {
+      closeTab: async (tabId) => {
+        const state = get()
+        const tab = state.tabs.find((t) => t.id === tabId)
+        if (!tab || !tab.closable) return
+
+        // 执行关闭前钩子
+        const hook = state.beforeCloseHooks[tabId]
+        if (hook) {
+          const canClose = await hook(tabId)
+          if (!canClose) return
+        }
+
         set((draft) => {
           const index = draft.tabs.findIndex((tab) => tab.id === tabId)
           if (index === -1) return
 
-          const tab = draft.tabs[index]
-          if (!tab.closable) return // 不可关闭的标签
-
           draft.tabs.splice(index, 1)
+
+          // 清除钩子
+          delete draft.beforeCloseHooks[tabId]
 
           // 如果关闭的是激活标签，激活邻近标签
           if (draft.activeTabId === tabId) {
@@ -133,9 +153,27 @@ export const useTabStore = create<TabStoreState>()(
         })
       },
 
-      closeAllTabs: () => {
+      closeAllTabs: async () => {
+        const state = get()
+        const closableTabs = state.tabs.filter((tab) => tab.closable)
+
+        // 依次检查所有可关闭标签的钩子
+        for (const tab of closableTabs) {
+          const hook = state.beforeCloseHooks[tab.id]
+          if (hook) {
+            const canClose = await hook(tab.id)
+            if (!canClose) return // 任何一个阻止则取消全部关闭
+          }
+        }
+
         set((draft) => {
           const unclosableTabs = draft.tabs.filter((tab) => !tab.closable)
+          
+          // 清除所有可关闭标签的钩子
+          for (const tab of closableTabs) {
+            delete draft.beforeCloseHooks[tab.id]
+          }
+
           draft.tabs = unclosableTabs
 
           // 如果当前激活标签被关闭，激活第一个不可关闭标签
@@ -149,12 +187,32 @@ export const useTabStore = create<TabStoreState>()(
         })
       },
 
-      closeOtherTabs: (tabId) => {
-        set((draft) => {
-          const currentTab = draft.tabs.find((tab) => tab.id === tabId)
-          if (!currentTab) return
+      closeOtherTabs: async (tabId) => {
+        const state = get()
+        const currentTab = state.tabs.find((tab) => tab.id === tabId)
+        if (!currentTab) return
 
+        const tabsToClose = state.tabs.filter(
+          (tab) => tab.id !== tabId && tab.closable
+        )
+
+        // 依次检查要关闭的标签的钩子
+        for (const tab of tabsToClose) {
+          const hook = state.beforeCloseHooks[tab.id]
+          if (hook) {
+            const canClose = await hook(tab.id)
+            if (!canClose) return
+          }
+        }
+
+        set((draft) => {
           const unclosableTabs = draft.tabs.filter((tab) => !tab.closable)
+          
+          // 清除要关闭标签的钩子
+          for (const tab of tabsToClose) {
+            delete draft.beforeCloseHooks[tab.id]
+          }
+
           draft.tabs = [...unclosableTabs, currentTab].filter(
             (tab, index, self) => self.findIndex((t) => t.id === tab.id) === index
           )
@@ -162,7 +220,23 @@ export const useTabStore = create<TabStoreState>()(
         })
       },
 
-      closeLeftTabs: (tabId) => {
+      closeLeftTabs: async (tabId) => {
+        const state = get()
+        const index = state.tabs.findIndex((tab) => tab.id === tabId)
+        if (index === -1) return
+
+        const leftTabs = state.tabs.slice(0, index)
+        const closableLeftTabs = leftTabs.filter((tab) => tab.closable)
+
+        // 检查左侧可关闭标签的钩子
+        for (const tab of closableLeftTabs) {
+          const hook = state.beforeCloseHooks[tab.id]
+          if (hook) {
+            const canClose = await hook(tab.id)
+            if (!canClose) return
+          }
+        }
+
         set((draft) => {
           const index = draft.tabs.findIndex((tab) => tab.id === tabId)
           if (index === -1) return
@@ -171,6 +245,12 @@ export const useTabStore = create<TabStoreState>()(
           const rightTabs = draft.tabs.slice(index)
 
           const unclosableLeftTabs = leftTabs.filter((tab) => !tab.closable)
+          
+          // 清除左侧可关闭标签的钩子
+          for (const tab of closableLeftTabs) {
+            delete draft.beforeCloseHooks[tab.id]
+          }
+
           draft.tabs = [...unclosableLeftTabs, ...rightTabs]
 
           // 如果当前激活标签被关闭，激活目标标签
@@ -183,7 +263,23 @@ export const useTabStore = create<TabStoreState>()(
         })
       },
 
-      closeRightTabs: (tabId) => {
+      closeRightTabs: async (tabId) => {
+        const state = get()
+        const index = state.tabs.findIndex((tab) => tab.id === tabId)
+        if (index === -1) return
+
+        const rightTabs = state.tabs.slice(index + 1)
+        const closableRightTabs = rightTabs.filter((tab) => tab.closable)
+
+        // 检查右侧可关闭标签的钩子
+        for (const tab of closableRightTabs) {
+          const hook = state.beforeCloseHooks[tab.id]
+          if (hook) {
+            const canClose = await hook(tab.id)
+            if (!canClose) return
+          }
+        }
+
         set((draft) => {
           const index = draft.tabs.findIndex((tab) => tab.id === tabId)
           if (index === -1) return
@@ -192,6 +288,12 @@ export const useTabStore = create<TabStoreState>()(
           const rightTabs = draft.tabs.slice(index + 1)
 
           const unclosableRightTabs = rightTabs.filter((tab) => !tab.closable)
+          
+          // 清除右侧可关闭标签的钩子
+          for (const tab of closableRightTabs) {
+            delete draft.beforeCloseHooks[tab.id]
+          }
+
           draft.tabs = [...leftTabs, ...unclosableRightTabs]
 
           // 如果当前激活标签被关闭，激活目标标签
@@ -240,6 +342,18 @@ export const useTabStore = create<TabStoreState>()(
           if (tab) {
             tab.title = title
           }
+        })
+      },
+
+      registerBeforeCloseHook: (tabId, hook) => {
+        set((draft) => {
+          draft.beforeCloseHooks[tabId] = hook
+        })
+      },
+
+      unregisterBeforeCloseHook: (tabId) => {
+        set((draft) => {
+          delete draft.beforeCloseHooks[tabId]
         })
       },
     })),

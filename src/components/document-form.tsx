@@ -5,12 +5,13 @@
  * 组合 MasterForm + DetailTable + TracePanel + ImpactDialog。
  */
 
-import { useState, useRef, useCallback } from "react"
+import { useState, useRef, useCallback, useEffect, useMemo } from "react"
 import type {
   DocumentData,
   ImpactAssessment,
 } from "@/core/types"
 import { useDocumentStore, getTraceableStore } from "@/stores/document-store"
+import { useTabStore } from "@/stores/tab-store"
 import { useTraceability, usePushDown, useImpactAssessment } from "@/hooks/use-document"
 import { registry } from "@/core/registry"
 import { createDocumentApi, updateDocumentApi } from "@/lib/document-api"
@@ -18,6 +19,7 @@ import { MasterForm } from "./master-form"
 import { DetailTable } from "./detail-table"
 import { TracePanel } from "./trace-panel"
 import { ImpactDialog } from "./impact-dialog"
+import { UnsavedChangesDialog } from "./unsaved-changes-dialog"
 import { ApprovalHistory } from "./approval-history"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -61,6 +63,7 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
     saveDocument,
     updateStatus,
   } = useDocumentStore()
+  const { activeTabId, updateTabTitle, registerBeforeCloseHook, unregisterBeforeCloseHook } = useTabStore()
 
   const { upstream, downstream } = useTraceability(docId)
   const { getAvailableRules, executePushDown } = usePushDown()
@@ -70,8 +73,13 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
   const [assessment, setAssessment] = useState<ImpactAssessment | null>(null)
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [unsavedDialogOpen, setUnsavedDialogOpen] = useState(false)
   const pendingSaveRef = useRef<DocumentData | null>(null)
+  const pendingCloseResolveRef = useRef<((value: boolean) => void) | null>(null)
   const sidePanelRef = usePanelRef()
+  
+  // 保存初始数据快照用于变更检测
+  const initialDocSnapshot = useRef<string | null>(null)
 
   const togglePanel = useCallback(() => {
     const panel = sidePanelRef.current
@@ -82,6 +90,31 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
       panel.collapse()
     }
   }, [])
+
+  // 检测是否有变更
+  const hasChanges = useMemo(() => {
+    if (!doc || !initialDocSnapshot.current) return false
+    
+    // 将当前数据序列化后与初始快照比较
+    const currentSnapshot = JSON.stringify({
+      masterData: doc.masterData,
+      detailTables: doc.detailTables,
+      status: doc.status,
+    })
+    
+    return currentSnapshot !== initialDocSnapshot.current
+  }, [doc])
+
+  // 初始化快照
+  useEffect(() => {
+    if (doc && !initialDocSnapshot.current) {
+      initialDocSnapshot.current = JSON.stringify({
+        masterData: doc.masterData,
+        detailTables: doc.detailTables,
+        status: doc.status,
+      })
+    }
+  }, [doc])
 
   if (!doc) {
     return (
@@ -104,6 +137,38 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
   const isNew = Boolean(doc._isNew)
   const pushDownRules = getAvailableRules(doc.typeId)
 
+  const resolveDocCode = useCallback((value: unknown) => {
+    if (typeof value === "string") {
+      const trimmed = value.trim()
+      return trimmed.length > 0 ? trimmed : ""
+    }
+    if (typeof value === "number") {
+      return String(value)
+    }
+    return ""
+  }, [])
+
+  useEffect(() => {
+    if (!activeTabId) return
+    const candidateCode = resolveDocCode(
+      (doc.masterData as Record<string, unknown> | undefined)?.code 
+    )
+    const finalCode = candidateCode || doc.id
+    const nextTitle = isNew
+      ? `${schema.typeName}-新建`
+      : `${schema.typeName}-${finalCode}`
+    updateTabTitle(activeTabId, nextTitle)
+  }, [
+    activeTabId,
+    updateTabTitle,
+    resolveDocCode,
+    isNew,
+    schema.typeName,
+    doc.masterData?.code,
+    doc.docNumber,
+    doc.id,
+  ])
+
   /** 持久化到服务端: 新建文档调用 create, 已有文档调用 update */
   const persistToServer = useCallback(
     async (docData: DocumentData) => {
@@ -115,21 +180,86 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
           await createDocumentApi(docData.typeId, payload)
           // 持久化成功后清除 _isNew 标记
           saveDocument({ ...docData, _isNew: undefined })
+          // 更新快照
+          initialDocSnapshot.current = JSON.stringify({
+            masterData: { ...docData.masterData },
+            detailTables: docData.detailTables,
+            status: "draft",
+          })
         } else {
           // 已有文档 → 调用 update API
           const { _isNew, ...payload } = docData
           await updateDocumentApi(docData.typeId, docData.id, payload)
           saveDocument(docData)
+          // 更新快照
+          initialDocSnapshot.current = JSON.stringify({
+            masterData: docData.masterData,
+            detailTables: docData.detailTables,
+            status: docData.status,
+          })
         }
       } catch (err) {
         console.error("保存失败:", err)
         alert(`保存失败: ${err instanceof Error ? err.message : String(err)}`)
+        throw err // 重新抛出错误以便调用方处理
       } finally {
         setSaving(false)
       }
     },
     [saveDocument]
   )
+
+  // 处理未保存变更对话框的操作
+  const handleUnsavedSave = useCallback(async () => {
+    try {
+      // 保存文档
+      await persistToServer(doc)
+      setUnsavedDialogOpen(false)
+      // 允许关闭
+      pendingCloseResolveRef.current?.(true)
+      pendingCloseResolveRef.current = null
+    } catch (err) {
+      // 保存失败，不关闭标签
+      pendingCloseResolveRef.current?.(false)
+      pendingCloseResolveRef.current = null
+    }
+  }, [doc, persistToServer])
+
+  const handleUnsavedDiscard = useCallback(() => {
+    setUnsavedDialogOpen(false)
+    // 允许关闭但不保存
+    pendingCloseResolveRef.current?.(true)
+    pendingCloseResolveRef.current = null
+  }, [])
+
+  const handleUnsavedCancel = useCallback(() => {
+    setUnsavedDialogOpen(false)
+    // 阻止关闭
+    pendingCloseResolveRef.current?.(false)
+    pendingCloseResolveRef.current = null
+  }, [])
+
+  // 注册关闭前钩子
+  useEffect(() => {
+    if (!activeTabId) return
+
+    const beforeCloseHook = async (): Promise<boolean> => {
+      // 如果没有变更，允许直接关闭
+      if (!hasChanges) return true
+
+      // 有变更，显示确认对话框
+      return new Promise((resolve) => {
+        pendingCloseResolveRef.current = resolve
+        setUnsavedDialogOpen(true)
+      })
+    }
+
+    registerBeforeCloseHook(activeTabId, beforeCloseHook)
+
+    return () => {
+      unregisterBeforeCloseHook(activeTabId)
+    }
+  }, [activeTabId, hasChanges, registerBeforeCloseHook, unregisterBeforeCloseHook])
 
   const handleSave = () => {
     // 构建新文档用于影响评估
@@ -366,6 +496,15 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
         assessment={assessment}
         onConfirm={handleImpactConfirm}
         onCancel={handleImpactCancel}
+      />
+
+      {/* 未保存变更确认对话框 */}
+      <UnsavedChangesDialog
+        open={unsavedDialogOpen}
+        onOpenChange={setUnsavedDialogOpen}
+        onSave={handleUnsavedSave}
+        onDiscard={handleUnsavedDiscard}
+        onCancel={handleUnsavedCancel}
       />
     </div>
   )

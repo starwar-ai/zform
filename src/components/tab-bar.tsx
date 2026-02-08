@@ -156,7 +156,7 @@ export function TabBar() {
                 tab={tab}
                 isActive={tab.id === activeTabId}
                 onSwitch={() => switchTab(tab.id)}
-                onClose={() => closeTab(tab.id)}
+                onClose={() => void closeTab(tab.id)}
               />
             ))}
           </div>
