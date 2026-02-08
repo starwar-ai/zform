@@ -87,6 +87,7 @@ export const useDocumentStore = create<DocumentStoreState>()(
         status: "draft",
         createdAt: now,
         updatedAt: now,
+        _isNew: true,
       }
 
       set((state) => {

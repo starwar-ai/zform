@@ -13,6 +13,7 @@ import type {
 import { useDocumentStore, getTraceableStore } from "@/stores/document-store"
 import { useTraceability, usePushDown, useImpactAssessment } from "@/hooks/use-document"
 import { registry } from "@/core/registry"
+import { createDocumentApi, updateDocumentApi } from "@/lib/document-api"
 import { MasterForm } from "./master-form"
 import { DetailTable } from "./detail-table"
 import { TracePanel } from "./trace-panel"
@@ -68,6 +69,7 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
   const [impactOpen, setImpactOpen] = useState(false)
   const [assessment, setAssessment] = useState<ImpactAssessment | null>(null)
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false)
+  const [saving, setSaving] = useState(false)
   const pendingSaveRef = useRef<DocumentData | null>(null)
   const sidePanelRef = usePanelRef()
 
@@ -101,6 +103,33 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
   const isEditable = doc.status === "draft"
   const pushDownRules = getAvailableRules(doc.typeId)
 
+  /** 持久化到服务端: 新建文档调用 create, 已有文档调用 update */
+  const persistToServer = useCallback(
+    async (docData: DocumentData) => {
+      setSaving(true)
+      try {
+        if (docData._isNew) {
+          // 新建文档 → 调用 create API
+          const { _isNew, ...payload } = docData
+          await createDocumentApi(docData.typeId, payload)
+          // 持久化成功后清除 _isNew 标记
+          saveDocument({ ...docData, _isNew: undefined })
+        } else {
+          // 已有文档 → 调用 update API
+          const { _isNew, ...payload } = docData
+          await updateDocumentApi(docData.typeId, docData.id, payload)
+          saveDocument(docData)
+        }
+      } catch (err) {
+        console.error("保存失败:", err)
+        alert(`保存失败: ${err instanceof Error ? err.message : String(err)}`)
+      } finally {
+        setSaving(false)
+      }
+    },
+    [saveDocument]
+  )
+
   const handleSave = () => {
     // 构建新文档用于影响评估
     const store = getTraceableStore()
@@ -119,12 +148,12 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
       }
     }
 
-    saveDocument(doc)
+    persistToServer(doc)
   }
 
   const handleImpactConfirm = () => {
     if (pendingSaveRef.current) {
-      saveDocument(pendingSaveRef.current)
+      persistToServer(pendingSaveRef.current)
     }
     setImpactOpen(false)
     pendingSaveRef.current = null
@@ -135,8 +164,25 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
     pendingSaveRef.current = null
   }
 
-  const handleSubmit = () => {
-    updateStatus(docId, "submitted")
+  const handleSubmit = async () => {
+    setSaving(true)
+    try {
+      if (doc._isNew) {
+        // 新建文档提交: 先创建再更新状态
+        const { _isNew, ...payload } = doc
+        await createDocumentApi(doc.typeId, { ...payload, status: "submitted" })
+        saveDocument({ ...doc, _isNew: undefined, status: "submitted" })
+      } else {
+        // 已有文档提交: 更新状态
+        await updateDocumentApi(doc.typeId, doc.id, { ...doc, status: "submitted" })
+        updateStatus(docId, "submitted")
+      }
+    } catch (err) {
+      console.error("提交失败:", err)
+      alert(`提交失败: ${err instanceof Error ? err.message : String(err)}`)
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handlePushDown = (ruleIndex: number) => {
@@ -162,13 +208,13 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
         <div className="flex items-center gap-2">
           {isEditable && (
             <>
-              <Button variant="outline" size="sm" onClick={handleSave}>
+              <Button variant="outline" size="sm" onClick={handleSave} disabled={saving}>
                 <Save className="h-4 w-4 mr-1" />
-                保存
+                {saving ? "保存中..." : "保存"}
               </Button>
-              <Button size="sm" onClick={handleSubmit}>
+              <Button size="sm" onClick={handleSubmit} disabled={saving}>
                 <Send className="h-4 w-4 mr-1" />
-                提交
+                {saving ? "提交中..." : "提交"}
               </Button>
             </>
           )}

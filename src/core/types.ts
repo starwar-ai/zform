@@ -139,6 +139,8 @@ export interface DocumentData {
   createdAt: string
   /** 更新时间 */
   updatedAt: string
+  /** 是否为本地新建文档 (尚未持久化到服务端) */
+  _isNew?: boolean
 }
 
 /** 单据状态 */

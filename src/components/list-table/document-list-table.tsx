@@ -20,10 +20,10 @@ import type { FetchParams, FetchResult, ListTableColumn } from "./types"
 import { ListTable } from "./list-table"
 import {
   fetchDocumentListApi,
-  createDocumentApi,
   deleteDocumentApi,
   deleteDocumentItemApi,
 } from "@/lib/document-api"
+import { useDocumentStore } from "@/stores/document-store"
 import type { FlatDocumentRow, ListMode } from "@/lib/document-api"
 
 // ============================================================
@@ -191,11 +191,12 @@ export function DocumentListTable({
     }
   }, [])
 
-  // 新建单据 (调用服务端 API)
-  const handleCreate = useCallback(async () => {
-    const result = await createDocumentApi(typeId)
-    onOpenDocument(result.id)
-  }, [typeId, onOpenDocument])
+  // 新建单据 (本地创建, 不调用服务端 API; 保存/提交时才持久化)
+  const createDocument = useDocumentStore((s) => s.createDocument)
+  const handleCreate = useCallback(() => {
+    const doc = createDocument(typeId)
+    onOpenDocument(doc.id)
+  }, [typeId, onOpenDocument, createDocument])
 
   // 行点击
   const handleRowClick = useCallback(
