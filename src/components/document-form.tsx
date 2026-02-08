@@ -22,12 +22,9 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Separator } from "@/components/ui/separator"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   ResizablePanelGroup,
   ResizablePanel,
-  ResizableHandle,
   usePanelRef,
 } from "@/components/ui/resizable"
 import { Save, Send, ArrowDownToLine, FileText, PanelRightClose, PanelRightOpen } from "lucide-react"
@@ -187,34 +184,40 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
               {rule.name}
             </Button>
           ))}
-          {isPanelCollapsed && (
-            <Button variant="ghost" size="icon" onClick={togglePanel} title="展开详情面板">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={togglePanel}
+            title={isPanelCollapsed ? "展开详情面板" : "隐藏详情面板"}
+            className="ml-2"
+          >
+            {isPanelCollapsed ? (
               <PanelRightOpen className="h-4 w-4" />
-            </Button>
-          )}
+            ) : (
+              <PanelRightClose className="h-4 w-4" />
+            )}
+          </Button>
         </div>
       </div>
-
-      <Separator />
 
       {/* 可拖拽面板布局 */}
       <ResizablePanelGroup orientation="horizontal" className="flex-1 mt-4">
         {/* 左侧主内容区 */}
         <ResizablePanel defaultSize={75} minSize={50}>
           <div className="h-full pr-2 overflow-auto">
-            <Tabs defaultValue="master">
-              <TabsList>
-                <TabsTrigger value="master">主信息</TabsTrigger>
-                {schema.detailTables.map((t) => (
-                  <TabsTrigger key={t.id} value={t.id}>
-                    {t.label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+            <Card>
+              <CardContent className="pt-4">
+                <Tabs defaultValue="master">
+                  <TabsList>
+                    <TabsTrigger value="master">主信息</TabsTrigger>
+                    {schema.detailTables.map((t) => (
+                      <TabsTrigger key={t.id} value={t.id}>
+                        {t.label}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
 
-              <TabsContent value="master">
-                <Card>
-                  <CardContent className="pt-6">
+                  <TabsContent value="master" className="mt-4">
                     <MasterForm
                       fields={schema.masterFields}
                       data={doc.masterData}
@@ -223,18 +226,14 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
                       }
                       disabled={!isEditable}
                     />
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                  </TabsContent>
 
-              {schema.detailTables.map((tableDef) => {
-                const tableData = doc.detailTables.find(
-                  (t) => t.tableId === tableDef.id
-                )
-                return (
-                  <TabsContent key={tableDef.id} value={tableDef.id}>
-                    <Card>
-                      <CardContent className="pt-6">
+                  {schema.detailTables.map((tableDef) => {
+                    const tableData = doc.detailTables.find(
+                      (t) => t.tableId === tableDef.id
+                    )
+                    return (
+                      <TabsContent key={tableDef.id} value={tableDef.id} className="mt-4">
                         <DetailTable
                           tableDef={tableDef}
                           rows={tableData?.rows ?? []}
@@ -253,16 +252,14 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
                           }
                           disabled={!isEditable}
                         />
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                )
-              })}
-            </Tabs>
+                      </TabsContent>
+                    )
+                  })}
+                </Tabs>
+              </CardContent>
+            </Card>
           </div>
         </ResizablePanel>
-
-        <ResizableHandle withHandle />
 
         {/* 右侧可折叠面板 */}
         <ResizablePanel
@@ -275,38 +272,39 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
             setIsPanelCollapsed(size.asPercentage === 0)
           }}
         >
-          <div className="h-full flex flex-col border-l">
+          <div className="flex flex-col rounded-xl border bg-card text-card-foreground shadow overflow-hidden">
             {/* 面板标题栏 */}
-            <div className="flex items-center justify-between px-3 py-2 border-b">
+            <div className="flex items-center px-3 py-2 border-b">
               <span className="text-sm font-semibold">详情</span>
-              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={togglePanel}>
-                <PanelRightClose className="h-4 w-4" />
-              </Button>
             </div>
-            {/* 可滚动内容区 */}
-            <ScrollArea className="flex-1">
-              <div className="p-3 space-y-4">
-                {/* 关联单据 */}
-                <div>
-                  <h4 className="text-sm font-medium mb-2">关联单据</h4>
+            <Tabs defaultValue="trace" className="flex flex-col">
+              <div className="px-3 pt-2">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="trace">关联单据</TabsTrigger>
+                  <TabsTrigger value="approval">审核记录</TabsTrigger>
+                </TabsList>
+              </div>
+
+              <TabsContent value="trace" className="mt-2">
+                <div className="p-3 pt-1">
                   <TracePanel
                     upstream={upstream}
                     downstream={downstream}
                     onNavigate={(id) => onNavigate?.(id)}
                   />
                 </div>
-                <Separator />
-                {/* 审核记录 */}
-                <div>
-                  <h4 className="text-sm font-medium mb-2">审核记录</h4>
+              </TabsContent>
+
+              <TabsContent value="approval" className="mt-2">
+                <div className="p-3 pt-1">
                   <ApprovalHistory
                     docType={doc.typeId}
                     docId={docId}
                     embedded
                   />
                 </div>
-              </div>
-            </ScrollArea>
+              </TabsContent>
+            </Tabs>
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>
