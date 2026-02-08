@@ -9,6 +9,8 @@ import approvalRoutes from './approvals';
 import menuRoutes from './menus';
 import roleRoutes from './roles';
 import userRoutes from './users';
+import departmentRoutes from './departments';
+import dataPermissionRoutes from './data-permissions';
 import documentRoutes from '../documents/document.routes';
 
 const router = Router();
@@ -20,6 +22,8 @@ router.use('/documents', documentRoutes);
 router.use('/menus', menuRoutes);
 router.use('/roles', roleRoutes);
 router.use('/users', userRoutes);
+router.use('/departments', departmentRoutes);
+router.use('/data-permissions', dataPermissionRoutes);
 
 // ---- 旧路由 (保留兼容) ----
 router.use('/products', productRoutes);

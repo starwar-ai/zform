@@ -250,12 +250,15 @@ export class DocumentService {
   /**
    * 统一列表查询
    *
-   * 支持: 关键字搜索、列筛选、排序、分页、聚合
+   * 支持: 关键字搜索、列筛选、排序、分页、聚合、数据权限过滤
+   *
+   * @param dataPermissionWhere 数据权限附加的 where 条件（由 DataPermissionService 生成）
    */
   async list(
     typeId: string,
     params: DocumentListParams,
-    search?: string
+    search?: string,
+    dataPermissionWhere?: Record<string, any>
   ): Promise<DocumentListResult> {
     const adapter = documentTypeRegistry.getOrThrow(typeId);
     const model = getModelDelegate(adapter.prismaModel);
@@ -267,7 +270,12 @@ export class DocumentService {
     };
     const searchWhere = buildSearchWhere(adapter, search);
     const filterWhere = buildFilterWhere(adapter, params.filters);
-    const where = { ...baseWhere, ...searchWhere, ...filterWhere };
+    const where = {
+      ...baseWhere,
+      ...searchWhere,
+      ...filterWhere,
+      ...(dataPermissionWhere || {}),
+    };
 
     // 构建 orderBy
     const orderBy = buildOrderBy(adapter, params.sorting);

@@ -10,6 +10,7 @@ import { DocumentListTable } from "@/components/list-table"
 import { UserManagement } from "@/components/user-management"
 import { RoleManagement } from "@/components/role-management"
 import { MenuManagement } from "@/components/menu-management"
+import { DepartmentManagement } from "@/components/department-management"
 import { DashboardHome } from "@/components/dashboard-home"
 
 export function TabContent() {
@@ -83,6 +84,9 @@ export function TabContent() {
 
       case "menu-management":
         return <MenuManagement />
+
+      case "department-management":
+        return <DepartmentManagement />
 
       default:
         return (

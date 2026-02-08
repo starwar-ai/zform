@@ -9,6 +9,7 @@ interface CreateUserInput {
   email?: string;
   phone?: string;
   department?: string;
+  departmentId?: string;
   status?: string;
   roleIds?: string[];
 }
@@ -19,6 +20,7 @@ interface UpdateUserInput {
   email?: string;
   phone?: string;
   department?: string;
+  departmentId?: string | null;
   status?: string;
 }
 
@@ -38,6 +40,7 @@ export class UserService {
         email: data.email,
         phone: data.phone,
         department: data.department,
+        departmentId: data.departmentId || null,
         status: data.status ?? 'active',
         createdBy: userId,
         updatedBy: userId,

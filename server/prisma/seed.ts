@@ -668,6 +668,36 @@ async function main() {
   // ==================== 系统管理种子数据 ====================
   console.log('Seeding system management data...');
 
+  // -- 部门层级 --
+  // 清空旧数据
+  await prisma.department.deleteMany({});
+
+  const companyDept = await prisma.department.create({
+    data: { code: 'COMPANY', name: '总公司', orderNum: 0 },
+  });
+
+  const salesDept = await prisma.department.create({
+    data: { code: 'SALES', name: '销售部', parentId: companyDept.id, orderNum: 1 },
+  });
+  const salesDeptDomestic = await prisma.department.create({
+    data: { code: 'SALES_DOMESTIC', name: '内销组', parentId: salesDept.id, orderNum: 1 },
+  });
+  const salesDeptExport = await prisma.department.create({
+    data: { code: 'SALES_EXPORT', name: '外贸组', parentId: salesDept.id, orderNum: 2 },
+  });
+
+  const purchaseDept = await prisma.department.create({
+    data: { code: 'PURCHASE', name: '采购部', parentId: companyDept.id, orderNum: 2 },
+  });
+
+  const techDept = await prisma.department.create({
+    data: { code: 'TECH', name: '技术部', parentId: companyDept.id, orderNum: 3 },
+  });
+
+  const financeDept = await prisma.department.create({
+    data: { code: 'FINANCE', name: '财务部', parentId: companyDept.id, orderNum: 4 },
+  });
+
   // -- 角色 --
   const adminRole = await prisma.sysRole.upsert({
     where: { code: 'ADMIN' },
@@ -693,26 +723,28 @@ async function main() {
 
   const adminUser = await prisma.sysUser.upsert({
     where: { username: 'admin' },
-    update: { name: '管理员', password: adminPassword, status: 'active' },
+    update: { name: '管理员', password: adminPassword, status: 'active', departmentId: techDept.id },
     create: {
       username: 'admin',
       password: adminPassword,
       name: '管理员',
       email: 'admin@zform.com',
       department: '技术部',
+      departmentId: techDept.id,
       status: 'active',
     },
   });
 
   const demoUser = await prisma.sysUser.upsert({
     where: { username: 'demo' },
-    update: { name: '演示用户', password: demoPassword, status: 'active' },
+    update: { name: '演示用户', password: demoPassword, status: 'active', departmentId: salesDept.id },
     create: {
       username: 'demo',
       password: demoPassword,
       name: '演示用户',
       email: 'demo@zform.com',
-      department: '业务部',
+      department: '销售部',
+      departmentId: salesDept.id,
       status: 'active',
     },
   });
@@ -936,6 +968,54 @@ async function main() {
     },
   });
 
+  const deptMgmtMenu = await prisma.sysMenu.create({
+    data: {
+      title: '部门管理',
+      icon: 'Building2',
+      path: '/department-management',
+      parentId: sysMenu.id,
+      orderNum: 4,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  // -- 数据权限种子数据 --
+  await prisma.sysDataPermission.deleteMany({});
+
+  // 管理员角色：全部类型 -> all
+  await prisma.sysDataPermission.create({
+    data: {
+      roleId: adminRole.id,
+      typeId: '*',
+      level: 'all',
+      extraDepartmentIds: [],
+      extraUserIds: [],
+    },
+  });
+
+  // 业务经理角色：全部类型 -> department
+  await prisma.sysDataPermission.create({
+    data: {
+      roleId: managerRole.id,
+      typeId: '*',
+      level: 'department',
+      extraDepartmentIds: [],
+      extraUserIds: [],
+    },
+  });
+
+  // 普通用户角色：全部类型 -> personal
+  await prisma.sysDataPermission.create({
+    data: {
+      roleId: userRole.id,
+      typeId: '*',
+      level: 'personal',
+      extraDepartmentIds: [],
+      extraUserIds: [],
+    },
+  });
+
   // -- 角色-菜单关联 --
   // 管理员角色：拥有全部菜单 + 全部按钮权限
   const allMenuIds = [
@@ -950,6 +1030,7 @@ async function main() {
     userMgmtMenu.id,
     roleMgmtMenu.id,
     menuMgmtMenu.id,
+    deptMgmtMenu.id,
     ...allBtnIds,
   ];
 
@@ -1014,9 +1095,11 @@ async function main() {
   console.log(`Products: ${standardProduct.code}, ${customerProduct.code}`);
   console.log(`Sales contract: ${salesContract.code}`);
   console.log(`Approval rules: ${salesContractApprovalRule.code}, ${purchasePlanApprovalRule.code}, ${purchaseContractApprovalRule.code}`);
+  console.log(`Departments: ${companyDept.code} -> ${salesDept.code}, ${purchaseDept.code}, ${techDept.code}, ${financeDept.code}`);
   console.log(`Roles: ${adminRole.code}, ${managerRole.code}, ${userRole.code}`);
-  console.log(`Users: admin (password: admin123), demo (password: 123456)`);
+  console.log(`Users: admin (password: admin123, dept: ${techDept.code}), demo (password: 123456, dept: ${salesDept.code})`);
   console.log(`Menus: ${allMenuIds.length} menus (incl. ${allBtnIds.length} button permissions)`);
+  console.log(`Data permissions: admin=all, manager=department, user=personal`);
 }
 
 main()

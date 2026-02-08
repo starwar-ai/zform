@@ -42,12 +42,18 @@ model Department {
   id        String    @id @default(cuid())
   code      String    @unique
   name      String
+  parentId  String?   @map("parent_id")
+  parent    Department?  @relation("DepartmentTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children  Department[] @relation("DepartmentTree")
+  orderNum  Int       @default(0) @map("order_num")
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   products  Product[]
+  users     SysUser[] @relation("UserDepartment")
 
+  @@index([parentId])
   @@map("departments")
 }
 
@@ -1315,8 +1321,9 @@ model SysRole {
   status      String    @default("active")  // 状态：active | inactive
 
   // 关联关系
-  userRoles   SysUserRole[]
-  roleMenus   SysRoleMenu[]
+  userRoles       SysUserRole[]
+  roleMenus       SysRoleMenu[]
+  dataPermissions SysDataPermission[]
 
   // 时间戳
   createdBy   String?   @map("created_by")
@@ -1330,17 +1337,39 @@ model SysRole {
   @@map("sys_roles")
 }
 
+// ==================== 系统管理：数据权限表 ====================
+
+model SysDataPermission {
+  id                 String    @id @default(cuid())
+  roleId             String    @map("role_id")
+  role               SysRole   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  typeId             String    @map("type_id")           // 单据类型ID，"*" 表示全部类型
+  level              String    @default("personal")      // "all" | "department" | "personal"
+  extraDepartmentIds Json?     @map("extra_department_ids") // 特殊授权的部门ID列表 ["id1","id2"]
+  extraUserIds       Json?     @map("extra_user_ids")       // 特殊授权的用户ID列表 ["id1","id2"]
+
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  @@unique([roleId, typeId])
+  @@index([roleId])
+  @@index([typeId])
+  @@map("sys_data_permissions")
+}
+
 // ==================== 系统管理：用户表 ====================
 
 model SysUser {
-  id          String    @id @default(cuid())
-  username    String    @unique             // 用户名（登录名）
-  password    String                        // 密码（bcrypt 哈希）
-  name        String                        // 姓名
-  email       String?                       // 邮箱
-  phone       String?                       // 电话
-  department  String?                       // 部门
-  status      String    @default("active")  // 状态：active | inactive
+  id            String    @id @default(cuid())
+  username      String    @unique             // 用户名（登录名）
+  password      String                        // 密码（bcrypt 哈希）
+  name          String                        // 姓名
+  email         String?                       // 邮箱
+  phone         String?                       // 电话
+  department    String?                       // 部门（旧字段，兼容保留）
+  departmentId  String?   @map("department_id") // 部门ID（FK）
+  dept          Department? @relation("UserDepartment", fields: [departmentId], references: [id], onDelete: SetNull)
+  status        String    @default("active")  // 状态：active | inactive
 
   // 关联关系
   userRoles   SysUserRole[]
@@ -1354,6 +1383,7 @@ model SysUser {
 
   @@index([username])
   @@index([status])
+  @@index([departmentId])
   @@map("sys_users")
 }
 

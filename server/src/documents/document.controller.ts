@@ -6,16 +6,27 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { DocumentService } from './document.service';
+import { DataPermissionService } from '../services/data-permission.service';
 import { successResponse } from '../utils/response';
 import type { DocumentListParams } from './types';
+import prisma from '../config/database';
 
 const documentService = new DocumentService();
+const dataPermissionService = new DataPermissionService();
 
 /** 从请求头安全获取用户 ID */
 function getUserId(req: Request): string {
   const raw = req.headers['x-user-id'];
   if (Array.isArray(raw)) return raw[0] || 'system';
   return (raw as string) || 'system';
+}
+
+/** 从请求头安全获取角色 ID 列表 */
+function getRoleIds(req: Request): string[] {
+  const raw = req.headers['x-user-roles'];
+  const str = Array.isArray(raw) ? raw[0] : (raw as string);
+  if (!str) return [];
+  return str.split(',').map((s) => s.trim()).filter(Boolean);
 }
 
 /** 安全获取路由参数 (Express 某些版本 params 值可能是 string | string[]) */
@@ -66,7 +77,28 @@ export const documentController = {
         sorting: sortingJson ? JSON.parse(sortingJson) : [],
       };
 
-      const result = await documentService.list(typeId, params, search);
+      // ---- 数据权限过滤 ----
+      const userId = getUserId(req);
+      const roleIds = getRoleIds(req);
+      let dataPermissionWhere: Record<string, any> | undefined;
+
+      if (userId !== 'system' && roleIds.length > 0) {
+        const effectivePerm = await dataPermissionService.getEffectivePermission(roleIds, typeId);
+
+        // 查询用户的部门 ID
+        const user = await prisma.sysUser.findUnique({
+          where: { id: userId },
+          select: { departmentId: true },
+        });
+
+        dataPermissionWhere = await dataPermissionService.buildDataPermissionWhere(
+          userId,
+          user?.departmentId ?? null,
+          effectivePerm
+        );
+      }
+
+      const result = await documentService.list(typeId, params, search, dataPermissionWhere);
 
       res.json({
         success: true,

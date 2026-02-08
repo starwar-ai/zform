@@ -11,7 +11,8 @@ export interface User {
   name: string // 姓名
   email?: string | null // 邮箱
   phone?: string | null // 电话
-  department?: string | null // 部门
+  department?: string | null // 部门（旧字段，兼容保留）
+  departmentId?: string | null // 部门ID（FK 关联 Department 表）
   roleIds: string[] // 关联的角色ID列表（来自 SysUserRole 关联）
   status: UserStatus // 状态
   createdBy?: string | null
@@ -29,6 +30,7 @@ export interface CreateUserInput {
   phone?: string
   roleIds?: string[]
   department?: string
+  departmentId?: string
   status?: UserStatus
 }
 
@@ -38,5 +40,6 @@ export interface UpdateUserInput {
   email?: string
   phone?: string
   department?: string
+  departmentId?: string | null
   status?: UserStatus
 }
