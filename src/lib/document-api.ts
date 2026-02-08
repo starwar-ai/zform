@@ -19,6 +19,8 @@
  */
 
 import type { FetchParams, FetchResult, AggregateItem } from "@/components/list-table/types"
+import type { DocumentData } from "@/core/types"
+import { normalizeDocumentData } from "./document-transform"
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3001/api"
 
@@ -181,8 +183,9 @@ export async function fetchDocumentListApi(
 export async function fetchDocumentApi(
   typeId: string,
   id: string
-): Promise<any> {
-  return request<any>(`/documents/${typeId}/${id}`)
+): Promise<DocumentData> {
+  const rawDoc = await request<any>(`/documents/${typeId}/${id}`)
+  return normalizeDocumentData(typeId, rawDoc)
 }
 
 /**

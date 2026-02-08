@@ -1424,3 +1424,21 @@ model SysRoleMenu {
   @@index([menuId])
   @@map("sys_role_menus")
 }
+
+// ==================== 文档级权限表 ====================
+
+model DocumentPermission {
+  id         String   @id @default(cuid())
+  docType    String   @map("doc_type")        // 单据类型（如 "sales_contract"）
+  docId      String   @map("doc_id")          // 单据 ID
+  userId     String   @map("user_id")         // 被授权用户 ID
+  userName   String   @map("user_name")       // 用户姓名（冗余，方便展示）
+  permission String   @default("read")        // "read" | "write"
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@unique([docType, docId, userId])
+  @@index([docType, docId])
+  @@index([userId])
+  @@map("document_permissions")
+}

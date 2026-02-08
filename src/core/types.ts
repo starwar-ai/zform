@@ -135,6 +135,10 @@ export interface DocumentData {
   status: DocumentStatus
   /** 来源追溯 (整单级) */
   sourceRef?: SourceRef
+  /** 创建人 ID (文档所有者) */
+  createdBy?: string
+  /** 最后更新人 ID */
+  updatedBy?: string
   /** 创建时间 */
   createdAt: string
   /** 更新时间 */

@@ -30,7 +30,7 @@ import { ExternalLink, Plus, Settings2 } from "lucide-react"
 import type { DocumentTypeId } from "@/core/types"
 
 interface DashboardHomeProps {
-  onOpenDocument: (docId: string) => void
+  onOpenDocument: (docId: string, typeId?: string) => void
   onOpenTypeList: (typeId: string, title: string) => void
 }
 
@@ -101,7 +101,7 @@ export function DashboardHome({
 
   const handleCreate = (typeId: DocumentTypeId) => {
     const doc = createDocument(typeId)
-    onOpenDocument(doc.id)
+    onOpenDocument(doc.id, typeId)
   }
 
   const toggleButtonFavorite = (typeId: string, checked: boolean) => {
@@ -274,7 +274,7 @@ export function DashboardHome({
                       size="sm"
                       onClick={() => {
                         const newDoc = createDocument(schema.typeId)
-                        onOpenDocument(newDoc.id)
+                        onOpenDocument(newDoc.id, schema.typeId)
                       }}
                       variant="outline"
                     >
@@ -306,7 +306,7 @@ export function DashboardHome({
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => onOpenDocument(doc.id)}
+                                onClick={() => onOpenDocument(doc.id, doc.typeId)}
                                 className="h-7 text-xs"
                               >
                                 打开

@@ -16,13 +16,14 @@ import { useTraceability, usePushDown, useImpactAssessment } from "@/hooks/use-d
 import { useApproval } from "@/hooks/use-approval"
 import { useDocumentFormActions } from "@/hooks/use-document-form-actions"
 import { registry } from "@/core/registry"
-import { createDocumentApi, updateDocumentApi } from "@/lib/document-api"
+import { createDocumentApi, updateDocumentApi, fetchDocumentApi } from "@/lib/document-api"
 import { MasterForm } from "./master-form"
 import { DetailTable } from "./detail-table"
 import { TracePanel } from "./trace-panel"
 import { ImpactDialog } from "./impact-dialog"
 import { UnsavedChangesDialog } from "./unsaved-changes-dialog"
 import { ApprovalHistory } from "./approval-history"
+import { DocumentPermissionPanel } from "./document-permission-panel"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -53,7 +54,8 @@ function ActionIcon({ name }: { name?: string }) {
 
 interface DocumentFormProps {
   docId: string
-  onNavigate?: (docId: string) => void
+  typeId?: string
+  onNavigate?: (docId: string, typeId?: string) => void
 }
 
 const statusLabels: Record<string, string> = {
@@ -72,7 +74,7 @@ const statusColors: Record<string, "default" | "secondary" | "destructive" | "ou
   cancelled: "destructive",
 }
 
-export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
+export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
   const doc = useDocumentStore((s) => s.documents[docId])
   const {
     updateMasterField,
@@ -81,6 +83,7 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
     deleteDetailRow,
     saveDocument,
     updateStatus,
+    addDocument,
   } = useDocumentStore()
   const { activeTabId, updateTabTitle, registerBeforeCloseHook, unregisterBeforeCloseHook } = useTabStore()
 
@@ -95,12 +98,32 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false)
   const [saving, setSaving] = useState(false)
   const [unsavedDialogOpen, setUnsavedDialogOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const pendingSaveRef = useRef<DocumentData | null>(null)
   const pendingCloseResolveRef = useRef<((value: boolean) => void) | null>(null)
   const sidePanelRef = usePanelRef()
   
   // 保存初始数据快照用于变更检测
   const initialDocSnapshot = useRef<string | null>(null)
+
+  // 数据加载逻辑：如果 store 中没有数据且提供了 typeId，从服务端加载
+  useEffect(() => {
+    if (!doc && typeId && !loading && !error) {
+      setLoading(true)
+      setError(null)
+      fetchDocumentApi(typeId, docId)
+        .then((data) => {
+          addDocument(data)
+          setLoading(false)
+        })
+        .catch((err) => {
+          console.error('加载单据失败:', err)
+          setError(err.message || '加载单据失败')
+          setLoading(false)
+        })
+    }
+  }, [docId, typeId, doc, loading, error, addDocument])
 
   const togglePanel = useCallback(() => {
     const panel = sidePanelRef.current
@@ -136,6 +159,24 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
       })
     }
   }, [doc])
+
+  // 加载中状态
+  if (loading) {
+    return (
+      <div className="p-8 text-center text-muted-foreground">
+        加载中...
+      </div>
+    )
+  }
+
+  // 错误状态
+  if (error) {
+    return (
+      <div className="p-8 text-center text-destructive">
+        加载失败: {error}
+      </div>
+    )
+  }
 
   if (!doc) {
     return (
@@ -341,7 +382,7 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
     const rule = rules[ruleIndex]
     if (!rule) return
     const newDoc = executePushDown(doc, rule)
-    onNavigate?.(newDoc.id)
+    onNavigate?.(newDoc.id, newDoc.typeId)
   }
 
   /** 审批通过 */
@@ -609,9 +650,10 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
               </div>
               <Tabs defaultValue="trace" className="flex flex-col">
                 <div className="px-3 pt-2">
-                  <TabsList className="grid w-full grid-cols-2">
+                  <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="trace">关联单据</TabsTrigger>
                     <TabsTrigger value="approval">审核记录</TabsTrigger>
+                    <TabsTrigger value="permissions">权限</TabsTrigger>
                   </TabsList>
                 </div>
 
@@ -631,6 +673,16 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
                       docType={doc.typeId}
                       docId={docId}
                       embedded
+                    />
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="permissions" className="mt-2">
+                  <div className="p-3 pt-1">
+                    <DocumentPermissionPanel
+                      docType={doc.typeId}
+                      docId={docId}
+                      createdBy={doc.createdBy}
                     />
                   </div>
                 </TabsContent>

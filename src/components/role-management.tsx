@@ -808,16 +808,18 @@ export function RoleManagement() {
                         <TableCell>
                           <Select
                             value={row.level || ""}
-                            onValueChange={(v) =>
-                              handleDpRowChange(row.typeId, "level", v as DataPermissionLevel)
-                            }
+                            onValueChange={(v) => {
+                              const nextLevel =
+                                v === "__inherit__" ? "" : (v as DataPermissionLevel)
+                              handleDpRowChange(row.typeId, "level", nextLevel)
+                            }}
                           >
                             <SelectTrigger className="h-8 text-sm">
                               <SelectValue placeholder={isDefault ? "请选择" : "继承默认"} />
                             </SelectTrigger>
                             <SelectContent>
                               {!isDefault && (
-                                <SelectItem value="">继承默认</SelectItem>
+                                <SelectItem value="__inherit__">继承默认</SelectItem>
                               )}
                               {(Object.keys(DATA_PERMISSION_LEVEL_LABELS) as DataPermissionLevel[]).map(
                                 (lv) => (

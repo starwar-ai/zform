@@ -33,7 +33,7 @@ import type { FlatDocumentRow, ListMode } from "@/lib/document-api"
 
 interface DocumentListTableProps {
   typeId: DocumentTypeId
-  onOpenDocument: (docId: string) => void
+  onOpenDocument: (docId: string, typeId?: string) => void
   /** 列表模式: document=单据模式(默认), detail=明细模式 */
   mode?: ListMode
   /** 明细模式下需要指定展示哪个明细表 */
@@ -242,7 +242,7 @@ export function DocumentListTable({
     Record<string, (row: FlatDocumentRow) => void>
   >(
     () => ({
-      open: (row) => onOpenDocument(String(row._id)),
+      open: (row) => onOpenDocument(String(row._id), typeId),
       delete: (row) => handleDeleteDocument(String(row._id)),
       "delete-detail": (row) =>
         handleDeleteDetail(
@@ -251,7 +251,7 @@ export function DocumentListTable({
         ),
       "copy-id": (row) => handleCopyText(String(row._id)),
     }),
-    [onOpenDocument, handleDeleteDocument, handleDeleteDetail, handleCopyText]
+    [onOpenDocument, typeId, handleDeleteDocument, handleDeleteDetail, handleCopyText]
   )
 
   // ============================================================

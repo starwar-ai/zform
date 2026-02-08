@@ -11,6 +11,7 @@ import roleRoutes from './roles';
 import userRoutes from './users';
 import departmentRoutes from './departments';
 import dataPermissionRoutes from './data-permissions';
+import docPermissionRoutes from './document-permissions';
 import documentRoutes from '../documents/document.routes';
 
 const router = Router();
@@ -24,6 +25,7 @@ router.use('/roles', roleRoutes);
 router.use('/users', userRoutes);
 router.use('/departments', departmentRoutes);
 router.use('/data-permissions', dataPermissionRoutes);
+router.use('/document-permissions', docPermissionRoutes);
 
 // ---- 旧路由 (保留兼容) ----
 router.use('/products', productRoutes);

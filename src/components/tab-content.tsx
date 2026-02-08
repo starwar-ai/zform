@@ -27,8 +27,8 @@ export function TabContent() {
   }
 
   // 处理导航回调，适配为 openTab 调用
-  const handleOpenDocument = (docId: string) => {
-    openTab("document-form", { docId }, `单据 ${docId}`)
+  const handleOpenDocument = (docId: string, typeId?: string) => {
+    openTab("document-form", { docId, typeId }, `单据 ${docId}`)
   }
 
   // 根据标签类型渲染内容
@@ -56,6 +56,7 @@ export function TabContent() {
           <div className="p-6">
             <DocumentForm
               docId={activeTab.params.docId as string}
+              typeId={activeTab.params.typeId as string | undefined}
               onNavigate={handleOpenDocument}
             />
           </div>

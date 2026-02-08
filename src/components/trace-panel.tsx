@@ -12,7 +12,7 @@ import { ArrowUp, ArrowDown } from "lucide-react"
 interface TracePanelProps {
   upstream: DocumentData[]
   downstream: DocumentData[]
-  onNavigate: (docId: string) => void
+  onNavigate: (docId: string, typeId?: string) => void
 }
 
 const statusLabels: Record<string, string> = {
@@ -73,13 +73,13 @@ function DocLink({
   onNavigate,
 }: {
   doc: DocumentData
-  onNavigate: (docId: string) => void
+  onNavigate: (docId: string, typeId?: string) => void
 }) {
   const schema = registry.getSchema(doc.typeId)
   return (
     <button
       className="w-full text-left p-2 rounded-md border hover:bg-accent transition-colors flex items-center justify-between"
-      onClick={() => onNavigate(doc.id)}
+      onClick={() => onNavigate(doc.id, doc.typeId)}
     >
       <div>
         <span className="text-sm font-medium">{doc.docNumber}</span>

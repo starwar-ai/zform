@@ -65,6 +65,16 @@ function getIcon(iconName?: string | null): LucideIcon {
   return iconMap[iconName] || FileText
 }
 
+/** 递归过滤菜单树，移除按钮类型的菜单项 */
+function filterButtonMenus(nodes: MenuTreeNode[]): MenuTreeNode[] {
+  return nodes
+    .filter((node) => node.menuType !== "button")
+    .map((node) => ({
+      ...node,
+      children: filterButtonMenus(node.children),
+    }))
+}
+
 /** 解析菜单路径，转换为 openTab 调用参数 */
 function parseMenuPath(path?: string | null): {
   type: TabType
@@ -271,7 +281,7 @@ export function Sidebar() {
         {userMenuTree.length > 0 && (
           <>
             <div className="my-2 border-t border-sidebar-border" />
-            {userMenuTree.map((node) => (
+            {filterButtonMenus(userMenuTree).map((node) => (
               <MenuItemRenderer
                 key={node.id}
                 node={node}
