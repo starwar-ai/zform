@@ -80,13 +80,13 @@ function ActionCell({ actions }: { actions: RowAction[] }) {
   const overflowActions = visibleActions.slice(2)
 
   return (
-    <div className="flex items-center justify-end gap-2">
+    <div className="flex items-center justify-center gap-1">
       {inlineActions.map((action) => (
         <Button
           key={action.id}
           variant="link"
           size="sm"
-          className={action.danger ? "text-destructive" : ""}
+          className={`h-7 px-1 ${action.danger ? "text-destructive" : ""}`}
           onClick={(event) => {
             event.stopPropagation()
             action.onClick()
@@ -108,14 +108,14 @@ function ActionCell({ actions }: { actions: RowAction[] }) {
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-40 p-1" align="end">
+          <PopoverContent className="w-32 p-1" align="end">
             <div className="flex flex-col">
               {overflowActions.map((action) => (
                 <Button
                   key={action.id}
                   variant="ghost"
                   size="sm"
-                  className={`justify-start ${action.danger ? "text-destructive" : ""}`}
+                  className={`h-7 justify-start px-2 ${action.danger ? "text-destructive" : ""}`}
                   onClick={(event) => {
                     event.stopPropagation()
                     setOpen(false)
@@ -153,6 +153,9 @@ export function DocumentListTable({
     [detailTableId, schema]
   )
   const fixedRightColumns = useMemo(() => ["_actions"], [])
+  const fixedLeftColumns = useMemo(() => ["_selection"], [])
+  const [selectedRows, setSelectedRows] = useState<FlatDocumentRow[]>([])
+  const hasSelection = selectedRows.length > 0
   const canToggleToDetail = Boolean(resolvedDetailTableId)
 
   useEffect(() => {
@@ -197,14 +200,6 @@ export function DocumentListTable({
     const doc = createDocument(typeId)
     onOpenDocument(doc.id)
   }, [typeId, onOpenDocument, createDocument])
-
-  // 行点击
-  const handleRowClick = useCallback(
-    (row: FlatDocumentRow) => {
-      onOpenDocument(row._id as string)
-    },
-    [onOpenDocument]
-  )
 
   const handleDeleteDocument = useCallback(
     async (docId: string) => {
@@ -346,8 +341,8 @@ export function DocumentListTable({
       label: "操作",
       type: "text",
       source: "system",
-      width: 160,
-      minWidth: 140,
+      width: 120,
+      minWidth: 100,
       sortable: false,
       filterable: false,
       render: (_, row) => <ActionCell actions={getRowActions(row)} />,
@@ -413,10 +408,15 @@ export function DocumentListTable({
         title={schema.typeName}
         titleIcon={<FileText className="h-5 w-5" />}
         fixedRightColumnIds={fixedRightColumns}
+        enableRowSelection
+        onSelectionChange={setSelectedRows}
+        fixedLeftColumnIds={fixedLeftColumns}
         toolbarActions={
           <div className="flex items-center gap-1">
             {/* 根据配置动态渲染工具栏按钮 */}
-            {resolvedToolbarActions?.map((action) => (
+            {resolvedToolbarActions
+              ?.filter((action) => !action.requiresSelection || hasSelection)
+              .map((action) => (
               <Button
                 key={action.id}
                 variant={action.variant ?? "outline"}
@@ -451,7 +451,6 @@ export function DocumentListTable({
             </Button>
           </div>
         }
-        onRowClick={handleRowClick}
         defaultPageSize={20}
         rowKey={(row) =>
           isDetailMode

@@ -50,6 +50,10 @@ interface TableToolbarProps<T> {
   filters?: ColumnFilter[]
   /** 清除筛选回调 */
   onClearFilters?: () => void
+  /** 选中行数量 (跨页总计) */
+  selectedCount?: number
+  /** 清空全部选择回调 */
+  onClearSelection?: () => void
 }
 
 export function TableToolbar<T>({
@@ -68,19 +72,36 @@ export function TableToolbar<T>({
   extraActions,
   filters = [],
   onClearFilters,
+  selectedCount = 0,
+  onClearSelection,
 }: TableToolbarProps<T>) {
   // 是否有活动的筛选条件
   const hasActiveFilters = filters.length > 0
 
   return (
     <div className="flex items-center justify-between gap-2 pb-3">
-      {/* 左侧：标题 */}
-      <div className="flex items-center gap-2">
+      {/* 左侧：标题 + 选中提示 */}
+      <div className="flex items-center gap-3">
         {title && (
           <h3 className="text-base font-medium flex items-center gap-2">
             {titleIcon}
             {title}
           </h3>
+        )}
+        {selectedCount > 0 && (
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <span>已选 <span className="font-medium text-foreground">{selectedCount}</span> 项</span>
+            {onClearSelection && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-1.5 text-xs"
+                onClick={onClearSelection}
+              >
+                清空
+              </Button>
+            )}
+          </div>
         )}
       </div>
 

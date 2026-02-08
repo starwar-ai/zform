@@ -174,4 +174,10 @@ export interface ListTableProps<T> {
   exportFilename?: string
   /** 固定在右侧的列 ID */
   fixedRightColumnIds?: string[]
+  /** 是否启用行选择 (左侧 Checkbox，默认 false) */
+  enableRowSelection?: boolean
+  /** 选中行变化回调 (返回选中行的原始数据数组) */
+  onSelectionChange?: (selectedRows: T[]) => void
+  /** 固定在左侧的列 ID */
+  fixedLeftColumnIds?: string[]
 }

@@ -101,6 +101,7 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
   }
 
   const isEditable = doc.status === "draft"
+  const isNew = Boolean(doc._isNew)
   const pushDownRules = getAvailableRules(doc.typeId)
 
   /** 持久化到服务端: 新建文档调用 create, 已有文档调用 update */
@@ -229,26 +230,28 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
               {rule.name}
             </Button>
           ))}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={togglePanel}
-            title={isPanelCollapsed ? "展开详情面板" : "隐藏详情面板"}
-            className="ml-2"
-          >
-            {isPanelCollapsed ? (
-              <PanelRightOpen className="h-4 w-4" />
-            ) : (
-              <PanelRightClose className="h-4 w-4" />
-            )}
-          </Button>
+          {!isNew && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={togglePanel}
+              title={isPanelCollapsed ? "展开详情面板" : "隐藏详情面板"}
+              className="ml-2"
+            >
+              {isPanelCollapsed ? (
+                <PanelRightOpen className="h-4 w-4" />
+              ) : (
+                <PanelRightClose className="h-4 w-4" />
+              )}
+            </Button>
+          )}
         </div>
       </div>
 
       {/* 可拖拽面板布局 */}
       <ResizablePanelGroup orientation="horizontal" className="flex-1 mt-4">
         {/* 左侧主内容区 */}
-        <ResizablePanel defaultSize={75} minSize={50}>
+        <ResizablePanel defaultSize={isNew ? 100 : 75} minSize={50}>
           <div className="h-full pr-2 overflow-auto">
             <Card>
               <CardContent className="pt-4">
@@ -307,51 +310,53 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
         </ResizablePanel>
 
         {/* 右侧可折叠面板 */}
-        <ResizablePanel
-          panelRef={sidePanelRef}
-          defaultSize={25}
-          minSize={15}
-          collapsible
-          collapsedSize={0}
-          onResize={(size) => {
-            setIsPanelCollapsed(size.asPercentage === 0)
-          }}
-        >
-          <div className="flex flex-col rounded-xl border bg-card text-card-foreground shadow overflow-hidden">
-            {/* 面板标题栏 */}
-            <div className="flex items-center px-3 py-2 border-b">
-              <span className="text-sm font-semibold">详情</span>
-            </div>
-            <Tabs defaultValue="trace" className="flex flex-col">
-              <div className="px-3 pt-2">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="trace">关联单据</TabsTrigger>
-                  <TabsTrigger value="approval">审核记录</TabsTrigger>
-                </TabsList>
+        {!isNew && (
+          <ResizablePanel
+            panelRef={sidePanelRef}
+            defaultSize={25}
+            minSize={15}
+            collapsible
+            collapsedSize={0}
+            onResize={(size) => {
+              setIsPanelCollapsed(size.asPercentage === 0)
+            }}
+          >
+            <div className="flex flex-col rounded-xl border bg-card text-card-foreground shadow overflow-hidden">
+              {/* 面板标题栏 */}
+              <div className="flex items-center px-3 py-2 border-b">
+                <span className="text-sm font-semibold">详情</span>
               </div>
-
-              <TabsContent value="trace" className="mt-2">
-                <div className="p-3 pt-1">
-                  <TracePanel
-                    upstream={upstream}
-                    downstream={downstream}
-                    onNavigate={(id) => onNavigate?.(id)}
-                  />
+              <Tabs defaultValue="trace" className="flex flex-col">
+                <div className="px-3 pt-2">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="trace">关联单据</TabsTrigger>
+                    <TabsTrigger value="approval">审核记录</TabsTrigger>
+                  </TabsList>
                 </div>
-              </TabsContent>
 
-              <TabsContent value="approval" className="mt-2">
-                <div className="p-3 pt-1">
-                  <ApprovalHistory
-                    docType={doc.typeId}
-                    docId={docId}
-                    embedded
-                  />
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
-        </ResizablePanel>
+                <TabsContent value="trace" className="mt-2">
+                  <div className="p-3 pt-1">
+                    <TracePanel
+                      upstream={upstream}
+                      downstream={downstream}
+                      onNavigate={(id) => onNavigate?.(id)}
+                    />
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="approval" className="mt-2">
+                  <div className="p-3 pt-1">
+                    <ApprovalHistory
+                      docType={doc.typeId}
+                      docId={docId}
+                      embedded
+                    />
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+          </ResizablePanel>
+        )}
       </ResizablePanelGroup>
 
       {/* 影响评估对话框 */}

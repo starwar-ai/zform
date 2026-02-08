@@ -404,6 +404,8 @@ export interface ToolbarActionDef {
   icon?: string
   /** 按钮样式 */
   variant?: "default" | "outline" | "ghost"
+  /** 是否仅在选中行时显示 (默认 false，始终显示) */
+  requiresSelection?: boolean
 }
 
 /** 单据列表操作配置 —— 声明式定义某种单据在列表中可执行的操作 */

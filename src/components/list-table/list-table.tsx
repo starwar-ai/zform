@@ -5,7 +5,7 @@
  * 支持服务端分页/筛选/排序、操作工具栏、列设置、CSV 导出。
  */
 
-import { useMemo, useState, useCallback, useEffect } from "react"
+import { useMemo, useState, useCallback, useEffect, useRef } from "react"
 import {
   useReactTable,
   getCoreRowModel,
@@ -15,6 +15,7 @@ import {
   type VisibilityState,
   type ColumnSizingState,
   type ColumnPinningState as TanStackColumnPinningState,
+  type RowSelectionState,
   type Header,
   type Cell,
 } from "@tanstack/react-table"
@@ -28,6 +29,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { ArrowDown, ArrowUp, ArrowUpDown, Loader2 } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
 import type {
   ListTableProps,
@@ -54,6 +56,9 @@ export function ListTable<T>({
   rowKey,
   exportFilename,
   fixedRightColumnIds = [],
+  enableRowSelection = false,
+  onSelectionChange,
+  fixedLeftColumnIds = [],
 }: ListTableProps<T>) {
   // ============================================================
   // 状态管理
@@ -94,16 +99,21 @@ export function ListTable<T>({
   })
   const applyFixedPinning = useCallback(
     (pinning: ColumnPinningState): ColumnPinningState => {
-      if (fixedRightColumnIds.length === 0) return pinning
-      const left = pinning.left.filter(
-        (id) => !fixedRightColumnIds.includes(id)
+      if (fixedRightColumnIds.length === 0 && fixedLeftColumnIds.length === 0) return pinning
+      const left = Array.from(
+        new Set([
+          ...fixedLeftColumnIds,
+          ...pinning.left.filter(
+            (id) => !fixedRightColumnIds.includes(id) && !fixedLeftColumnIds.includes(id)
+          ),
+        ])
       )
       const right = Array.from(
-        new Set([...pinning.right, ...fixedRightColumnIds])
+        new Set([...pinning.right.filter((id) => !fixedLeftColumnIds.includes(id)), ...fixedRightColumnIds])
       )
       return { left, right }
     },
-    [fixedRightColumnIds]
+    [fixedRightColumnIds, fixedLeftColumnIds]
   )
 
   // ---- 保存到 localStorage ----
@@ -139,9 +149,20 @@ export function ListTable<T>({
   }, [columnPinning, storageKeyPrefix])
 
   useEffect(() => {
-    if (fixedRightColumnIds.length === 0) return
+    if (fixedRightColumnIds.length === 0 && fixedLeftColumnIds.length === 0) return
     setColumnPinning((prev) => applyFixedPinning(prev))
-  }, [fixedRightColumnIds, applyFixedPinning])
+  }, [fixedRightColumnIds, fixedLeftColumnIds, applyFixedPinning])
+
+  // ============================================================
+  // 行选择状态 (跨页保留)
+  // ============================================================
+
+  // TanStack Table 的当前页选中状态
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
+  // 跨页保留: Map<rowId, rowData>，存储所有已选行的数据
+  const selectedRowsMapRef = useRef<Map<string, T>>(new Map())
+  // 选中行总数 (跨页)
+  const [selectedCount, setSelectedCount] = useState(0)
 
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -187,6 +208,58 @@ export function ListTable<T>({
   )
   const total = queryResult?.total ?? 0
 
+  // ---- 翻页/数据刷新后，从 Map 中恢复当前页行的选中态 ----
+  const getRowId = useCallback(
+    (row: T, index: number) => (rowKey ? rowKey(row) : String(index)),
+    [rowKey]
+  )
+
+  useEffect(() => {
+    if (!enableRowSelection) return
+    const map = selectedRowsMapRef.current
+    const restored: RowSelectionState = {}
+    tableData.forEach((row, index) => {
+      const id = getRowId(row, index)
+      if (map.has(id)) {
+        restored[id] = true
+      }
+    })
+    setRowSelection(restored)
+  }, [tableData, enableRowSelection, getRowId])
+
+  // ---- 选中行变更时同步到 Map + 回调 ----
+  const handleRowSelectionChange = useCallback(
+    (updater: RowSelectionState | ((prev: RowSelectionState) => RowSelectionState)) => {
+      setRowSelection((prev) => {
+        const next = typeof updater === "function" ? updater(prev) : updater
+        const map = selectedRowsMapRef.current
+
+        // 同步当前页的变更到 Map
+        tableData.forEach((row, index) => {
+          const id = getRowId(row, index)
+          if (next[id]) {
+            map.set(id, row)
+          } else {
+            map.delete(id)
+          }
+        })
+
+        setSelectedCount(map.size)
+        onSelectionChange?.(Array.from(map.values()))
+        return next
+      })
+    },
+    [tableData, getRowId, onSelectionChange]
+  )
+
+  // 清空全部选择
+  const handleClearSelection = useCallback(() => {
+    selectedRowsMapRef.current.clear()
+    setRowSelection({})
+    setSelectedCount(0)
+    onSelectionChange?.([])
+  }, [onSelectionChange])
+
   // ============================================================
   // 列定义映射 (用于 FilterRow)
   // ============================================================
@@ -204,7 +277,44 @@ export function ListTable<T>({
   // ============================================================
 
   const tableColumns = useMemo<ColumnDef<T>[]>(() => {
-    return columns.map((col) => ({
+    const cols: ColumnDef<T>[] = []
+
+    // 行选择列 (Checkbox)
+    if (enableRowSelection) {
+      cols.push({
+        id: "_selection",
+        size: 40,
+        minSize: 40,
+        enableResizing: false,
+        enableSorting: false,
+        header: ({ table: tbl }) => {
+          const allPageSelected = tbl.getIsAllPageRowsSelected()
+          const someSelected = tbl.getIsSomePageRowsSelected()
+          return (
+            <div className="flex items-center justify-center">
+              <Checkbox
+                checked={allPageSelected ? true : someSelected ? "indeterminate" : false}
+                onCheckedChange={(value) => tbl.toggleAllPageRowsSelected(!!value)}
+                aria-label="全选当前页"
+              />
+            </div>
+          )
+        },
+        cell: ({ row }) => (
+          <div className="flex items-center justify-center">
+            <Checkbox
+              checked={row.getIsSelected()}
+              onCheckedChange={(value) => row.toggleSelected(!!value)}
+              onClick={(e) => e.stopPropagation()}
+              aria-label="选择行"
+            />
+          </div>
+        ),
+      })
+    }
+
+    // 业务列
+    const businessCols: ColumnDef<T>[] = columns.map((col) => ({
       id: col.id,
       accessorFn: (row: T) => (row as Record<string, unknown>)[col.id],
       header: ({ column }) => {
@@ -244,7 +354,10 @@ export function ListTable<T>({
       minSize: col.minWidth,
       enableSorting: col.sortable !== false,
     }))
-  }, [columns])
+    cols.push(...businessCols)
+
+    return cols
+  }, [columns, enableRowSelection])
 
   // ============================================================
   // TanStack Table 实例
@@ -273,12 +386,15 @@ export function ListTable<T>({
       columnSizing,
       columnOrder: columnOrder.length > 0 ? columnOrder : undefined,
       columnPinning: tanstackPinning,
+      ...(enableRowSelection ? { rowSelection } : {}),
     },
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
     onColumnSizingChange: setColumnSizing,
     onColumnOrderChange: setColumnOrder,
     enableColumnResizing: true,
+    enableRowSelection,
+    onRowSelectionChange: enableRowSelection ? handleRowSelectionChange : undefined,
     onColumnPinningChange: (updater) => {
       const newPinning =
         typeof updater === "function" ? updater(tanstackPinning) : updater
@@ -349,6 +465,8 @@ export function ListTable<T>({
         extraActions={toolbarActions}
         filters={filters}
         onClearFilters={handleClearFilters}
+        selectedCount={selectedCount}
+        onClearSelection={enableRowSelection ? handleClearSelection : undefined}
       />
 
       {/* 表格 */}
@@ -441,8 +559,10 @@ export function ListTable<T>({
                 return (
                   <TableRow
                     key={row.id}
+                    data-state={row.getIsSelected() ? "selected" : undefined}
                     className={cn(
-                      onRowClick && "cursor-pointer hover:bg-muted/50"
+                      onRowClick && "cursor-pointer hover:bg-muted/50",
+                      row.getIsSelected() && "bg-muted/40"
                     )}
                     onClick={() => onRowClick?.(row.original)}
                   >
