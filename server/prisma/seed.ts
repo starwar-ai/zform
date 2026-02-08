@@ -13,6 +13,8 @@ import {
   PrintStatus,
   SignBackStatus,
   ConfirmStatus,
+  CompanyNature,
+  PortStatus,
 } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
@@ -1223,6 +1225,18 @@ async function main() {
     },
   });
 
+  const businessConfigMenu = await prisma.sysMenu.create({
+    data: {
+      title: '业务配置',
+      icon: 'Settings',
+      path: '/business-config',
+      parentId: sysMenu.id,
+      orderNum: 6,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
   // -- 数据权限种子数据 --
   await prisma.sysDataPermission.deleteMany({});
 
@@ -1275,6 +1289,7 @@ async function main() {
     menuMgmtMenu.id,
     deptMgmtMenu.id,
     categoryMgmtMenu.id,
+    businessConfigMenu.id,
     customerMenu.id,
     supplierMenu.id,
     ...allBtnIds,
@@ -1345,11 +1360,329 @@ async function main() {
   console.log(`Roles: ${adminRole.code}, ${managerRole.code}, ${userRole.code}`);
   console.log(`Users: admin (password: admin123, dept: ${techDept.code}), demo (password: 123456, dept: ${salesDept.code})`);
   console.log(`Menus: ${allMenuIds.length} menus (incl. ${allBtnIds.length} button permissions)`);
-  console.log(`System management menus: ${userMgmtMenu.title}, ${roleMgmtMenu.title}, ${menuMgmtMenu.title}, ${deptMgmtMenu.title}, ${categoryMgmtMenu.title}`);
+  console.log(`System management menus: ${userMgmtMenu.title}, ${roleMgmtMenu.title}, ${menuMgmtMenu.title}, ${deptMgmtMenu.title}, ${categoryMgmtMenu.title}, ${businessConfigMenu.title}`);
   console.log(`Data permissions: admin=all, manager=department, user=personal`);
   console.log(`Customer categories: ${customerCategoryA.code} (${customerCategoryA1.code}, ${customerCategoryA2.code}), ${customerCategoryB.code} (${customerCategoryB1.code}), ${customerCategoryC.code}`);
   console.log(`Product categories (HsCode): ${hsCodeElectronics.code} -> ${hsCodePhoneAccessories.code} -> ${hsCodePhoneCase.code}, ${hsCodePlastic.code} -> ${hsCodePlasticPackaging.code}`);
   console.log(`Exhibition categories: ${exhibitionCategory1.name}, ${exhibitionCategory2.name}, ${exhibitionCategory3.name}, ${exhibitionCategory4.name}, ${exhibitionCategory5.name}`);
+
+  // ==================== 业务配置 Seed ====================
+
+  // ---- 国家 ----
+  const countryChina = await prisma.country.upsert({
+    where: { code: 'CN' },
+    update: { name: '中国', regionCode: 'AS', regionName: '亚洲', areaCode: 'EA' },
+    create: { code: 'CN', name: '中国', regionCode: 'AS', regionName: '亚洲', areaCode: 'EA' },
+  });
+
+  const countryUSA = await prisma.country.upsert({
+    where: { code: 'US' },
+    update: { name: '美国', regionCode: 'NA', regionName: '北美洲', areaCode: 'NA' },
+    create: { code: 'US', name: '美国', regionCode: 'NA', regionName: '北美洲', areaCode: 'NA' },
+  });
+
+  const countryGermany = await prisma.country.upsert({
+    where: { code: 'DE' },
+    update: { name: '德国', regionCode: 'EU', regionName: '欧洲', areaCode: 'WE' },
+    create: { code: 'DE', name: '德国', regionCode: 'EU', regionName: '欧洲', areaCode: 'WE' },
+  });
+
+  const countryJapan = await prisma.country.upsert({
+    where: { code: 'JP' },
+    update: { name: '日本', regionCode: 'AS', regionName: '亚洲', areaCode: 'EA' },
+    create: { code: 'JP', name: '日本', regionCode: 'AS', regionName: '亚洲', areaCode: 'EA' },
+  });
+
+  const countryUK = await prisma.country.upsert({
+    where: { code: 'GB' },
+    update: { name: '英国', regionCode: 'EU', regionName: '欧洲', areaCode: 'WE' },
+    create: { code: 'GB', name: '英国', regionCode: 'EU', regionName: '欧洲', areaCode: 'WE' },
+  });
+
+  // ---- 港口 ----
+  const portShanghai = await prisma.port.upsert({
+    where: { code: 'CNSHA' },
+    update: {
+      name: '上海港',
+      nameEn: 'Shanghai Port',
+      countryId: countryChina.id,
+      city: '上海',
+      isCommon: true,
+      status: 'NORMAL',
+    },
+    create: {
+      code: 'CNSHA',
+      name: '上海港',
+      nameEn: 'Shanghai Port',
+      countryId: countryChina.id,
+      city: '上海',
+      isCommon: true,
+      status: 'NORMAL',
+    },
+  });
+
+  const portShenzhen = await prisma.port.upsert({
+    where: { code: 'CNSZX' },
+    update: {
+      name: '深圳港',
+      nameEn: 'Shenzhen Port',
+      countryId: countryChina.id,
+      city: '深圳',
+      isCommon: true,
+      status: 'NORMAL',
+    },
+    create: {
+      code: 'CNSZX',
+      name: '深圳港',
+      nameEn: 'Shenzhen Port',
+      countryId: countryChina.id,
+      city: '深圳',
+      isCommon: true,
+      status: 'NORMAL',
+    },
+  });
+
+  const portNingbo = await prisma.port.upsert({
+    where: { code: 'CNNGB' },
+    update: {
+      name: '宁波港',
+      nameEn: 'Ningbo Port',
+      countryId: countryChina.id,
+      city: '宁波',
+      isCommon: true,
+      status: 'NORMAL',
+    },
+    create: {
+      code: 'CNNGB',
+      name: '宁波港',
+      nameEn: 'Ningbo Port',
+      countryId: countryChina.id,
+      city: '宁波',
+      isCommon: true,
+      status: 'NORMAL',
+    },
+  });
+
+  const portLosAngeles = await prisma.port.upsert({
+    where: { code: 'USLAX' },
+    update: {
+      name: '洛杉矶港',
+      nameEn: 'Los Angeles Port',
+      countryId: countryUSA.id,
+      city: 'Los Angeles',
+      isCommon: true,
+      status: 'NORMAL',
+    },
+    create: {
+      code: 'USLAX',
+      name: '洛杉矶港',
+      nameEn: 'Los Angeles Port',
+      countryId: countryUSA.id,
+      city: 'Los Angeles',
+      isCommon: true,
+      status: 'NORMAL',
+    },
+  });
+
+  const portHamburg = await prisma.port.upsert({
+    where: { code: 'DEHAM' },
+    update: {
+      name: '汉堡港',
+      nameEn: 'Hamburg Port',
+      countryId: countryGermany.id,
+      city: 'Hamburg',
+      isCommon: false,
+      status: 'NORMAL',
+    },
+    create: {
+      code: 'DEHAM',
+      name: '汉堡港',
+      nameEn: 'Hamburg Port',
+      countryId: countryGermany.id,
+      city: 'Hamburg',
+      isCommon: false,
+      status: 'NORMAL',
+    },
+  });
+
+  // ---- 子公司 ----
+  const mainCompany = await prisma.company.upsert({
+    where: { id: 'company-main-001' },
+    update: {
+      name: '示例进出口贸易有限公司',
+      nameEn: 'Sample Import & Export Trading Co., Ltd.',
+      abbreviation: '示例贸易',
+      unitAbbreviation: 'SIET',
+      nature: 'EXPORT_COMPANY',
+      taxNumber: '91310000MA1234567X',
+      customsCode: '3100123456',
+      legalPerson: '张三',
+      phone: '021-12345678',
+      fax: '021-12345679',
+      address: '上海市浦东新区世纪大道1000号',
+      addressEn: '1000 Century Avenue, Pudong New Area, Shanghai, China',
+      adminName: '李四',
+      adminEmail: 'lisi@example.com',
+      adminMobile: '13800138000',
+      businessLicenseNumber: '91310000MA1234567X',
+      isEnabled: true,
+    },
+    create: {
+      id: 'company-main-001',
+      name: '示例进出口贸易有限公司',
+      nameEn: 'Sample Import & Export Trading Co., Ltd.',
+      abbreviation: '示例贸易',
+      unitAbbreviation: 'SIET',
+      nature: 'EXPORT_COMPANY',
+      taxNumber: '91310000MA1234567X',
+      customsCode: '3100123456',
+      legalPerson: '张三',
+      phone: '021-12345678',
+      fax: '021-12345679',
+      address: '上海市浦东新区世纪大道1000号',
+      addressEn: '1000 Century Avenue, Pudong New Area, Shanghai, China',
+      adminName: '李四',
+      adminEmail: 'lisi@example.com',
+      adminMobile: '13800138000',
+      businessLicenseNumber: '91310000MA1234567X',
+      isEnabled: true,
+    },
+  });
+
+  const factoryCompany = await prisma.company.upsert({
+    where: { id: 'company-factory-001' },
+    update: {
+      name: '示例制造工厂有限公司',
+      nameEn: 'Sample Manufacturing Factory Co., Ltd.',
+      abbreviation: '示例工厂',
+      unitAbbreviation: 'SMF',
+      nature: 'FACTORY',
+      taxNumber: '91320000MA7654321Y',
+      customsCode: '3200654321',
+      legalPerson: '王五',
+      phone: '0512-87654321',
+      fax: '0512-87654322',
+      address: '江苏省苏州市工业园区工业路500号',
+      addressEn: '500 Industrial Road, Industrial Park, Suzhou, Jiangsu, China',
+      adminName: '赵六',
+      adminEmail: 'zhaoliu@example.com',
+      adminMobile: '13900139000',
+      businessLicenseNumber: '91320000MA7654321Y',
+      isEnabled: true,
+    },
+    create: {
+      id: 'company-factory-001',
+      name: '示例制造工厂有限公司',
+      nameEn: 'Sample Manufacturing Factory Co., Ltd.',
+      abbreviation: '示例工厂',
+      unitAbbreviation: 'SMF',
+      nature: 'FACTORY',
+      taxNumber: '91320000MA7654321Y',
+      customsCode: '3200654321',
+      legalPerson: '王五',
+      phone: '0512-87654321',
+      fax: '0512-87654322',
+      address: '江苏省苏州市工业园区工业路500号',
+      addressEn: '500 Industrial Road, Industrial Park, Suzhou, Jiangsu, China',
+      adminName: '赵六',
+      adminEmail: 'zhaoliu@example.com',
+      adminMobile: '13900139000',
+      businessLicenseNumber: '91320000MA7654321Y',
+      isEnabled: true,
+    },
+  });
+
+  // ---- 子公司银行账号 ----
+  await prisma.companyBankAccount.upsert({
+    where: { id: 'bank-account-001' },
+    update: {
+      companyId: mainCompany.id,
+      companyNameCn: '示例进出口贸易有限公司',
+      companyNameEn: 'Sample Import & Export Trading Co., Ltd.',
+      bankNameCn: '中国工商银行上海分行',
+      bankNameEn: 'Industrial and Commercial Bank of China Shanghai Branch',
+      bankAddress: '上海市黄浦区南京东路100号',
+      bankAddressEn: '100 East Nanjing Road, Huangpu District, Shanghai, China',
+      accountNumber: '1234567890123456789',
+      swiftCode: 'ICBKCNBJSHA',
+      isDefault: true,
+    },
+    create: {
+      id: 'bank-account-001',
+      companyId: mainCompany.id,
+      companyNameCn: '示例进出口贸易有限公司',
+      companyNameEn: 'Sample Import & Export Trading Co., Ltd.',
+      bankNameCn: '中国工商银行上海分行',
+      bankNameEn: 'Industrial and Commercial Bank of China Shanghai Branch',
+      bankAddress: '上海市黄浦区南京东路100号',
+      bankAddressEn: '100 East Nanjing Road, Huangpu District, Shanghai, China',
+      accountNumber: '1234567890123456789',
+      swiftCode: 'ICBKCNBJSHA',
+      isDefault: true,
+    },
+  });
+
+  await prisma.companyBankAccount.upsert({
+    where: { id: 'bank-account-002' },
+    update: {
+      companyId: mainCompany.id,
+      companyNameCn: '示例进出口贸易有限公司',
+      companyNameEn: 'Sample Import & Export Trading Co., Ltd.',
+      bankNameCn: '中国银行上海分行',
+      bankNameEn: 'Bank of China Shanghai Branch',
+      bankAddress: '上海市浦东新区陆家嘴环路1233号',
+      bankAddressEn: '1233 Lujiazui Ring Road, Pudong New Area, Shanghai, China',
+      accountNumber: '9876543210987654321',
+      swiftCode: 'BKCHCNBJSHA',
+      isDefault: false,
+    },
+    create: {
+      id: 'bank-account-002',
+      companyId: mainCompany.id,
+      companyNameCn: '示例进出口贸易有限公司',
+      companyNameEn: 'Sample Import & Export Trading Co., Ltd.',
+      bankNameCn: '中国银行上海分行',
+      bankNameEn: 'Bank of China Shanghai Branch',
+      bankAddress: '上海市浦东新区陆家嘴环路1233号',
+      bankAddressEn: '1233 Lujiazui Ring Road, Pudong New Area, Shanghai, China',
+      accountNumber: '9876543210987654321',
+      swiftCode: 'BKCHCNBJSHA',
+      isDefault: false,
+    },
+  });
+
+  await prisma.companyBankAccount.upsert({
+    where: { id: 'bank-account-003' },
+    update: {
+      companyId: factoryCompany.id,
+      companyNameCn: '示例制造工厂有限公司',
+      companyNameEn: 'Sample Manufacturing Factory Co., Ltd.',
+      bankNameCn: '中国建设银行苏州分行',
+      bankNameEn: 'China Construction Bank Suzhou Branch',
+      bankAddress: '江苏省苏州市工业园区星湖街328号',
+      bankAddressEn: '328 Xinghu Street, Industrial Park, Suzhou, Jiangsu, China',
+      accountNumber: '5555666677778888999',
+      swiftCode: 'PCBCCNBJSUZ',
+      isDefault: true,
+    },
+    create: {
+      id: 'bank-account-003',
+      companyId: factoryCompany.id,
+      companyNameCn: '示例制造工厂有限公司',
+      companyNameEn: 'Sample Manufacturing Factory Co., Ltd.',
+      bankNameCn: '中国建设银行苏州分行',
+      bankNameEn: 'China Construction Bank Suzhou Branch',
+      bankAddress: '江苏省苏州市工业园区星湖街328号',
+      bankAddressEn: '328 Xinghu Street, Industrial Park, Suzhou, Jiangsu, China',
+      accountNumber: '5555666677778888999',
+      swiftCode: 'PCBCCNBJSUZ',
+      isDefault: true,
+    },
+  });
+
+  console.log(`Countries: ${countryChina.code}, ${countryUSA.code}, ${countryGermany.code}, ${countryJapan.code}, ${countryUK.code}`);
+  console.log(`Ports: ${portShanghai.code}, ${portShenzhen.code}, ${portNingbo.code}, ${portLosAngeles.code}, ${portHamburg.code}`);
+  console.log(`Companies: ${mainCompany.name}, ${factoryCompany.name}`);
 }
 
 main()

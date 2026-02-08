@@ -12,6 +12,7 @@ import { RoleManagement } from "@/components/role-management"
 import { MenuManagement } from "@/components/menu-management"
 import { DepartmentManagement } from "@/components/department-management"
 import { CategoryManagement } from "@/components/category-management"
+import { BusinessConfig } from "@/components/business-config"
 import { DashboardHome } from "@/components/dashboard-home"
 
 export function TabContent() {
@@ -92,6 +93,9 @@ export function TabContent() {
 
       case "category-management":
         return <CategoryManagement />
+
+      case "business-config":
+        return <BusinessConfig />
 
       default:
         return (

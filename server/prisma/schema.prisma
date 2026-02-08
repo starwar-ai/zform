@@ -36,6 +36,124 @@ enum ChangeStatus {
   CANCELLED     // 已取消
 }
 
+enum CompanyNature {
+  FACTORY           // 工厂
+  EXPORT_COMPANY    // 外销公司
+  DOMESTIC_COMPANY  // 内销公司
+  INTERNAL_CUSTOMER // 内部客户
+}
+
+enum PortStatus {
+  NORMAL    // 正常
+  SUSPENDED // 停运
+}
+
+// ==================== 子公司表 ====================
+
+model Company {
+  id                    String         @id @default(cuid())
+  taxNumber             String?        @map("tax_number")              // 税号
+  customsCode           String?        @map("customs_code")            // 海关编号
+  officialSealImage     String?        @map("official_seal_image")     // 公章图片
+  abbreviation          String?                                        // 简称
+  isEnabled             Boolean        @default(true) @map("is_enabled") // 启用标识
+  legalPerson           String?        @map("legal_person")            // 法人
+  fax                   String?                                        // 企业传真
+  phone                 String?                                        // 企业电话
+  adminEmail            String?        @map("admin_email")             // 管理员邮箱
+  adminMobile           String?        @map("admin_mobile")            // 管理员手机号
+  adminName             String?        @map("admin_name")              // 管理员
+  address               String?                                        // 企业地址
+  addressEn             String?        @map("address_en")              // 企业英文地址
+  businessLicenseNumber String?        @map("business_license_number") // 营业执照号
+  businessLicenseImage  String?        @map("business_license_image")  // 营业执照
+  nameEn                String?        @map("name_en")                 // 企业英文名称
+  name                  String                                         // 企业名称
+  nature                CompanyNature  @default(FACTORY)               // 公司性质
+  unitAbbreviation      String?        @map("unit_abbreviation")       // 单位名称简称
+  
+  createdBy             String?        @map("created_by")
+  createdAt             DateTime       @default(now()) @map("created_at")
+  updatedBy             String?        @map("updated_by")
+  updatedAt             DateTime       @updatedAt @map("updated_at")
+  deletedAt             DateTime?      @map("deleted_at")
+  
+  bankAccounts          CompanyBankAccount[]
+
+  @@map("companies")
+}
+
+// ==================== 子公司银行账号表 ====================
+
+model CompanyBankAccount {
+  id                    String    @id @default(cuid())
+  companyId             String    @map("company_id")
+  company               Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  bankAddress           String?   @map("bank_address")           // 银行地址
+  companyNameCn         String?   @map("company_name_cn")        // 企业中文名称
+  companyNameEn         String?   @map("company_name_en")        // 企业英文名称
+  bankNameCn            String?   @map("bank_name_cn")           // 银行中文名称
+  bankNameEn            String?   @map("bank_name_en")           // 银行英文名称
+  bankAddressEn         String?   @map("bank_address_en")        // 银行英文地址
+  accountNumber         String?   @map("account_number")         // 银行账号
+  swiftCode             String?   @map("swift_code")             // 银行识别代码
+  isDefault             Boolean   @default(false) @map("is_default") // 是否默认账户
+  
+  createdBy             String?   @map("created_by")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedBy             String?   @map("updated_by")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+  deletedAt             DateTime? @map("deleted_at")
+
+  @@index([companyId])
+  @@map("company_bank_accounts")
+}
+
+// ==================== 国家表 ====================
+
+model Country {
+  id           String    @id @default(cuid())
+  name         String                          // 国家名称
+  code         String    @unique               // 国家编码
+  regionCode   String?   @map("region_code")   // 区域编码
+  regionName   String?   @map("region_name")   // 区域名称
+  areaCode     String?   @map("area_code")     // 区域代码
+  
+  createdBy    String?   @map("created_by")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedBy    String?   @map("updated_by")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+  
+  ports        Port[]
+
+  @@map("countries")
+}
+
+// ==================== 港口表 ====================
+
+model Port {
+  id           String      @id @default(cuid())
+  code         String      @unique               // 编号
+  name         String                            // 名称
+  nameEn       String?     @map("name_en")       // 英文名称
+  countryId    String      @map("country_id")    // 国家id
+  country      Country     @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  city         String?                           // 城市
+  address      String?                           // 地址
+  isCommon     Boolean     @default(false) @map("is_common") // 常用标记
+  status       PortStatus  @default(NORMAL)      // 状态
+  
+  createdBy    String?     @map("created_by")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedBy    String?     @map("updated_by")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+  deletedAt    DateTime?   @map("deleted_at")
+
+  @@index([countryId])
+  @@map("ports")
+}
+
 // ==================== 部门表 ====================
 
 model Department {
