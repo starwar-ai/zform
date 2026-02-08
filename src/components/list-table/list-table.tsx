@@ -254,6 +254,7 @@ export function ListTable<T>({
     onColumnVisibilityChange: setColumnVisibility,
     onColumnSizingChange: setColumnSizing,
     onColumnOrderChange: setColumnOrder,
+    enableColumnResizing: true,
     onColumnPinningChange: (updater) => {
       const newPinning =
         typeof updater === "function" ? updater(tanstackPinning) : updater
@@ -333,7 +334,10 @@ export function ListTable<T>({
           </div>
         )}
 
-        <Table>
+        <Table
+          className="table-fixed"
+          style={{ width: table.getTotalSize(), minWidth: "100%" }}
+        >
           <TableHeader>
             {/* 表头行 */}
             {table.getHeaderGroups().map((headerGroup) => {
@@ -355,6 +359,7 @@ export function ListTable<T>({
                           ...pinnedStyle,
                         }}
                         className={cn(
+                          "relative select-none",
                           isPinned && "bg-background",
                           lastLeft && "shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]",
                           firstRight && "shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.1)]"
@@ -424,7 +429,11 @@ export function ListTable<T>({
                       return (
                         <TableCell
                           key={cell.id}
-                          style={pinnedStyle}
+                          style={{
+                            width: cell.column.getSize(),
+                            minWidth: cell.column.columnDef.minSize,
+                            ...pinnedStyle,
+                          }}
                           className={cn(
                             isPinned && "bg-background",
                             lastLeft && "shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]",
