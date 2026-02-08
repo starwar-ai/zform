@@ -3,18 +3,32 @@
  *
  * 单据列表适配组件。将 DocumentSchema + 服务端 API 适配为 ListTable。
  * 分页/筛选/排序均由服务端处理。
+ *
+ * 行操作和工具栏操作根据 Registry 中注册的 DocumentListActionConfig 动态构建。
+ * 内置操作 (open / delete / delete-detail / copy-id) 由组件自行处理；
+ * 自定义操作通过 onAction 回调交给外部处理。
  */
 
-import { useCallback, useMemo } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { registry } from "@/core/registry"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Plus, FileText } from "lucide-react"
-import type { DocumentTypeId } from "@/core/types"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Plus, FileText, List, MoreHorizontal } from "lucide-react"
+import type { DocumentTypeId, DocumentActionDef, DocumentListActionConfig } from "@/core/types"
 import type { FetchParams, FetchResult, ListTableColumn } from "./types"
 import { ListTable } from "./list-table"
-import { fetchDocumentListApi, createDocumentApi } from "@/lib/document-api"
+import {
+  fetchDocumentListApi,
+  createDocumentApi,
+  deleteDocumentApi,
+  deleteDocumentItemApi,
+} from "@/lib/document-api"
 import type { FlatDocumentRow, ListMode } from "@/lib/document-api"
+
+// ============================================================
+// Props
+// ============================================================
 
 interface DocumentListTableProps {
   typeId: DocumentTypeId
@@ -23,72 +37,266 @@ interface DocumentListTableProps {
   mode?: ListMode
   /** 明细模式下需要指定展示哪个明细表 */
   detailTableId?: string
+  /**
+   * 自定义操作回调: 处理非内置的行操作
+   * @param actionId  操作 ID
+   * @param row       行数据
+   */
+  onAction?: (actionId: string, row: FlatDocumentRow) => void
 }
 
-/** 单据状态配色 */
-const statusLabels: Record<string, string> = {
-  draft: "草稿",
-  submitted: "已提交",
-  approved: "已审批",
-  closed: "已关闭",
-  cancelled: "已取消",
+// ============================================================
+// 默认 Action Config (未注册配置时的兜底方案)
+// ============================================================
+
+const DEFAULT_ROW_ACTIONS: DocumentActionDef[] = [
+  { id: "open", label: "打开" },
+  { id: "copy-id", label: "复制ID" },
+]
+
+const DEFAULT_ACTION_CONFIG: Omit<DocumentListActionConfig, "typeId"> = {
+  rowActions: DEFAULT_ROW_ACTIONS,
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline" },
+  ],
 }
 
-const statusVariants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  draft: "secondary",
-  submitted: "default",
-  approved: "default",
-  closed: "outline",
-  cancelled: "destructive",
+// ============================================================
+// ActionCell 子组件
+// ============================================================
+
+interface RowAction {
+  id: string
+  label: string
+  onClick: () => void
+  disabled?: boolean
+  danger?: boolean
 }
+
+function ActionCell({ actions }: { actions: RowAction[] }) {
+  const [open, setOpen] = useState(false)
+  const visibleActions = actions.filter((action) => action.disabled !== true)
+  const inlineActions = visibleActions.slice(0, 2)
+  const overflowActions = visibleActions.slice(2)
+
+  return (
+    <div className="flex items-center justify-end gap-2">
+      {inlineActions.map((action) => (
+        <Button
+          key={action.id}
+          variant="link"
+          size="sm"
+          className={action.danger ? "text-destructive" : ""}
+          onClick={(event) => {
+            event.stopPropagation()
+            action.onClick()
+          }}
+        >
+          {action.label}
+        </Button>
+      ))}
+
+      {overflowActions.length > 0 && (
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-40 p-1" align="end">
+            <div className="flex flex-col">
+              {overflowActions.map((action) => (
+                <Button
+                  key={action.id}
+                  variant="ghost"
+                  size="sm"
+                  className={`justify-start ${action.danger ? "text-destructive" : ""}`}
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    setOpen(false)
+                    action.onClick()
+                  }}
+                >
+                  {action.label}
+                </Button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+      )}
+    </div>
+  )
+}
+
+// ============================================================
+// 主组件
+// ============================================================
 
 export function DocumentListTable({
   typeId,
   onOpenDocument,
   mode = "document",
   detailTableId,
+  onAction,
 }: DocumentListTableProps) {
   const schema = registry.getSchema(typeId)
-  const isDetailMode = mode === "detail"
+  const actionConfig = registry.getActionConfig(typeId)
+  const queryClient = useQueryClient()
+  const [currentMode, setCurrentMode] = useState<ListMode>(mode)
+  const resolvedDetailTableId = useMemo(
+    () => detailTableId ?? schema?.detailTables[0]?.id,
+    [detailTableId, schema]
+  )
+  const fixedRightColumns = useMemo(() => ["_actions"], [])
+  const canToggleToDetail = Boolean(resolvedDetailTableId)
 
+  useEffect(() => {
+    setCurrentMode(mode)
+  }, [mode])
+
+  useEffect(() => {
+    if (!canToggleToDetail && currentMode === "detail") {
+      setCurrentMode("document")
+    }
+  }, [canToggleToDetail, currentMode])
+
+  const isDetailMode = currentMode === "detail"
+
+  // ---- 合并后的操作配置 (注册配置 > 默认配置) ----
+  const resolvedRowActions = useMemo<DocumentActionDef[]>(
+    () => actionConfig?.rowActions ?? DEFAULT_ACTION_CONFIG.rowActions,
+    [actionConfig]
+  )
+
+  const resolvedToolbarActions = useMemo(
+    () => actionConfig?.toolbarActions ?? DEFAULT_ACTION_CONFIG.toolbarActions,
+    [actionConfig]
+  )
+
+  // ============================================================
+  // 内置操作 handler
+  // ============================================================
+
+  const handleCopyText = useCallback(async (text: string) => {
+    if (!text) return
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch {
+      console.warn("复制失败，请手动复制", text)
+    }
+  }, [])
+
+  // 新建单据 (调用服务端 API)
+  const handleCreate = useCallback(async () => {
+    const result = await createDocumentApi(typeId)
+    onOpenDocument(result.id)
+  }, [typeId, onOpenDocument])
+
+  // 行点击
+  const handleRowClick = useCallback(
+    (row: FlatDocumentRow) => {
+      onOpenDocument(row._id as string)
+    },
+    [onOpenDocument]
+  )
+
+  const handleDeleteDocument = useCallback(
+    async (docId: string) => {
+      const ok = window.confirm("确认删除该单据？")
+      if (!ok) return
+      await deleteDocumentApi(typeId, docId)
+      await queryClient.invalidateQueries({
+        queryKey: ["documents", typeId, currentMode, resolvedDetailTableId ?? ""],
+      })
+    },
+    [typeId, currentMode, resolvedDetailTableId, queryClient]
+  )
+
+  const handleDeleteDetail = useCallback(
+    async (docId: string, detailRowId?: string) => {
+      if (!detailRowId) return
+      const ok = window.confirm("确认删除该明细？")
+      if (!ok) return
+      await deleteDocumentItemApi(typeId, docId, detailRowId)
+      await queryClient.invalidateQueries({
+        queryKey: ["documents", typeId, currentMode, resolvedDetailTableId ?? ""],
+      })
+    },
+    [typeId, currentMode, resolvedDetailTableId, queryClient]
+  )
+
+  // ============================================================
+  // 内置 handler 映射表: actionId → handler(row)
+  // ============================================================
+
+  const builtinHandlers = useMemo<
+    Record<string, (row: FlatDocumentRow) => void>
+  >(
+    () => ({
+      open: (row) => onOpenDocument(String(row._id)),
+      delete: (row) => handleDeleteDocument(String(row._id)),
+      "delete-detail": (row) =>
+        handleDeleteDetail(
+          String(row._id),
+          row._detailRowId ? String(row._detailRowId) : undefined
+        ),
+      "copy-id": (row) => handleCopyText(String(row._id)),
+    }),
+    [onOpenDocument, handleDeleteDocument, handleDeleteDetail, handleCopyText]
+  )
+
+  // ============================================================
+  // 根据 action config + 行数据动态生成行操作
+  // ============================================================
+
+  const getRowActions = useCallback(
+    (row: FlatDocumentRow): RowAction[] => {
+      return resolvedRowActions
+        .filter((def) => {
+          // 按模式过滤
+          if (def.modes && !def.modes.includes(currentMode)) return false
+          // 按可见性条件过滤
+          if (def.visible && !def.visible(row)) return false
+          return true
+        })
+        .map((def) => {
+          const handler = builtinHandlers[def.id]
+          return {
+            id: def.id,
+            label: def.label,
+            danger: def.danger,
+            disabled: def.disabled ? def.disabled(row) : false,
+            onClick: () => {
+              if (handler) {
+                handler(row)
+              } else if (onAction) {
+                // 非内置操作，交给外部 onAction 回调
+                onAction(def.id, row)
+              } else {
+                console.warn(
+                  `[DocumentListTable] 未处理的操作: "${def.id}"，请提供 onAction 回调或注册为内置操作。`
+                )
+              }
+            },
+          }
+        })
+    },
+    [resolvedRowActions, currentMode, builtinHandlers, onAction]
+  )
+
+  // ============================================================
   // 构建列定义
+  // ============================================================
+
   const columns = useMemo<ListTableColumn<FlatDocumentRow>[]>(() => {
     if (!schema) return []
 
-    const cols: ListTableColumn<FlatDocumentRow>[] = [
-      {
-        id: "_docNumber",
-        label: "单据编号",
-        type: "text",
-        source: "system",
-        width: 160,
-        render: (value) => (
-          <span className="font-medium">{String(value)}</span>
-        ),
-      },
-      {
-        id: "_status",
-        label: "状态",
-        type: "select",
-        source: "system",
-        width: 100,
-        options: [
-          { label: "草稿", value: "draft" },
-          { label: "已提交", value: "submitted" },
-          { label: "已审批", value: "approved" },
-          { label: "已关闭", value: "closed" },
-          { label: "已取消", value: "cancelled" },
-        ],
-        render: (value) => {
-          const status = String(value)
-          return (
-            <Badge variant={statusVariants[status] ?? "outline"}>
-              {statusLabels[status] ?? status}
-            </Badge>
-          )
-        },
-      },
-    ]
+    const cols: ListTableColumn<FlatDocumentRow>[] = []
 
     // 从 schema.masterFields 中取前几个关键字段作为列表列
     // 过滤掉 textarea 和 computed 类型 (不适合列表显示)
@@ -110,9 +318,9 @@ export function DocumentListTable({
     }
 
     // 明细模式: 追加指定明细表的字段列
-    if (isDetailMode && detailTableId) {
+    if (isDetailMode && resolvedDetailTableId) {
       const detailTableDef = schema.detailTables.find(
-        (t) => t.id === detailTableId
+        (t) => t.id === resolvedDetailTableId
       )
       if (detailTableDef) {
         const detailFields = detailTableDef.fields.filter(
@@ -131,61 +339,61 @@ export function DocumentListTable({
       }
     }
 
-    // 追加固定列
+    // 操作列 (始终固定在右侧)
     cols.push({
-      id: "_createdAt",
-      label: "创建时间",
-      type: "date",
-      source: "system",
-      width: 160,
-      render: (value) => (
-        <span className="text-muted-foreground text-sm">
-          {value ? new Date(String(value)).toLocaleString("zh-CN") : "-"}
-        </span>
-      ),
-    })
-
-    cols.push({
-      id: "_sourceTypeId",
-      label: "来源",
+      id: "_actions",
+      label: "操作",
       type: "text",
       source: "system",
-      width: 100,
-      render: (value) => {
-        if (!value) return "-"
-        const sourceSchema = registry.getSchema(String(value))
-        return (
-          <Badge variant="outline" className="text-xs">
-            {sourceSchema?.typeName ?? String(value)}
-          </Badge>
-        )
-      },
+      width: 160,
+      minWidth: 140,
+      sortable: false,
+      filterable: false,
+      render: (_, row) => <ActionCell actions={getRowActions(row)} />,
     })
 
     return cols
-  }, [schema, isDetailMode, detailTableId])
+  }, [schema, isDetailMode, resolvedDetailTableId, getRowActions])
 
   // queryFn: 从服务端 API 获取数据 (分页/筛选/排序均由服务端处理)
   const queryFn = useCallback(
     async (params: FetchParams): Promise<FetchResult<FlatDocumentRow>> => {
-      return fetchDocumentListApi(typeId, params, mode, detailTableId)
+      return fetchDocumentListApi(typeId, params, currentMode, resolvedDetailTableId)
     },
-    [typeId, mode, detailTableId]
+    [typeId, currentMode, resolvedDetailTableId]
   )
 
-  // 新建单据 (调用服务端 API)
-  const handleCreate = useCallback(async () => {
-    const result = await createDocumentApi(typeId)
-    onOpenDocument(result.id)
-  }, [typeId, onOpenDocument])
+  const handleToggleMode = useCallback(() => {
+    if (!canToggleToDetail) return
+    setCurrentMode((prev) => (prev === "document" ? "detail" : "document"))
+  }, [canToggleToDetail])
 
-  // 行点击
-  const handleRowClick = useCallback(
-    (row: FlatDocumentRow) => {
-      onOpenDocument(row._id as string)
-    },
-    [onOpenDocument]
+  // ============================================================
+  // 工具栏操作 handler 映射 (内置的 toolbar 操作)
+  // ============================================================
+
+  const toolbarBuiltinHandlers: Record<string, () => void> = useMemo(
+    () => ({
+      create: handleCreate,
+    }),
+    [handleCreate]
   )
+
+  const handleToolbarAction = useCallback(
+    (actionId: string) => {
+      const handler = toolbarBuiltinHandlers[actionId]
+      if (handler) {
+        handler()
+      } else {
+        console.warn(`[DocumentListTable] 未处理的工具栏操作: "${actionId}"`)
+      }
+    },
+    [toolbarBuiltinHandlers]
+  )
+
+  // ============================================================
+  // 渲染
+  // ============================================================
 
   if (!schema) {
     return (
@@ -199,15 +407,48 @@ export function DocumentListTable({
     <div className="flex flex-col h-full p-6">
       <ListTable<FlatDocumentRow>
         columns={columns}
-        queryKey={["documents", typeId, mode, detailTableId ?? ""]}
+        queryKey={["documents", typeId, currentMode, resolvedDetailTableId ?? ""]}
         queryFn={queryFn}
         title={schema.typeName}
         titleIcon={<FileText className="h-5 w-5" />}
+        fixedRightColumnIds={fixedRightColumns}
         toolbarActions={
-          <Button variant="outline" size="sm" onClick={handleCreate}>
-            <Plus className="h-4 w-4 mr-1" />
-            新建
-          </Button>
+          <div className="flex items-center gap-1">
+            {/* 根据配置动态渲染工具栏按钮 */}
+            {resolvedToolbarActions?.map((action) => (
+              <Button
+                key={action.id}
+                variant={action.variant ?? "outline"}
+                size="sm"
+                onClick={() => handleToolbarAction(action.id)}
+              >
+                {action.icon === "Plus" && <Plus className="h-4 w-4 mr-1" />}
+                {action.label}
+              </Button>
+            ))}
+
+            {/* 模式切换按钮 (始终显示, 由明细表决定是否可用) */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleToggleMode}
+              disabled={!canToggleToDetail}
+              aria-pressed={isDetailMode}
+              title={
+                canToggleToDetail
+                  ? isDetailMode
+                    ? "切换到单据模式"
+                    : "切换到明细模式"
+                  : "当前单据无明细表"
+              }
+            >
+              {isDetailMode ? (
+                <FileText className="h-4 w-4" />
+              ) : (
+                <List className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
         }
         onRowClick={handleRowClick}
         defaultPageSize={20}
@@ -221,4 +462,3 @@ export function DocumentListTable({
     </div>
   )
 }
-

@@ -172,4 +172,6 @@ export interface ListTableProps<T> {
   rowKey?: (row: T) => string
   /** 导出文件名 (不含扩展名) */
   exportFilename?: string
+  /** 固定在右侧的列 ID */
+  fixedRightColumnIds?: string[]
 }

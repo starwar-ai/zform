@@ -53,6 +53,7 @@ export function ListTable<T>({
   defaultPageSize = 20,
   rowKey,
   exportFilename,
+  fixedRightColumnIds = [],
 }: ListTableProps<T>) {
   // ============================================================
   // 状态管理
@@ -91,6 +92,19 @@ export function ListTable<T>({
       return { left: [], right: [] }
     }
   })
+  const applyFixedPinning = useCallback(
+    (pinning: ColumnPinningState): ColumnPinningState => {
+      if (fixedRightColumnIds.length === 0) return pinning
+      const left = pinning.left.filter(
+        (id) => !fixedRightColumnIds.includes(id)
+      )
+      const right = Array.from(
+        new Set([...pinning.right, ...fixedRightColumnIds])
+      )
+      return { left, right }
+    },
+    [fixedRightColumnIds]
+  )
 
   // ---- 保存到 localStorage ----
 
@@ -123,6 +137,11 @@ export function ListTable<T>({
       }
     }
   }, [columnPinning, storageKeyPrefix])
+
+  useEffect(() => {
+    if (fixedRightColumnIds.length === 0) return
+    setColumnPinning((prev) => applyFixedPinning(prev))
+  }, [fixedRightColumnIds, applyFixedPinning])
 
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -232,12 +251,17 @@ export function ListTable<T>({
   // ============================================================
 
   // 将 ColumnPinningState 转为 TanStack 的类型
+  const effectivePinning = useMemo(
+    () => applyFixedPinning(columnPinning),
+    [applyFixedPinning, columnPinning]
+  )
+
   const tanstackPinning: TanStackColumnPinningState = useMemo(
     () => ({
-      left: columnPinning.left,
-      right: columnPinning.right,
+      left: effectivePinning.left,
+      right: effectivePinning.right,
     }),
-    [columnPinning]
+    [effectivePinning]
   )
 
   const table = useReactTable({
@@ -258,10 +282,12 @@ export function ListTable<T>({
     onColumnPinningChange: (updater) => {
       const newPinning =
         typeof updater === "function" ? updater(tanstackPinning) : updater
-      setColumnPinning({
-        left: newPinning.left ?? [],
-        right: newPinning.right ?? [],
-      })
+      setColumnPinning(
+        applyFixedPinning({
+          left: newPinning.left ?? [],
+          right: newPinning.right ?? [],
+        })
+      )
     },
     columnResizeMode: "onChange",
     getCoreRowModel: getCoreRowModel(),

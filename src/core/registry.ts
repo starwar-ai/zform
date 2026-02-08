@@ -11,6 +11,7 @@ import type {
   PushDownRule,
   ChangeRule,
   ApprovalRule,
+  DocumentListActionConfig,
 } from "./types"
 
 class DocumentRegistry {
@@ -18,6 +19,7 @@ class DocumentRegistry {
   private pushDownRules: PushDownRule[] = []
   private changeRules: ChangeRule[] = []
   private approvalRules: ApprovalRule[] = []
+  private actionConfigs = new Map<DocumentTypeId, DocumentListActionConfig>()
 
   /** 注册单据 Schema */
   registerSchema(schema: DocumentSchema): void {
@@ -98,12 +100,33 @@ class DocumentRegistry {
     return [...this.approvalRules]
   }
 
+  // ---- 列表操作配置 ----
+
+  /** 注册单据列表操作配置 */
+  registerActionConfig(config: DocumentListActionConfig): void {
+    if (this.actionConfigs.has(config.typeId)) {
+      console.warn(`[Registry] ActionConfig "${config.typeId}" already registered, overwriting.`)
+    }
+    this.actionConfigs.set(config.typeId, config)
+  }
+
+  /** 获取某种单据的列表操作配置 */
+  getActionConfig(typeId: DocumentTypeId): DocumentListActionConfig | undefined {
+    return this.actionConfigs.get(typeId)
+  }
+
+  /** 获取所有列表操作配置 */
+  getAllActionConfigs(): DocumentListActionConfig[] {
+    return Array.from(this.actionConfigs.values())
+  }
+
   /** 清空所有注册 (用于测试) */
   clear(): void {
     this.schemas.clear()
     this.pushDownRules = []
     this.changeRules = []
     this.approvalRules = []
+    this.actionConfigs.clear()
   }
 }
 

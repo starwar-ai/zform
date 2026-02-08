@@ -354,3 +354,62 @@ export interface ApprovalResult {
   /** 审核记录 */
   record?: ApprovalRecord
 }
+
+// ============================================================
+// 单据列表操作配置 (Action Config)
+// ============================================================
+
+/**
+ * 内置操作 ID 常量
+ *
+ * 内置操作由 DocumentListTable 自行实现 handler，
+ * 业务侧只需声明即可，无需提供 handler。
+ */
+export type BuiltinActionId =
+  | "open"        // 打开单据
+  | "delete"      // 删除单据
+  | "delete-detail" // 删除明细行 (仅明细模式)
+  | "copy-id"     // 复制单据 ID
+
+/** 行操作定义 */
+export interface DocumentActionDef {
+  /** 操作标识: 内置 ID 或自定义字符串 */
+  id: BuiltinActionId | string
+  /** 显示文本 */
+  label: string
+  /** 适用的列表模式: document / detail; 不设则两种模式都显示 */
+  modes?: ("document" | "detail")[]
+  /** 是否危险操作 (红色显示) */
+  danger?: boolean
+  /**
+   * 可见性条件: 根据行数据决定是否显示
+   * row 的类型为 FlatDocumentRow (Record<string, unknown> & 系统字段)
+   */
+  visible?: (row: Record<string, unknown>) => boolean
+  /**
+   * 禁用条件: 根据行数据决定是否禁用
+   */
+  disabled?: (row: Record<string, unknown>) => boolean
+}
+
+/** 工具栏操作定义 */
+export interface ToolbarActionDef {
+  /** 操作标识 */
+  id: string
+  /** 显示文本 */
+  label: string
+  /** 图标名称 (对应 lucide-react 的 icon name) */
+  icon?: string
+  /** 按钮样式 */
+  variant?: "default" | "outline" | "ghost"
+}
+
+/** 单据列表操作配置 —— 声明式定义某种单据在列表中可执行的操作 */
+export interface DocumentListActionConfig {
+  /** 单据类型 ID */
+  typeId: DocumentTypeId
+  /** 行级操作列表 (按顺序显示，前2个内联，其余溢出到 ··· 菜单) */
+  rowActions: DocumentActionDef[]
+  /** 工具栏操作列表 (显示在标题栏右侧) */
+  toolbarActions?: ToolbarActionDef[]
+}

@@ -8,6 +8,7 @@
 import { registry } from "@/core/registry"
 import { useUserStore } from "@/stores/user-store"
 import { useRoleStore } from "@/stores/role-store"
+import type { DocumentListActionConfig } from "@/core/types"
 import {
   salesContractSchema,
   salesContractChangeRule,
@@ -31,6 +32,122 @@ import {
   salesContractChangeToPurchasePlanRule,
   purchasePlanChangeRule,
 } from "./purchase-plan-schemas"
+
+// ============================================================
+// 单据列表操作配置
+// ============================================================
+
+/** 销售合同 - 列表操作 */
+const salesContractActionConfig: DocumentListActionConfig = {
+  typeId: "sales_contract",
+  rowActions: [
+    { id: "open", label: "打开" },
+    { id: "copy-id", label: "复制ID" },
+    {
+      id: "delete",
+      label: "删除",
+      danger: true,
+      modes: ["document"],
+      visible: (row) => row._status === "draft",
+    },
+  ],
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline" },
+  ],
+}
+
+/** 采购计划 - 列表操作 */
+const purchasePlanActionConfig: DocumentListActionConfig = {
+  typeId: "purchase_plan",
+  rowActions: [
+    { id: "open", label: "打开" },
+    { id: "copy-id", label: "复制ID" },
+    {
+      id: "delete",
+      label: "删除",
+      danger: true,
+      modes: ["document"],
+      visible: (row) => row._status === "draft",
+    },
+  ],
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline" },
+  ],
+}
+
+/** 采购合同 - 列表操作 */
+const purchaseContractActionConfig: DocumentListActionConfig = {
+  typeId: "purchase_contract",
+  rowActions: [
+    { id: "open", label: "打开" },
+    { id: "copy-id", label: "复制ID" },
+    {
+      id: "delete",
+      label: "删除",
+      danger: true,
+      modes: ["document"],
+      visible: (row) => row._status === "draft",
+    },
+  ],
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline" },
+  ],
+}
+
+/** 标准产品 - 列表操作 */
+const standardProductActionConfig: DocumentListActionConfig = {
+  typeId: "standard_product",
+  rowActions: [
+    { id: "open", label: "打开" },
+    { id: "copy-id", label: "复制ID" },
+    {
+      id: "delete",
+      label: "删除",
+      danger: true,
+      modes: ["document"],
+    },
+  ],
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline" },
+  ],
+}
+
+/** 客户产品 - 列表操作 */
+const customerProductActionConfig: DocumentListActionConfig = {
+  typeId: "customer_product",
+  rowActions: [
+    { id: "open", label: "打开" },
+    { id: "copy-id", label: "复制ID" },
+    {
+      id: "delete",
+      label: "删除",
+      danger: true,
+      modes: ["document"],
+    },
+  ],
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline" },
+  ],
+}
+
+/** 自营产品 - 列表操作 */
+const selfOwnedProductActionConfig: DocumentListActionConfig = {
+  typeId: "self_owned_product",
+  rowActions: [
+    { id: "open", label: "打开" },
+    { id: "copy-id", label: "复制ID" },
+    {
+      id: "delete",
+      label: "删除",
+      danger: true,
+      modes: ["document"],
+    },
+  ],
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline" },
+  ],
+}
+
 export function setupExampleSchemas(): void {
   // 注册单据 Schema
   registry.registerSchema(salesContractSchema)
@@ -58,6 +175,14 @@ export function setupExampleSchemas(): void {
 
   // 注册产品变更规则
   registry.registerChangeRule(standardProductChangeRule)
+
+  // 注册列表操作配置
+  registry.registerActionConfig(salesContractActionConfig)
+  registry.registerActionConfig(purchasePlanActionConfig)
+  registry.registerActionConfig(purchaseContractActionConfig)
+  registry.registerActionConfig(standardProductActionConfig)
+  registry.registerActionConfig(customerProductActionConfig)
+  registry.registerActionConfig(selfOwnedProductActionConfig)
 
   // 初始化默认用户和角色
   initializeDefaultData()
