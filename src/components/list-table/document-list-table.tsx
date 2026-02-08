@@ -24,6 +24,7 @@ import {
   deleteDocumentItemApi,
 } from "@/lib/document-api"
 import { useDocumentStore } from "@/stores/document-store"
+import { useUserPermissions } from "@/hooks/use-user-permissions"
 import type { FlatDocumentRow, ListMode } from "@/lib/document-api"
 
 // ============================================================
@@ -147,6 +148,7 @@ export function DocumentListTable({
   const schema = registry.getSchema(typeId)
   const actionConfig = registry.getActionConfig(typeId)
   const queryClient = useQueryClient()
+  const { permissions } = useUserPermissions()
   const [currentMode, setCurrentMode] = useState<ListMode>(mode)
   const resolvedDetailTableId = useMemo(
     () => detailTableId ?? schema?.detailTables[0]?.id,
@@ -170,15 +172,21 @@ export function DocumentListTable({
 
   const isDetailMode = currentMode === "detail"
 
-  // ---- 合并后的操作配置 (注册配置 > 默认配置) ----
+  // ---- 合并后的操作配置 (注册配置 > 默认配置) + 权限过滤 ----
   const resolvedRowActions = useMemo<DocumentActionDef[]>(
-    () => actionConfig?.rowActions ?? DEFAULT_ACTION_CONFIG.rowActions,
-    [actionConfig]
+    () => {
+      const actions = actionConfig?.rowActions ?? DEFAULT_ACTION_CONFIG.rowActions
+      return actions.filter((a) => !a.permission || permissions.has(a.permission))
+    },
+    [actionConfig, permissions]
   )
 
   const resolvedToolbarActions = useMemo(
-    () => actionConfig?.toolbarActions ?? DEFAULT_ACTION_CONFIG.toolbarActions,
-    [actionConfig]
+    () => {
+      const actions = actionConfig?.toolbarActions ?? DEFAULT_ACTION_CONFIG.toolbarActions
+      return actions?.filter((a) => !a.permission || permissions.has(a.permission))
+    },
+    [actionConfig, permissions]
   )
 
   // ============================================================

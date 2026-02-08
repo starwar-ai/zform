@@ -675,6 +675,12 @@ async function main() {
     create: { code: 'ADMIN', name: '系统管理员', description: '拥有全部权限', status: 'active' },
   });
 
+  const managerRole = await prisma.sysRole.upsert({
+    where: { code: 'MANAGER' },
+    update: { name: '业务经理', description: '单据审批和管理权限', status: 'active' },
+    create: { code: 'MANAGER', name: '业务经理', description: '单据审批和管理权限', status: 'active' },
+  });
+
   const userRole = await prisma.sysRole.upsert({
     where: { code: 'USER' },
     update: { name: '普通用户', description: '基础操作权限', status: 'active' },
@@ -800,6 +806,87 @@ async function main() {
     },
   });
 
+  // 采购合同菜单
+  const purchaseContractMenu = await prisma.sysMenu.create({
+    data: {
+      title: '采购合同',
+      icon: 'ClipboardList',
+      path: '/type-list/purchase_contract',
+      parentId: docMenu.id,
+      orderNum: 6,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  // ---- 按钮级权限菜单 (menuType = 'button') ----
+  // 这些不会在侧边栏显示，仅用于权限标识
+
+  /** 批量创建某个单据类型的按钮权限 */
+  async function createDocPermButtons(
+    parentId: string,
+    typeId: string,
+    actions: { perm: string; title: string }[]
+  ) {
+    const result: string[] = [];
+    for (let i = 0; i < actions.length; i++) {
+      const btn = await prisma.sysMenu.create({
+        data: {
+          title: actions[i].title,
+          parentId,
+          orderNum: i + 1,
+          menuType: 'button',
+          permission: `${typeId}:${actions[i].perm}`,
+          status: 'visible',
+        },
+      });
+      result.push(btn.id);
+    }
+    return result;
+  }
+
+  // 通用按钮权限定义
+  const fullDocActions = [
+    { perm: 'create', title: '新建' },
+    { perm: 'delete', title: '删除' },
+    { perm: 'submit', title: '提交' },
+    { perm: 'approve', title: '审批' },
+    { perm: 'close', title: '关闭' },
+    { perm: 'void', title: '作废' },
+    { perm: 'push_down', title: '下推' },
+  ];
+
+  const basicDocActions = [
+    { perm: 'create', title: '新建' },
+    { perm: 'delete', title: '删除' },
+    { perm: 'submit', title: '提交' },
+    { perm: 'approve', title: '审批' },
+  ];
+
+  const salesContractBtnIds = await createDocPermButtons(salesContractMenu.id, 'sales_contract', fullDocActions);
+  const purchasePlanBtnIds = await createDocPermButtons(purchasePlanMenu.id, 'purchase_plan', fullDocActions);
+  const purchaseContractBtnIds = await createDocPermButtons(purchaseContractMenu.id, 'purchase_contract', [
+    ...basicDocActions,
+    { perm: 'close', title: '关闭' },
+    { perm: 'void', title: '作废' },
+  ]);
+  const stdProductBtnIds = await createDocPermButtons(stdProductMenu.id, 'standard_product', [
+    ...basicDocActions,
+    { perm: 'push_down', title: '下推' },
+  ]);
+  const custProductBtnIds = await createDocPermButtons(custProductMenu.id, 'customer_product', basicDocActions);
+  const selfProductBtnIds = await createDocPermButtons(selfProductMenu.id, 'self_owned_product', basicDocActions);
+
+  // 所有按钮权限 ID 汇总
+  const allBtnIds = [
+    ...salesContractBtnIds,
+    ...purchasePlanBtnIds,
+    ...purchaseContractBtnIds,
+    ...stdProductBtnIds,
+    ...custProductBtnIds,
+    ...selfProductBtnIds,
+  ];
+
   // 顶级菜单：系统管理
   const sysMenu = await prisma.sysMenu.create({
     data: {
@@ -850,7 +937,7 @@ async function main() {
   });
 
   // -- 角色-菜单关联 --
-  // 管理员角色：拥有全部菜单
+  // 管理员角色：拥有全部菜单 + 全部按钮权限
   const allMenuIds = [
     docMenu.id,
     salesContractMenu.id,
@@ -858,10 +945,12 @@ async function main() {
     stdProductMenu.id,
     custProductMenu.id,
     selfProductMenu.id,
+    purchaseContractMenu.id,
     sysMenu.id,
     userMgmtMenu.id,
     roleMgmtMenu.id,
     menuMgmtMenu.id,
+    ...allBtnIds,
   ];
 
   await prisma.sysRoleMenu.createMany({
@@ -871,7 +960,36 @@ async function main() {
     })),
   });
 
-  // 普通用户角色：只有单据管理菜单
+  // 业务经理角色：单据管理菜单 + 全部按钮权限（含审批）
+  const managerMenuIds = [
+    docMenu.id,
+    salesContractMenu.id,
+    purchasePlanMenu.id,
+    stdProductMenu.id,
+    custProductMenu.id,
+    selfProductMenu.id,
+    purchaseContractMenu.id,
+    ...allBtnIds,
+  ];
+
+  await prisma.sysRoleMenu.createMany({
+    data: managerMenuIds.map((menuId) => ({
+      roleId: managerRole.id,
+      menuId,
+    })),
+  });
+
+  // 普通用户角色：单据管理菜单 + 基础操作按钮权限 (新建/删除/提交，不含审批/关闭/作废/下推)
+  // 从每种类型的按钮中，只取 create/delete/submit (前3个)
+  const userBtnIds = [
+    ...salesContractBtnIds.slice(0, 3),
+    ...purchasePlanBtnIds.slice(0, 3),
+    ...purchaseContractBtnIds.slice(0, 3),
+    ...stdProductBtnIds.slice(0, 3),
+    ...custProductBtnIds.slice(0, 3),
+    ...selfProductBtnIds.slice(0, 3),
+  ];
+
   const userMenuIds = [
     docMenu.id,
     salesContractMenu.id,
@@ -879,6 +997,8 @@ async function main() {
     stdProductMenu.id,
     custProductMenu.id,
     selfProductMenu.id,
+    purchaseContractMenu.id,
+    ...userBtnIds,
   ];
 
   await prisma.sysRoleMenu.createMany({
@@ -894,9 +1014,9 @@ async function main() {
   console.log(`Products: ${standardProduct.code}, ${customerProduct.code}`);
   console.log(`Sales contract: ${salesContract.code}`);
   console.log(`Approval rules: ${salesContractApprovalRule.code}, ${purchasePlanApprovalRule.code}, ${purchaseContractApprovalRule.code}`);
-  console.log(`Roles: ${adminRole.code}, ${userRole.code}`);
+  console.log(`Roles: ${adminRole.code}, ${managerRole.code}, ${userRole.code}`);
   console.log(`Users: admin (password: admin123), demo (password: 123456)`);
-  console.log(`Menus: ${allMenuIds.length} menus created`);
+  console.log(`Menus: ${allMenuIds.length} menus (incl. ${allBtnIds.length} button permissions)`);
 }
 
 main()

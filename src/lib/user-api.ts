@@ -115,3 +115,8 @@ export async function loginApi(
     body: JSON.stringify({ username, password }),
   })
 }
+
+/** 获取当前用户的权限标识列表 */
+export async function fetchUserPermissionsApi(): Promise<string[]> {
+  return request<string[]>("/users/me/permissions")
+}

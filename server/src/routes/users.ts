@@ -3,8 +3,9 @@ import { userController } from '../controllers/user.controller';
 
 const router = Router();
 
-// 登录路由放在参数路由之前
+// 登录路由和 /me 路由放在参数路由之前
 router.post('/login', userController.login);
+router.get('/me/permissions', userController.getMyPermissions);
 
 router.get('/', userController.list);
 router.post('/', userController.create);

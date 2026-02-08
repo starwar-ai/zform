@@ -65,6 +65,24 @@ export const userController = {
     }
   },
 
+  /** GET /users/me/permissions - 获取当前用户权限标识列表 */
+  async getMyPermissions(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = getUserId(req);
+      if (userId === 'system') {
+        return res.status(401).json({
+          success: false,
+          message: '未登录',
+          timestamp: new Date().toISOString(),
+        });
+      }
+      const permissions = await userService.getPermissions(userId);
+      res.json(successResponse(permissions));
+    } catch (error) {
+      next(error);
+    }
+  },
+
   /** POST /users/login - 登录 */
   async login(req: Request, res: Response, next: NextFunction) {
     try {

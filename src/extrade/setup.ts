@@ -6,7 +6,7 @@
  */
 
 import { registry } from "@/core/registry"
-import type { DocumentListActionConfig } from "@/core/types"
+import type { DocumentListActionConfig, DocumentFormActionConfig } from "@/core/types"
 import {
   salesContractSchema,
   salesContractChangeRule,
@@ -47,10 +47,11 @@ const salesContractActionConfig: DocumentListActionConfig = {
       danger: true,
       modes: ["document"],
       visible: (row) => row._status === "draft",
+      permission: "sales_contract:delete",
     },
   ],
   toolbarActions: [
-    { id: "create", label: "新建", icon: "Plus", variant: "outline" },
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "sales_contract:create" },
   ],
 }
 
@@ -66,10 +67,11 @@ const purchasePlanActionConfig: DocumentListActionConfig = {
       danger: true,
       modes: ["document"],
       visible: (row) => row._status === "draft",
+      permission: "purchase_plan:delete",
     },
   ],
   toolbarActions: [
-    { id: "create", label: "新建", icon: "Plus", variant: "outline" },
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "purchase_plan:create" },
   ],
 }
 
@@ -85,10 +87,11 @@ const purchaseContractActionConfig: DocumentListActionConfig = {
       danger: true,
       modes: ["document"],
       visible: (row) => row._status === "draft",
+      permission: "purchase_contract:delete",
     },
   ],
   toolbarActions: [
-    { id: "create", label: "新建", icon: "Plus", variant: "outline" },
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "purchase_contract:create" },
   ],
 }
 
@@ -103,10 +106,11 @@ const standardProductActionConfig: DocumentListActionConfig = {
       label: "删除",
       danger: true,
       modes: ["document"],
+      permission: "standard_product:delete",
     },
   ],
   toolbarActions: [
-    { id: "create", label: "新建", icon: "Plus", variant: "outline" },
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "standard_product:create" },
   ],
 }
 
@@ -121,10 +125,11 @@ const customerProductActionConfig: DocumentListActionConfig = {
       label: "删除",
       danger: true,
       modes: ["document"],
+      permission: "customer_product:delete",
     },
   ],
   toolbarActions: [
-    { id: "create", label: "新建", icon: "Plus", variant: "outline" },
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "customer_product:create" },
   ],
 }
 
@@ -139,10 +144,181 @@ const selfOwnedProductActionConfig: DocumentListActionConfig = {
       label: "删除",
       danger: true,
       modes: ["document"],
+      permission: "self_owned_product:delete",
     },
   ],
   toolbarActions: [
-    { id: "create", label: "新建", icon: "Plus", variant: "outline" },
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "self_owned_product:create" },
+  ],
+}
+
+// ============================================================
+// 单据表单操作配置 (状态 + 权限驱动)
+// ============================================================
+
+/** 销售合同 - 表单操作 */
+const salesContractFormActions: DocumentFormActionConfig = {
+  typeId: "sales_contract",
+  actions: [
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["draft"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["draft"], permission: "sales_contract:submit", order: 2 },
+    {
+      id: "approve", label: "审批", icon: "Check", allowedStatuses: ["submitted"],
+      permission: "sales_contract:approve", order: 3,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "reject", label: "拒绝", icon: "X", variant: "destructive", allowedStatuses: ["submitted"],
+      permission: "sales_contract:approve", order: 4,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "withdraw", label: "撤回", icon: "Undo2", variant: "outline", allowedStatuses: ["submitted"], order: 5,
+      visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
+    },
+    { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["approved"], permission: "sales_contract:close", order: 6 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["draft"], order: 7 },
+    { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["approved"], permission: "sales_contract:void", order: 8 },
+    {
+      id: "push-down:0", label: "生成采购计划", icon: "ArrowDownToLine", variant: "outline",
+      allowedStatuses: ["approved"], permission: "sales_contract:push_down", order: 10,
+    },
+  ],
+}
+
+/** 采购计划 - 表单操作 */
+const purchasePlanFormActions: DocumentFormActionConfig = {
+  typeId: "purchase_plan",
+  actions: [
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["draft"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["draft"], permission: "purchase_plan:submit", order: 2 },
+    {
+      id: "approve", label: "审批", icon: "Check", allowedStatuses: ["submitted"],
+      permission: "purchase_plan:approve", order: 3,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "reject", label: "拒绝", icon: "X", variant: "destructive", allowedStatuses: ["submitted"],
+      permission: "purchase_plan:approve", order: 4,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "withdraw", label: "撤回", icon: "Undo2", variant: "outline", allowedStatuses: ["submitted"], order: 5,
+      visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
+    },
+    { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["approved"], permission: "purchase_plan:close", order: 6 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["draft"], order: 7 },
+    { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["approved"], permission: "purchase_plan:void", order: 8 },
+    {
+      id: "push-down:0", label: "生成采购合同", icon: "ArrowDownToLine", variant: "outline",
+      allowedStatuses: ["approved"], permission: "purchase_plan:push_down", order: 10,
+    },
+  ],
+}
+
+/** 采购合同 - 表单操作 */
+const purchaseContractFormActions: DocumentFormActionConfig = {
+  typeId: "purchase_contract",
+  actions: [
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["draft"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["draft"], permission: "purchase_contract:submit", order: 2 },
+    {
+      id: "approve", label: "审批", icon: "Check", allowedStatuses: ["submitted"],
+      permission: "purchase_contract:approve", order: 3,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "reject", label: "拒绝", icon: "X", variant: "destructive", allowedStatuses: ["submitted"],
+      permission: "purchase_contract:approve", order: 4,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "withdraw", label: "撤回", icon: "Undo2", variant: "outline", allowedStatuses: ["submitted"], order: 5,
+      visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
+    },
+    { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["approved"], permission: "purchase_contract:close", order: 6 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["draft"], order: 7 },
+    { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["approved"], permission: "purchase_contract:void", order: 8 },
+  ],
+}
+
+/** 标准产品 - 表单操作 */
+const standardProductFormActions: DocumentFormActionConfig = {
+  typeId: "standard_product",
+  actions: [
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["draft"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["draft"], permission: "standard_product:submit", order: 2 },
+    {
+      id: "approve", label: "审批", icon: "Check", allowedStatuses: ["submitted"],
+      permission: "standard_product:approve", order: 3,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "reject", label: "拒绝", icon: "X", variant: "destructive", allowedStatuses: ["submitted"],
+      permission: "standard_product:approve", order: 4,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "withdraw", label: "撤回", icon: "Undo2", variant: "outline", allowedStatuses: ["submitted"], order: 5,
+      visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
+    },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["draft"], order: 7 },
+    {
+      id: "push-down:0", label: "生成客户产品", icon: "ArrowDownToLine", variant: "outline",
+      allowedStatuses: ["approved"], permission: "standard_product:push_down", order: 10,
+    },
+    {
+      id: "push-down:1", label: "生成自营产品", icon: "ArrowDownToLine", variant: "outline",
+      allowedStatuses: ["approved"], permission: "standard_product:push_down", order: 11,
+    },
+  ],
+}
+
+/** 客户产品 - 表单操作 */
+const customerProductFormActions: DocumentFormActionConfig = {
+  typeId: "customer_product",
+  actions: [
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["draft"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["draft"], permission: "customer_product:submit", order: 2 },
+    {
+      id: "approve", label: "审批", icon: "Check", allowedStatuses: ["submitted"],
+      permission: "customer_product:approve", order: 3,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "reject", label: "拒绝", icon: "X", variant: "destructive", allowedStatuses: ["submitted"],
+      permission: "customer_product:approve", order: 4,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "withdraw", label: "撤回", icon: "Undo2", variant: "outline", allowedStatuses: ["submitted"], order: 5,
+      visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
+    },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["draft"], order: 7 },
+  ],
+}
+
+/** 自营产品 - 表单操作 */
+const selfOwnedProductFormActions: DocumentFormActionConfig = {
+  typeId: "self_owned_product",
+  actions: [
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["draft"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["draft"], permission: "self_owned_product:submit", order: 2 },
+    {
+      id: "approve", label: "审批", icon: "Check", allowedStatuses: ["submitted"],
+      permission: "self_owned_product:approve", order: 3,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "reject", label: "拒绝", icon: "X", variant: "destructive", allowedStatuses: ["submitted"],
+      permission: "self_owned_product:approve", order: 4,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "withdraw", label: "撤回", icon: "Undo2", variant: "outline", allowedStatuses: ["submitted"], order: 5,
+      visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
+    },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["draft"], order: 7 },
   ],
 }
 
@@ -181,6 +357,14 @@ export function setupExampleSchemas(): void {
   registry.registerActionConfig(standardProductActionConfig)
   registry.registerActionConfig(customerProductActionConfig)
   registry.registerActionConfig(selfOwnedProductActionConfig)
+
+  // 注册表单操作配置
+  registry.registerFormActionConfig(salesContractFormActions)
+  registry.registerFormActionConfig(purchasePlanFormActions)
+  registry.registerFormActionConfig(purchaseContractFormActions)
+  registry.registerFormActionConfig(standardProductFormActions)
+  registry.registerFormActionConfig(customerProductFormActions)
+  registry.registerFormActionConfig(selfOwnedProductFormActions)
 
   // 用户和角色数据已迁移到后端数据库，通过 seed 初始化
   // 审核规则已迁移到服务端数据库，无需前端注册

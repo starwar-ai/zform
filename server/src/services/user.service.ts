@@ -180,6 +180,29 @@ export class UserService {
     return { ...rest, roleIds };
   }
 
+  /** 获取用户所有权限标识 (userId -> roles -> menus -> permission) */
+  async getPermissions(userId: string): Promise<string[]> {
+    const roleMenus = await prisma.sysRoleMenu.findMany({
+      where: {
+        role: {
+          userRoles: { some: { userId } },
+          status: 'active',
+        },
+      },
+      include: {
+        menu: {
+          select: { permission: true, status: true },
+        },
+      },
+    });
+
+    const permissions = roleMenus
+      .filter((rm) => rm.menu.status === 'visible' && rm.menu.permission)
+      .map((rm) => rm.menu.permission!);
+
+    return [...new Set(permissions)];
+  }
+
   /** 获取用户角色 ID 列表 */
   private async getUserRoleIds(userId: string): Promise<string[]> {
     const userRoles = await prisma.sysUserRole.findMany({

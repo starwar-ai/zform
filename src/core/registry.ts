@@ -12,6 +12,7 @@ import type {
   ChangeRule,
   ApprovalRule,
   DocumentListActionConfig,
+  DocumentFormActionConfig,
 } from "./types"
 
 class DocumentRegistry {
@@ -20,6 +21,7 @@ class DocumentRegistry {
   private changeRules: ChangeRule[] = []
   private approvalRules: ApprovalRule[] = []
   private actionConfigs = new Map<DocumentTypeId, DocumentListActionConfig>()
+  private formActionConfigs = new Map<DocumentTypeId, DocumentFormActionConfig>()
 
   /** 注册单据 Schema */
   registerSchema(schema: DocumentSchema): void {
@@ -120,6 +122,26 @@ class DocumentRegistry {
     return Array.from(this.actionConfigs.values())
   }
 
+  // ---- 表单操作配置 ----
+
+  /** 注册单据表单操作配置 */
+  registerFormActionConfig(config: DocumentFormActionConfig): void {
+    if (this.formActionConfigs.has(config.typeId)) {
+      console.warn(`[Registry] FormActionConfig "${config.typeId}" already registered, overwriting.`)
+    }
+    this.formActionConfigs.set(config.typeId, config)
+  }
+
+  /** 获取某种单据的表单操作配置 */
+  getFormActionConfig(typeId: DocumentTypeId): DocumentFormActionConfig | undefined {
+    return this.formActionConfigs.get(typeId)
+  }
+
+  /** 获取所有表单操作配置 */
+  getAllFormActionConfigs(): DocumentFormActionConfig[] {
+    return Array.from(this.formActionConfigs.values())
+  }
+
   /** 清空所有注册 (用于测试) */
   clear(): void {
     this.schemas.clear()
@@ -127,6 +149,7 @@ class DocumentRegistry {
     this.changeRules = []
     this.approvalRules = []
     this.actionConfigs.clear()
+    this.formActionConfigs.clear()
   }
 }
 

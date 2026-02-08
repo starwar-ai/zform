@@ -13,6 +13,8 @@ import type {
 import { useDocumentStore, getTraceableStore } from "@/stores/document-store"
 import { useTabStore } from "@/stores/tab-store"
 import { useTraceability, usePushDown, useImpactAssessment } from "@/hooks/use-document"
+import { useApproval } from "@/hooks/use-approval"
+import { useDocumentFormActions } from "@/hooks/use-document-form-actions"
 import { registry } from "@/core/registry"
 import { createDocumentApi, updateDocumentApi } from "@/lib/document-api"
 import { MasterForm } from "./master-form"
@@ -30,7 +32,24 @@ import {
   ResizablePanel,
   usePanelRef,
 } from "@/components/ui/resizable"
-import { Save, Send, ArrowDownToLine, FileText, PanelRightClose, PanelRightOpen } from "lucide-react"
+import {
+  Save, Send, ArrowDownToLine, FileText, PanelRightClose, PanelRightOpen,
+  Check, X, Undo2, Lock, Ban, Trash2,
+} from "lucide-react"
+import type { LucideIcon } from "lucide-react"
+
+/** 图标名称 → 组件映射 */
+const iconMap: Record<string, LucideIcon> = {
+  Save, Send, ArrowDownToLine, Check, X, Undo2, Lock, Ban, Trash2,
+}
+
+/** 根据图标名称渲染图标 */
+function ActionIcon({ name }: { name?: string }) {
+  if (!name) return null
+  const Icon = iconMap[name]
+  if (!Icon) return null
+  return <Icon className="h-4 w-4 mr-1" />
+}
 
 interface DocumentFormProps {
   docId: string
@@ -68,6 +87,8 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
   const { upstream, downstream } = useTraceability(docId)
   const { getAvailableRules, executePushDown } = usePushDown()
   const { evaluate } = useImpactAssessment()
+  const approval = useApproval(doc?.typeId ?? "", docId)
+  const { visibleActions, isDisabled: isActionDisabled } = useDocumentFormActions(doc)
 
   const [impactOpen, setImpactOpen] = useState(false)
   const [assessment, setAssessment] = useState<ImpactAssessment | null>(null)
@@ -135,7 +156,6 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
 
   const isEditable = doc.status === "draft"
   const isNew = Boolean(doc._isNew)
-  const pushDownRules = getAvailableRules(doc.typeId)
 
   const resolveDocCode = useCallback((value: unknown) => {
     if (typeof value === "string") {
@@ -317,10 +337,148 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
   }
 
   const handlePushDown = (ruleIndex: number) => {
-    const rule = pushDownRules[ruleIndex]
+    const rules = getAvailableRules(doc.typeId)
+    const rule = rules[ruleIndex]
     if (!rule) return
     const newDoc = executePushDown(doc, rule)
     onNavigate?.(newDoc.id)
+  }
+
+  /** 审批通过 */
+  const handleApprove = async () => {
+    setSaving(true)
+    try {
+      const result = await approval.approve()
+      if (result?.success) {
+        updateStatus(docId, "approved")
+        approval.refresh()
+      } else {
+        alert(`审批失败: ${result?.message ?? "未知错误"}`)
+      }
+    } catch (err) {
+      console.error("审批失败:", err)
+      alert(`审批失败: ${err instanceof Error ? err.message : String(err)}`)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  /** 拒绝 */
+  const handleReject = async () => {
+    setSaving(true)
+    try {
+      const result = await approval.reject()
+      if (result?.success) {
+        updateStatus(docId, "draft")
+        approval.refresh()
+      } else {
+        alert(`拒绝失败: ${result?.message ?? "未知错误"}`)
+      }
+    } catch (err) {
+      console.error("拒绝失败:", err)
+      alert(`拒绝失败: ${err instanceof Error ? err.message : String(err)}`)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  /** 撤回 */
+  const handleWithdraw = async () => {
+    setSaving(true)
+    try {
+      const result = await approval.withdraw()
+      if (result?.success) {
+        updateStatus(docId, "draft")
+        approval.refresh()
+      } else {
+        alert(`撤回失败: ${result?.message ?? "未知错误"}`)
+      }
+    } catch (err) {
+      console.error("撤回失败:", err)
+      alert(`撤回失败: ${err instanceof Error ? err.message : String(err)}`)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  /** 关闭单据 */
+  const handleClose = async () => {
+    setSaving(true)
+    try {
+      await updateDocumentApi(doc.typeId, doc.id, { ...doc, status: "closed" })
+      updateStatus(docId, "closed")
+    } catch (err) {
+      console.error("关闭失败:", err)
+      alert(`关闭失败: ${err instanceof Error ? err.message : String(err)}`)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  /** 取消单据 (草稿 → 已取消) */
+  const handleCancel = async () => {
+    setSaving(true)
+    try {
+      await updateDocumentApi(doc.typeId, doc.id, { ...doc, status: "cancelled" })
+      updateStatus(docId, "cancelled")
+    } catch (err) {
+      console.error("取消失败:", err)
+      alert(`取消失败: ${err instanceof Error ? err.message : String(err)}`)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  /** 作废单据 (已审批 → 已取消) */
+  const handleVoid = async () => {
+    setSaving(true)
+    try {
+      await updateDocumentApi(doc.typeId, doc.id, { ...doc, status: "cancelled" })
+      updateStatus(docId, "cancelled")
+    } catch (err) {
+      console.error("作废失败:", err)
+      alert(`作废失败: ${err instanceof Error ? err.message : String(err)}`)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  /** 统一操作分发 */
+  const handleAction = (actionId: string) => {
+    // push-down:N 格式解析
+    if (actionId.startsWith("push-down:")) {
+      const ruleIndex = parseInt(actionId.split(":")[1], 10)
+      handlePushDown(ruleIndex)
+      return
+    }
+    switch (actionId) {
+      case "save":
+        handleSave()
+        break
+      case "submit":
+        handleSubmit()
+        break
+      case "approve":
+        handleApprove()
+        break
+      case "reject":
+        handleReject()
+        break
+      case "withdraw":
+        handleWithdraw()
+        break
+      case "close":
+        handleClose()
+        break
+      case "cancel":
+        handleCancel()
+        break
+      case "void":
+        handleVoid()
+        break
+      default:
+        console.warn(`[DocumentForm] 未处理的操作: "${actionId}"`)
+    }
   }
 
   return (
@@ -337,29 +495,22 @@ export function DocumentForm({ docId, onNavigate }: DocumentFormProps) {
           </Badge>
         </div>
         <div className="flex items-center gap-2">
-          {isEditable && (
-            <>
-              <Button variant="outline" size="sm" onClick={handleSave} disabled={saving}>
-                <Save className="h-4 w-4 mr-1" />
-                {saving ? "保存中..." : "保存"}
-              </Button>
-              <Button size="sm" onClick={handleSubmit} disabled={saving}>
-                <Send className="h-4 w-4 mr-1" />
-                {saving ? "提交中..." : "提交"}
-              </Button>
-            </>
-          )}
-          {pushDownRules.map((rule, index) => (
+          {/* 根据状态 + 权限动态渲染操作按钮 */}
+          {visibleActions.map((action) => (
             <Button
-              key={index}
-              variant="outline"
+              key={action.id}
+              variant={action.variant ?? "outline"}
               size="sm"
-              onClick={() => handlePushDown(index)}
+              disabled={isActionDisabled(action.id) || saving}
+              onClick={() => handleAction(action.id)}
             >
-              <ArrowDownToLine className="h-4 w-4 mr-1" />
-              {rule.name}
+              <ActionIcon name={action.icon} />
+              {saving && (action.id === "save" || action.id === "submit")
+                ? `${action.label}中...`
+                : action.label}
             </Button>
           ))}
+          {/* 面板折叠/展开按钮 */}
           {!isNew && (
             <Button
               variant="ghost"

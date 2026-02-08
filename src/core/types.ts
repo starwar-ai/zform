@@ -392,6 +392,8 @@ export interface DocumentActionDef {
    * 禁用条件: 根据行数据决定是否禁用
    */
   disabled?: (row: Record<string, unknown>) => boolean
+  /** 所需权限标识 (格式 "typeId:action"，对应 Menu.permission) */
+  permission?: string
 }
 
 /** 工具栏操作定义 */
@@ -406,6 +408,8 @@ export interface ToolbarActionDef {
   variant?: "default" | "outline" | "ghost"
   /** 是否仅在选中行时显示 (默认 false，始终显示) */
   requiresSelection?: boolean
+  /** 所需权限标识 (格式 "typeId:action"，对应 Menu.permission) */
+  permission?: string
 }
 
 /** 单据列表操作配置 —— 声明式定义某种单据在列表中可执行的操作 */
@@ -416,4 +420,56 @@ export interface DocumentListActionConfig {
   rowActions: DocumentActionDef[]
   /** 工具栏操作列表 (显示在标题栏右侧) */
   toolbarActions?: ToolbarActionDef[]
+}
+
+// ============================================================
+// 单据表单操作配置 (状态 + 权限驱动)
+// ============================================================
+
+/** 操作上下文 -- 传给 visible/disabled 回调 */
+export interface ActionContext {
+  /** 当前单据数据 */
+  doc: DocumentData
+  /** 是否为新建单据 */
+  isNew: boolean
+  /** 当前用户 ID */
+  currentUserId: string
+  /** 当前用户拥有的权限标识集合 */
+  userPermissions: Set<string>
+  /** 审核状态 (由 useApprovalPermission 提供) */
+  approvalState?: {
+    canApprove: boolean
+    canWithdraw: boolean
+    canSubmit: boolean
+  }
+}
+
+/** 单据表单操作定义 */
+export interface DocumentFormActionDef {
+  /** 操作标识: "save" | "submit" | "approve" | "reject" | "withdraw" | "push-down:N" | "close" | "cancel" | "void" | 自定义 */
+  id: string
+  /** 显示文本 */
+  label: string
+  /** lucide-react 图标名 */
+  icon?: string
+  /** 按钮样式 */
+  variant?: "default" | "outline" | "ghost" | "destructive"
+  /** 允许该操作的单据状态列表 (空/undefined = 不限) */
+  allowedStatuses?: DocumentStatus[]
+  /** 所需权限标识 (格式 "typeId:action"，对应 Menu.permission) */
+  permission?: string
+  /** 自定义可见性判断 (优先级最高，可访问 doc 和 approvalState) */
+  visible?: (ctx: ActionContext) => boolean
+  /** 自定义禁用判断 */
+  disabled?: (ctx: ActionContext) => boolean
+  /** 排序权重 (越小越靠前，默认 100) */
+  order?: number
+}
+
+/** 单据表单操作配置 */
+export interface DocumentFormActionConfig {
+  /** 单据类型 ID */
+  typeId: DocumentTypeId
+  /** 表单操作列表 */
+  actions: DocumentFormActionDef[]
 }
