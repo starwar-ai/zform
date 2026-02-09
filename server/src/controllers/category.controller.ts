@@ -1,7 +1,7 @@
 /**
  * CategoryController
  *
- * 统一分类管理 REST API 控制器。
+ * 统一业务属性配置 REST API 控制器。
  * 通过 :type 路径参数分发到不同的 Service。
  */
 
@@ -9,11 +9,13 @@ import { Request, Response, NextFunction } from 'express';
 import { CustomerCategoryService } from '../services/customer-category.service';
 import { HsCodeService } from '../services/hs-code.service';
 import { ExhibitionCategoryService } from '../services/exhibition-category.service';
+import { CustomerSourceTagService } from '../services/customer-source-tag.service';
 import { successResponse } from '../utils/response';
 
 const customerCategoryService = new CustomerCategoryService();
 const hsCodeService = new HsCodeService();
 const exhibitionCategoryService = new ExhibitionCategoryService();
+const customerSourceTagService = new CustomerSourceTagService();
 
 /** 获取请求中的用户 ID */
 function getUserId(req: Request): string | undefined {
@@ -147,6 +149,48 @@ export const categoryController = {
     try {
       await exhibitionCategoryService.delete(param(req, 'id'));
       res.json(successResponse(null, '展会分类删除成功'));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // ==================== 客户来源 ====================
+
+  /** GET /categories/customer-source - 获取客户来源列表 */
+  async getCustomerSourceList(_req: Request, res: Response, next: NextFunction) {
+    try {
+      const list = await customerSourceTagService.findAll();
+      res.json(successResponse(list));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** POST /categories/customer-source - 创建客户来源 */
+  async createCustomerSource(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await customerSourceTagService.create(req.body, getUserId(req));
+      res.status(201).json(successResponse(result, '客户来源创建成功'));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** PUT /categories/customer-source/:id - 更新客户来源 */
+  async updateCustomerSource(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await customerSourceTagService.update(param(req, 'id'), req.body, getUserId(req));
+      res.json(successResponse(result, '客户来源更新成功'));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** DELETE /categories/customer-source/:id - 删除客户来源 */
+  async deleteCustomerSource(req: Request, res: Response, next: NextFunction) {
+    try {
+      await customerSourceTagService.delete(param(req, 'id'));
+      res.json(successResponse(null, '客户来源删除成功'));
     } catch (error) {
       next(error);
     }

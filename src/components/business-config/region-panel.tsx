@@ -1,17 +1,16 @@
 /**
- * CountryConfigPanel
+ * RegionConfigPanel
  *
- * 国家配置面板
+ * 区域配置面板
  */
 
 import { useState, useEffect, useCallback } from "react"
-import type { Country, Region } from "@/types/business-config"
+import type { Region } from "@/types/business-config"
 import {
   fetchRegionsApi,
-  fetchCountriesApi,
-  createCountryApi,
-  updateCountryApi,
-  deleteCountryApi,
+  createRegionApi,
+  updateRegionApi,
+  deleteRegionApi,
 } from "@/lib/business-config-api"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -44,33 +43,24 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Plus, Edit, Trash2, Loader2, RefreshCw } from "lucide-react"
 
-export function CountryConfigPanel() {
-  const [data, setData] = useState<Country[]>([])
-  const [regions, setRegions] = useState<Region[]>([])
+export function RegionConfigPanel() {
+  const [data, setData] = useState<Region[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   // 对话框状态
   const [dialogOpen, setDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [editingItem, setEditingItem] = useState<Country | null>(null)
+  const [editingItem, setEditingItem] = useState<Region | null>(null)
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
   // 表单数据
-  const [formData, setFormData] = useState<Partial<Country>>({
+  const [formData, setFormData] = useState<Partial<Region>>({
     name: '',
     code: '',
-    regionId: '',
   })
 
   // 加载数据
@@ -78,12 +68,8 @@ export function CountryConfigPanel() {
     setLoading(true)
     setError(null)
     try {
-      const [countriesResult, regionsResult] = await Promise.all([
-        fetchCountriesApi(),
-        fetchRegionsApi(),
-      ])
-      setData(countriesResult)
-      setRegions(regionsResult)
+      const result = await fetchRegionsApi()
+      setData(result)
     } catch (err) {
       setError(err instanceof Error ? err.message : '加载失败')
     } finally {
@@ -101,18 +87,16 @@ export function CountryConfigPanel() {
     setFormData({
       name: '',
       code: '',
-      regionId: '',
     })
     setDialogOpen(true)
   }
 
   // 编辑
-  const handleEdit = (item: Country) => {
+  const handleEdit = (item: Region) => {
     setEditingItem(item)
     setFormData({
       name: item.name,
       code: item.code,
-      regionId: item.regionId || '',
     })
     setDialogOpen(true)
   }
@@ -127,7 +111,7 @@ export function CountryConfigPanel() {
     if (!deletingItemId) return
     setSaving(true)
     try {
-      await deleteCountryApi(deletingItemId)
+      await deleteRegionApi(deletingItemId)
       await loadData()
     } catch (err) {
       console.error('删除失败:', err)
@@ -141,7 +125,7 @@ export function CountryConfigPanel() {
 
   // 提交
   const handleSubmit = async () => {
-    if (!formData.name || !formData.code || !formData.regionId) {
+    if (!formData.name || !formData.code) {
       alert('请填写必填字段')
       return
     }
@@ -149,9 +133,9 @@ export function CountryConfigPanel() {
     setSaving(true)
     try {
       if (editingItem) {
-        await updateCountryApi(editingItem.id, formData)
+        await updateRegionApi(editingItem.id, formData)
       } else {
-        await createCountryApi(formData)
+        await createRegionApi(formData)
       }
       setDialogOpen(false)
       await loadData()
@@ -179,7 +163,7 @@ export function CountryConfigPanel() {
           </Button>
           <Button size="sm" onClick={handleCreate}>
             <Plus className="h-4 w-4 mr-1" />
-            新建国家
+            新建区域
           </Button>
         </div>
       </div>
@@ -203,8 +187,6 @@ export function CountryConfigPanel() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>国家名称</TableHead>
-                  <TableHead>国家编码</TableHead>
                   <TableHead>区域名称</TableHead>
                   <TableHead>区域编码</TableHead>
                   <TableHead>创建时间</TableHead>
@@ -216,8 +198,6 @@ export function CountryConfigPanel() {
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">{item.name}</TableCell>
                     <TableCell>{item.code}</TableCell>
-                    <TableCell>{item.region?.name || '-'}</TableCell>
-                    <TableCell>{item.region?.code || '-'}</TableCell>
                     <TableCell>
                       {new Date(item.createdAt).toLocaleString('zh-CN')}
                     </TableCell>
@@ -239,7 +219,7 @@ export function CountryConfigPanel() {
             </Table>
           ) : (
             <p className="text-sm text-muted-foreground text-center py-8">
-              暂无数据，请点击"新建国家"创建。
+              暂无数据，请点击"新建区域"创建。
             </p>
           )}
         </CardContent>
@@ -249,51 +229,31 @@ export function CountryConfigPanel() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editingItem ? '编辑国家' : '新建国家'}</DialogTitle>
+            <DialogTitle>{editingItem ? '编辑区域' : '新建区域'}</DialogTitle>
             <DialogDescription>
-              {editingItem ? '修改国家信息' : '创建新国家'}
+              {editingItem ? '修改区域信息' : '创建新区域'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>
-                国家名称<span className="text-destructive ml-1">*</span>
+                区域名称<span className="text-destructive ml-1">*</span>
               </Label>
               <Input
                 value={formData.name || ''}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="例如: 中国"
+                placeholder="例如: 亚洲"
               />
             </div>
             <div className="space-y-2">
               <Label>
-                国家编码<span className="text-destructive ml-1">*</span>
+                区域编码<span className="text-destructive ml-1">*</span>
               </Label>
               <Input
                 value={formData.code || ''}
                 onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                placeholder="例如: CN"
+                placeholder="例如: AS"
               />
-            </div>
-            <div className="space-y-2">
-              <Label>
-                所属区域<span className="text-destructive ml-1">*</span>
-              </Label>
-              <Select
-                value={formData.regionId || ''}
-                onValueChange={(v) => setFormData({ ...formData, regionId: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="请选择区域" />
-                </SelectTrigger>
-                <SelectContent>
-                  {regions.map((region) => (
-                    <SelectItem key={region.id} value={region.id}>
-                      {region.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
           </div>
           <DialogFooter>
@@ -302,7 +262,7 @@ export function CountryConfigPanel() {
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={saving || !formData.name || !formData.code || !formData.regionId}
+              disabled={saving || !formData.name || !formData.code}
             >
               {saving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
               {editingItem ? '保存' : '创建'}
@@ -317,7 +277,7 @@ export function CountryConfigPanel() {
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除</AlertDialogTitle>
             <AlertDialogDescription>
-              此操作无法撤销。确定要删除该国家吗？如果该国家下有港口，将无法删除。
+              此操作无法撤销。确定要删除该区域吗？如果该区域下有国家，将无法删除。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

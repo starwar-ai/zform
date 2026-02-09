@@ -109,15 +109,32 @@ model CompanyBankAccount {
   @@map("company_bank_accounts")
 }
 
+// ==================== 区域表 ====================
+
+model Region {
+  id         String    @id @default(cuid())
+  code       String    @unique               // 区域编码
+  name       String                          // 区域名称
+
+  createdBy  String?   @map("created_by")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedBy  String?   @map("updated_by")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+  
+  countries  Country[]
+
+  @@map("regions")
+}
+
 // ==================== 国家表 ====================
 
 model Country {
   id           String    @id @default(cuid())
   name         String                          // 国家名称
   code         String    @unique               // 国家编码
-  regionCode   String?   @map("region_code")   // 区域编码
-  regionName   String?   @map("region_name")   // 区域名称
-  areaCode     String?   @map("area_code")     // 区域代码
+  regionId     String?   @map("region_id")     // 区域id
+  region       Region?   @relation(fields: [regionId], references: [id])
   
   createdBy    String?   @map("created_by")
   createdAt    DateTime  @default(now()) @map("created_at")
@@ -127,6 +144,7 @@ model Country {
   
   ports        Port[]
 
+  @@index([regionId])
   @@map("countries")
 }
 
@@ -186,9 +204,9 @@ model Brand {
   customerCode   String?   @map("customer_code")
   customerName   String?   @map("customer_name")
   type           String?   // 品牌类型
-  serialLength   Int       @default(6) @map("serial_length")
   description    String?
   descriptionEn  String?   @map("description_en")
+  isCommon       Boolean   @default(false) @map("is_common")
   isSelfOwned    Boolean   @default(false) @map("is_self_owned")
   createdBy      String?   @map("created_by")
   createdAt      DateTime  @default(now()) @map("created_at")
@@ -280,6 +298,23 @@ model ExhibitionCategory {
   deletedAt   DateTime? @map("deleted_at")          // 删除标志：null=有效
 
   @@map("exhibition_categories")
+}
+
+// ==================== 客户来源表 ====================
+
+model CustomerSourceTag {
+  id        String    @id @default(cuid())
+  code      String    @unique                        // 标签编码
+  name      String                                // 标签名称
+  isCommon  Boolean   @default(false) @map("is_common") // 是否常用
+
+  createdBy String?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedBy String?   @map("updated_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")          // 删除标志：null=有效
+
+  @@map("customer_source_tags")
 }
 
 // ==================== 包装方式表 ====================

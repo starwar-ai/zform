@@ -1,10 +1,10 @@
 /**
- * 业务配置模块类型定义
+ * 业务实体管理模块类型定义
  */
 
 // ==================== 通用类型 ====================
 
-export type ConfigTypeKey = 'company' | 'country' | 'port';
+export type ConfigTypeKey = 'company' | 'region' | 'country' | 'port' | 'brand';
 
 // ==================== 公司性质枚举 ====================
 
@@ -32,6 +32,18 @@ export enum PortStatus {
 export const PortStatusLabels: Record<PortStatus, string> = {
   [PortStatus.NORMAL]: '正常',
   [PortStatus.SUSPENDED]: '停运',
+};
+
+// ==================== 品牌类型枚举 ====================
+
+export enum BrandType {
+  CUSTOMER = 'CUSTOMER',
+  COMPANY = 'COMPANY',
+}
+
+export const BrandTypeLabels: Record<BrandType, string> = {
+  [BrandType.CUSTOMER]: '客户品牌',
+  [BrandType.COMPANY]: '公司品牌',
 };
 
 // ==================== 子公司相关 ====================
@@ -86,13 +98,25 @@ export interface CompanyBankAccount {
 
 // ==================== 国家相关 ====================
 
+export interface Region {
+  id: string;
+  name: string;
+  code: string;
+  createdBy?: string | null;
+  createdAt: string;
+  updatedBy?: string | null;
+  updatedAt: string;
+  deletedAt?: string | null;
+}
+
+// ==================== 国家相关 ====================
+
 export interface Country {
   id: string;
   name: string;
   code: string;
-  regionCode?: string | null;
-  regionName?: string | null;
-  areaCode?: string | null;
+  regionId?: string | null;
+  region?: Region | null;
   createdBy?: string | null;
   createdAt: string;
   updatedBy?: string | null;
@@ -113,6 +137,28 @@ export interface Port {
   address?: string | null;
   isCommon: boolean;
   status: PortStatus;
+  createdBy?: string | null;
+  createdAt: string;
+  updatedBy?: string | null;
+  updatedAt: string;
+  deletedAt?: string | null;
+}
+
+// ==================== 品牌相关 ====================
+
+export interface Brand {
+  id: string;
+  code: string;
+  name: string;
+  nameEn?: string | null;
+  customerId?: string | null;
+  customerCode?: string | null;
+  customerName?: string | null;
+  type?: BrandType | string | null;
+  description?: string | null;
+  descriptionEn?: string | null;
+  isCommon: boolean;
+  isSelfOwned: boolean;
   createdBy?: string | null;
   createdAt: string;
   updatedBy?: string | null;

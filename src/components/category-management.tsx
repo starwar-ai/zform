@@ -1,7 +1,7 @@
 /**
  * CategoryManagement
  *
- * 统一分类管理组件。
+ * 统一业务属性配置组件。
  * 通过配置驱动渲染不同分类的 Tab 页，支持树形和扁平列表两种展示模式。
  * 新增分类只需在 CATEGORY_CONFIGS 数组中添加配置即可。
  */
@@ -97,6 +97,25 @@ export const CATEGORY_CONFIGS: CategoryConfig[] = [
       { key: "code", label: "分类编码", type: "text", required: true, placeholder: "例如: CC001" },
       { key: "name", label: "分类名称", type: "text", required: true, placeholder: "例如: A类客户" },
       { key: "parentId", label: "上级分类", type: "parent-select" },
+    ],
+  },
+  {
+    key: "customer-source",
+    label: "客户来源",
+    icon: "Tags",
+    apiPath: "/categories/customer-source",
+    isTree: false,
+    nameField: "name",
+    columns: [
+      { key: "code", label: "标签编码", width: "160px" },
+      { key: "name", label: "标签名称", width: "260px" },
+      { key: "isCommon", label: "是否常用", render: "boolean" },
+      { key: "createdAt", label: "创建时间", render: "date" },
+    ],
+    formFields: [
+      { key: "code", label: "标签编码", type: "text", required: true, placeholder: "例如: CS001" },
+      { key: "name", label: "标签名称", type: "text", required: true, placeholder: "例如: 阿里巴巴" },
+      { key: "isCommon", label: "是否常用", type: "boolean", defaultValue: false },
     ],
   },
   {
@@ -727,7 +746,7 @@ export function CategoryManagement() {
       {/* 页面标题 */}
       <div className="flex items-center gap-2">
         <Tags className="h-5 w-5" />
-        <h1 className="text-xl font-bold">分类管理</h1>
+        <h1 className="text-xl font-bold">业务属性配置</h1>
       </div>
 
       {/* 分类 Tab 切换 */}

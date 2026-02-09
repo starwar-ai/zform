@@ -53,7 +53,7 @@ async function main() {
     create: { code: 'PKG001', name: 'Standard Carton', nameEn: 'Standard Carton' },
   });
 
-  // ==================== 分类管理 Seed ====================
+  // ==================== 业务属性配置 Seed ====================
 
   // ---- 客户分类（树形结构）----
   const customerCategoryA = await prisma.customerCategory.upsert({
@@ -245,6 +245,29 @@ async function main() {
     (await prisma.exhibitionCategory.create({
       data: { name: '深圳高交会', isDomestic: true },
     }));
+
+  // ---- 客户来源（扁平列表）----
+  const customerSourceTagSeeds = [
+    { code: 'CS001', name: '阿里巴巴' },
+    { code: 'CS002', name: '促销活动' },
+    { code: 'CS003', name: '广交会' },
+    { code: 'CS004', name: '国外会展' },
+    { code: 'CS005', name: '合作伙伴' },
+    { code: 'CS006', name: '互联网' },
+    { code: 'CS007', name: '老客户介绍' },
+  ];
+
+  const customerSourceTags = [];
+  for (const seed of customerSourceTagSeeds) {
+    const tag =
+      (await prisma.customerSourceTag.findFirst({
+        where: { code: seed.code, deletedAt: null },
+      })) ||
+      (await prisma.customerSourceTag.create({
+        data: { code: seed.code, name: seed.name, isCommon: false },
+      }));
+    customerSourceTags.push(tag);
+  }
 
   // ==================== 分类管理 Seed 结束 ====================
 
@@ -1215,7 +1238,7 @@ async function main() {
 
   const categoryMgmtMenu = await prisma.sysMenu.create({
     data: {
-      title: '分类管理',
+      title: '业务属性配置',
       icon: 'Tags',
       path: '/category-management',
       parentId: sysMenu.id,
@@ -1227,7 +1250,7 @@ async function main() {
 
   const businessConfigMenu = await prisma.sysMenu.create({
     data: {
-      title: '业务配置',
+      title: '业务实体管理',
       icon: 'Settings',
       path: '/business-config',
       parentId: sysMenu.id,
@@ -1365,38 +1388,58 @@ async function main() {
   console.log(`Customer categories: ${customerCategoryA.code} (${customerCategoryA1.code}, ${customerCategoryA2.code}), ${customerCategoryB.code} (${customerCategoryB1.code}), ${customerCategoryC.code}`);
   console.log(`Product categories (HsCode): ${hsCodeElectronics.code} -> ${hsCodePhoneAccessories.code} -> ${hsCodePhoneCase.code}, ${hsCodePlastic.code} -> ${hsCodePlasticPackaging.code}`);
   console.log(`Exhibition categories: ${exhibitionCategory1.name}, ${exhibitionCategory2.name}, ${exhibitionCategory3.name}, ${exhibitionCategory4.name}, ${exhibitionCategory5.name}`);
+  console.log(`Customer source tags: ${customerSourceTags.map((tag) => tag.name).join(', ')}`);
 
-  // ==================== 业务配置 Seed ====================
+  // ==================== 业务实体管理 Seed ====================
+
+  // ---- 区域 ----
+  const regionAsia = await prisma.region.upsert({
+    where: { code: 'AS' },
+    update: { name: '亚洲' },
+    create: { code: 'AS', name: '亚洲' },
+  });
+
+  const regionNorthAmerica = await prisma.region.upsert({
+    where: { code: 'NA' },
+    update: { name: '北美洲' },
+    create: { code: 'NA', name: '北美洲' },
+  });
+
+  const regionEurope = await prisma.region.upsert({
+    where: { code: 'EU' },
+    update: { name: '欧洲' },
+    create: { code: 'EU', name: '欧洲' },
+  });
 
   // ---- 国家 ----
   const countryChina = await prisma.country.upsert({
     where: { code: 'CN' },
-    update: { name: '中国', regionCode: 'AS', regionName: '亚洲', areaCode: 'EA' },
-    create: { code: 'CN', name: '中国', regionCode: 'AS', regionName: '亚洲', areaCode: 'EA' },
+    update: { name: '中国', regionId: regionAsia.id },
+    create: { code: 'CN', name: '中国', regionId: regionAsia.id },
   });
 
   const countryUSA = await prisma.country.upsert({
     where: { code: 'US' },
-    update: { name: '美国', regionCode: 'NA', regionName: '北美洲', areaCode: 'NA' },
-    create: { code: 'US', name: '美国', regionCode: 'NA', regionName: '北美洲', areaCode: 'NA' },
+    update: { name: '美国', regionId: regionNorthAmerica.id },
+    create: { code: 'US', name: '美国', regionId: regionNorthAmerica.id },
   });
 
   const countryGermany = await prisma.country.upsert({
     where: { code: 'DE' },
-    update: { name: '德国', regionCode: 'EU', regionName: '欧洲', areaCode: 'WE' },
-    create: { code: 'DE', name: '德国', regionCode: 'EU', regionName: '欧洲', areaCode: 'WE' },
+    update: { name: '德国', regionId: regionEurope.id },
+    create: { code: 'DE', name: '德国', regionId: regionEurope.id },
   });
 
   const countryJapan = await prisma.country.upsert({
     where: { code: 'JP' },
-    update: { name: '日本', regionCode: 'AS', regionName: '亚洲', areaCode: 'EA' },
-    create: { code: 'JP', name: '日本', regionCode: 'AS', regionName: '亚洲', areaCode: 'EA' },
+    update: { name: '日本', regionId: regionAsia.id },
+    create: { code: 'JP', name: '日本', regionId: regionAsia.id },
   });
 
   const countryUK = await prisma.country.upsert({
     where: { code: 'GB' },
-    update: { name: '英国', regionCode: 'EU', regionName: '欧洲', areaCode: 'WE' },
-    create: { code: 'GB', name: '英国', regionCode: 'EU', regionName: '欧洲', areaCode: 'WE' },
+    update: { name: '英国', regionId: regionEurope.id },
+    create: { code: 'GB', name: '英国', regionId: regionEurope.id },
   });
 
   // ---- 港口 ----
@@ -1680,6 +1723,7 @@ async function main() {
     },
   });
 
+  console.log(`Regions: ${regionAsia.code}, ${regionNorthAmerica.code}, ${regionEurope.code}`);
   console.log(`Countries: ${countryChina.code}, ${countryUSA.code}, ${countryGermany.code}, ${countryJapan.code}, ${countryUK.code}`);
   console.log(`Ports: ${portShanghai.code}, ${portShenzhen.code}, ${portNingbo.code}, ${portLosAngeles.code}, ${portHamburg.code}`);
   console.log(`Companies: ${mainCompany.name}, ${factoryCompany.name}`);

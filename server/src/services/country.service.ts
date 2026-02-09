@@ -5,37 +5,35 @@
  */
 
 import prisma from '../config/database';
-import type { Country } from '@prisma/client';
+import type { Country, Region } from '@prisma/client';
 
 export interface CreateCountryInput {
   name: string;
   code: string;
-  regionCode?: string | null;
-  regionName?: string | null;
-  areaCode?: string | null;
+  regionId: string;
 }
 
 export interface UpdateCountryInput {
   name?: string;
   code?: string;
-  regionCode?: string | null;
-  regionName?: string | null;
-  areaCode?: string | null;
+  regionId?: string;
 }
 
 export class CountryService {
-  /** 获取所有国家 */
-  async findAll(): Promise<Country[]> {
+  /** 国家（含区域） */
+  async findAll(): Promise<(Country & { region: Region | null })[]> {
     return prisma.country.findMany({
       where: { deletedAt: null },
+      include: { region: true },
       orderBy: [{ name: 'asc' }],
     });
   }
 
   /** 获取单个国家 */
-  async findById(id: string): Promise<Country | null> {
+  async findById(id: string): Promise<(Country & { region: Region | null }) | null> {
     return prisma.country.findFirst({
       where: { id, deletedAt: null },
+      include: { region: true },
     });
   }
 
@@ -47,6 +45,14 @@ export class CountryService {
     });
     if (existing) {
       throw new Error(`国家编码 "${data.code}" 已存在`);
+    }
+
+    // 检查区域是否存在
+    const region = await prisma.region.findFirst({
+      where: { id: data.regionId, deletedAt: null },
+    });
+    if (!region) {
+      throw new Error('所选区域不存在');
     }
 
     return prisma.country.create({
@@ -67,6 +73,19 @@ export class CountryService {
       });
       if (existing) {
         throw new Error(`国家编码 "${data.code}" 已存在`);
+      }
+    }
+
+    // 检查区域是否存在
+    if (Object.prototype.hasOwnProperty.call(data, 'regionId')) {
+      if (!data.regionId) {
+        throw new Error('请选择区域');
+      }
+      const region = await prisma.region.findFirst({
+        where: { id: data.regionId, deletedAt: null },
+      });
+      if (!region) {
+        throw new Error('所选区域不存在');
       }
     }
 

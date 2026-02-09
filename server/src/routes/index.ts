@@ -14,8 +14,10 @@ import dataPermissionRoutes from './data-permissions';
 import docPermissionRoutes from './document-permissions';
 import categoryRoutes from './categories';
 import companyRoutes from './companies';
+import regionRoutes from './regions';
 import countryRoutes from './countries';
 import portRoutes from './ports';
+import brandRoutes from './brands';
 import documentRoutes from '../documents/document.routes';
 
 const router = Router();
@@ -32,10 +34,12 @@ router.use('/data-permissions', dataPermissionRoutes);
 router.use('/document-permissions', docPermissionRoutes);
 router.use('/categories', categoryRoutes);
 
-// ---- 业务配置 API ----
+// ---- 业务实体管理 API ----
 router.use('/companies', companyRoutes);
+router.use('/regions', regionRoutes);
 router.use('/countries', countryRoutes);
 router.use('/ports', portRoutes);
+router.use('/brands', brandRoutes);
 
 // ---- 旧路由 (保留兼容) ----
 router.use('/products', productRoutes);

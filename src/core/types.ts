@@ -36,6 +36,27 @@ export type FieldType =
   | "textarea"
   | "checkbox"
   | "computed"
+  | "combobox"
+
+/** Combobox 下拉选项 */
+export interface ComboboxOption {
+  /** 选项值（通常是 ID） */
+  value: string
+  /** 显示文本 */
+  label: string
+  /** 树形层级深度，用于缩进展示（0 = 顶级） */
+  depth?: number
+  /** 是否为叶子节点（仅叶子可选中） */
+  isLeaf?: boolean
+}
+
+/** Combobox 配置 */
+export interface ComboboxConfig {
+  /** 数据获取函数，返回选项列表 */
+  fetchOptions: () => Promise<ComboboxOption[]>
+  /** 是否树形数据（启用缩进 + 仅叶子可选） */
+  isTree?: boolean
+}
 
 /** 字段定义 */
 export interface FieldDef {
@@ -61,6 +82,8 @@ export interface FieldDef {
   placeholder?: string
   /** 字段分组标题 (用于表单分段) */
   group?: string
+  /** Combobox 配置 (type=combobox 时) */
+  comboboxConfig?: ComboboxConfig
 }
 
 // ============================================================

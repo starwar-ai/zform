@@ -1,11 +1,12 @@
 /**
  * Category Routes
  *
- * 统一分类管理 API 路由。
+ * 统一业务属性配置 API 路由。
  * 各分类类型的路由按子路径分组：
  *   /categories/customer   - 客户分类
  *   /categories/product    - 产品分类（海关编码）
  *   /categories/exhibition - 展会分类
+ *   /categories/customer-source - 客户来源
  */
 
 import { Router } from 'express';
@@ -30,5 +31,11 @@ router.get('/exhibition', categoryController.getExhibitionList);
 router.post('/exhibition', categoryController.createExhibition);
 router.put('/exhibition/:id', categoryController.updateExhibition);
 router.delete('/exhibition/:id', categoryController.deleteExhibition);
+
+// ---- 客户来源（扁平列表）----
+router.get('/customer-source', categoryController.getCustomerSourceList);
+router.post('/customer-source', categoryController.createCustomerSource);
+router.put('/customer-source/:id', categoryController.updateCustomerSource);
+router.delete('/customer-source/:id', categoryController.deleteCustomerSource);
 
 export default router;

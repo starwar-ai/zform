@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Combobox } from "@/components/ui/combobox"
 
 interface FieldRendererProps {
   field: FieldDef
@@ -105,6 +106,18 @@ export function FieldRenderer({
             disabled={isDisabled}
           />
         )
+
+      case "combobox":
+        return field.comboboxConfig ? (
+          <Combobox
+            value={(value as string) ?? undefined}
+            onChange={onChange}
+            placeholder={field.placeholder}
+            disabled={isDisabled}
+            fetchOptions={field.comboboxConfig.fetchOptions}
+            isTree={field.comboboxConfig.isTree}
+          />
+        ) : null
 
       case "computed":
         return (

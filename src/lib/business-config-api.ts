@@ -1,8 +1,8 @@
 /**
- * 业务配置 API
+ * 业务实体管理 API
  */
 
-import type { Company, CompanyBankAccount, Country, Port } from '@/types/business-config';
+import type { Company, CompanyBankAccount, Region, Country, Port, Brand } from '@/types/business-config';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 
@@ -111,6 +111,55 @@ export async function deleteBankAccountApi(companyId: string, id: string): Promi
   }
 }
 
+// ==================== 区域 API ====================
+
+export async function fetchRegionsApi(): Promise<Region[]> {
+  const res = await fetch(`${API_BASE}/regions`, {
+    credentials: 'include',
+  });
+  if (!res.ok) throw new Error('获取区域列表失败');
+  return res.json();
+}
+
+export async function createRegionApi(data: Partial<Region>): Promise<Region> {
+  const res = await fetch(`${API_BASE}/regions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || '创建区域失败');
+  }
+  return res.json();
+}
+
+export async function updateRegionApi(id: string, data: Partial<Region>): Promise<Region> {
+  const res = await fetch(`${API_BASE}/regions/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || '更新区域失败');
+  }
+  return res.json();
+}
+
+export async function deleteRegionApi(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/regions/${id}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || '删除区域失败');
+  }
+}
+
 // ==================== 国家 API ====================
 
 export async function fetchCountriesApi(): Promise<Country[]> {
@@ -206,5 +255,54 @@ export async function deletePortApi(id: string): Promise<void> {
   if (!res.ok) {
     const error = await res.json();
     throw new Error(error.error || '删除港口失败');
+  }
+}
+
+// ==================== 品牌 API ====================
+
+export async function fetchBrandsApi(): Promise<Brand[]> {
+  const res = await fetch(`${API_BASE}/brands`, {
+    credentials: 'include',
+  });
+  if (!res.ok) throw new Error('获取品牌列表失败');
+  return res.json();
+}
+
+export async function createBrandApi(data: Partial<Brand>): Promise<Brand> {
+  const res = await fetch(`${API_BASE}/brands`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || '创建品牌失败');
+  }
+  return res.json();
+}
+
+export async function updateBrandApi(id: string, data: Partial<Brand>): Promise<Brand> {
+  const res = await fetch(`${API_BASE}/brands/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || '更新品牌失败');
+  }
+  return res.json();
+}
+
+export async function deleteBrandApi(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/brands/${id}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || '删除品牌失败');
   }
 }

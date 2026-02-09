@@ -5,7 +5,79 @@
  * 产品类型: 标准产品(STANDARD) → 客户产品(CUSTOMER) / 自营产品(SELF_OWNED)
  */
 
-import type { DocumentSchema, PushDownRule, ChangeRule } from "@/core/types"
+import type { DocumentSchema, PushDownRule, ChangeRule, ComboboxOption } from "@/core/types"
+import type { ProductCategoryTreeNode } from "@/types/category"
+import type { DepartmentTreeNode } from "@/types/department"
+import { fetchCategoryListApi } from "@/lib/category-api"
+import { fetchBrandsApi } from "@/lib/business-config-api"
+import { fetchDepartmentTreeApi } from "@/lib/department-api"
+
+// ============================================================
+// 工具函数：将树形分类拍平为 ComboboxOption[]
+// ============================================================
+
+/** 将产品分类树递归拍平为带 depth + isLeaf 的选项列表 */
+function flattenCategoryTree(
+  nodes: ProductCategoryTreeNode[],
+  depth = 0
+): ComboboxOption[] {
+  const result: ComboboxOption[] = []
+  for (const node of nodes) {
+    const hasChildren = node.children && node.children.length > 0
+    result.push({
+      value: node.id,
+      label: node.name,
+      depth,
+      isLeaf: !hasChildren,
+    })
+    if (hasChildren) {
+      result.push(...flattenCategoryTree(node.children, depth + 1))
+    }
+  }
+  return result
+}
+
+/** 获取产品分类选项（供 Combobox 使用） */
+async function fetchProductCategoryOptions(): Promise<ComboboxOption[]> {
+  const tree = await fetchCategoryListApi<ProductCategoryTreeNode>("product")
+  return flattenCategoryTree(tree)
+}
+
+/** 将部门树递归拍平为带 depth + isLeaf 的选项列表 */
+function flattenDepartmentTree(
+  nodes: DepartmentTreeNode[],
+  depth = 0
+): ComboboxOption[] {
+  const result: ComboboxOption[] = []
+  for (const node of nodes) {
+    const hasChildren = node.children && node.children.length > 0
+    result.push({
+      value: node.id,
+      label: node.name,
+      depth,
+      isLeaf: !hasChildren,
+    })
+    if (hasChildren) {
+      result.push(...flattenDepartmentTree(node.children, depth + 1))
+    }
+  }
+  return result
+}
+
+/** 获取品牌选项（供 Combobox 使用） */
+async function fetchBrandOptions(): Promise<ComboboxOption[]> {
+  const brands = await fetchBrandsApi()
+  return brands.map((brand) => ({
+    value: brand.id,
+    label: brand.name,
+  }))
+}
+
+/** 获取部门选项（供 Combobox 使用） */
+async function fetchDepartmentOptions(): Promise<ComboboxOption[]> {
+  const tree = await fetchDepartmentTreeApi()
+  return flattenDepartmentTree(tree)
+}
 
 // ============================================================
 // 标准产品 (Standard Product)
@@ -61,16 +133,19 @@ export const standardProductSchema: DocumentSchema = {
     {
       id: "unit",
       label: "计量单位",
-      type: "select",
+      type: "combobox",
       required: true,
-      options: [
-        { label: "PCS", value: "PCS" },
-        { label: "SET", value: "SET" },
-        { label: "KG", value: "KG" },
-        { label: "TON", value: "TON" },
-        { label: "METER", value: "METER" },
-        { label: "LITER", value: "LITER" },
-      ],
+      placeholder: "搜索或选择计量单位",
+      comboboxConfig: {
+        fetchOptions: async () => [
+          { label: "PCS", value: "PCS" },
+          { label: "SET", value: "SET" },
+          { label: "KG", value: "KG" },
+          { label: "TON", value: "TON" },
+          { label: "METER", value: "METER" },
+          { label: "LITER", value: "LITER" },
+        ],
+      },
       defaultValue: "PCS",
       group: "基本信息",
     },
@@ -79,23 +154,34 @@ export const standardProductSchema: DocumentSchema = {
     {
       id: "categoryId",
       label: "产品分类",
-      type: "text",
-      placeholder: "选择产品分类",
+      type: "combobox",
+      placeholder: "搜索或选择产品分类",
       group: "分类信息",
+      comboboxConfig: {
+        fetchOptions: fetchProductCategoryOptions,
+        isTree: true,
+      },
     },
     {
       id: "brandId",
       label: "品牌",
-      type: "text",
-      placeholder: "选择品牌",
+      type: "combobox",
+      placeholder: "搜索或选择品牌",
       group: "分类信息",
+      comboboxConfig: {
+        fetchOptions: fetchBrandOptions,
+      },
     },
     {
       id: "departmentId",
       label: "所属部门",
-      type: "text",
-      placeholder: "选择部门",
+      type: "combobox",
+      placeholder: "搜索或选择部门",
       group: "分类信息",
+      comboboxConfig: {
+        fetchOptions: fetchDepartmentOptions,
+        isTree: true,
+      },
     },
 
     // === 规格尺寸 ===

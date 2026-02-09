@@ -1,12 +1,12 @@
 /**
  * Category types
- * 统一分类管理相关类型定义
+ * 统一业务属性配置相关类型定义
  */
 
 // ==================== 通用基础类型 ====================
 
 /** 分类类型标识 */
-export type CategoryTypeKey = 'customer' | 'product' | 'exhibition'
+export type CategoryTypeKey = 'customer' | 'product' | 'exhibition' | 'customer-source'
 
 /** 基础分类字段 */
 interface BaseCategoryFields {
@@ -95,6 +95,26 @@ export interface CreateExhibitionCategoryInput {
 export interface UpdateExhibitionCategoryInput {
   name?: string
   isDomestic?: boolean
+}
+
+// ==================== 客户来源 ====================
+
+export interface CustomerSourceTag extends BaseCategoryFields {
+  code: string
+  name: string
+  isCommon: boolean
+}
+
+export interface CreateCustomerSourceTagInput {
+  code: string
+  name: string
+  isCommon?: boolean
+}
+
+export interface UpdateCustomerSourceTagInput {
+  code?: string
+  name?: string
+  isCommon?: boolean
 }
 
 // ==================== 配置驱动类型 ====================
