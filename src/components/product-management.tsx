@@ -7,7 +7,6 @@
 
 import { useState } from "react"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Package } from "lucide-react"
 import { DocumentListTable } from "@/components/list-table"
 import { useTabStore } from "@/stores/tab-store"
 

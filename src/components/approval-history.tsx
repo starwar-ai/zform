@@ -10,7 +10,7 @@ import {
   APPROVAL_ACTION_LABELS,
   APPROVAL_STATUS_LABELS,
 } from "@/core/approval"
-import type { ApprovalInstanceResponse, ApprovalRecordResponse } from "@/lib/approval-api"
+import type { ApprovalInstanceResponse, ApprovalRecordResponse } from "@/apis/approval-api"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"

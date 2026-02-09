@@ -408,65 +408,63 @@ export function DocumentListTable({
   }
 
   return (
-    <div className="flex flex-col h-full p-6">
-      <ListTable<FlatDocumentRow>
-        columns={columns}
-        queryKey={["documents", typeId, currentMode, resolvedDetailTableId ?? ""]}
-        queryFn={queryFn}
-        title={schema.typeName}
-        titleIcon={<FileText className="h-5 w-5" />}
-        fixedRightColumnIds={fixedRightColumns}
-        enableRowSelection
-        onSelectionChange={setSelectedRows}
-        fixedLeftColumnIds={fixedLeftColumns}
-        toolbarActions={
-          <div className="flex items-center gap-1">
-            {/* 根据配置动态渲染工具栏按钮 */}
-            {resolvedToolbarActions
-              ?.filter((action) => !action.requiresSelection || hasSelection)
-              .map((action) => (
-              <Button
-                key={action.id}
-                variant={action.variant ?? "outline"}
-                size="sm"
-                onClick={() => handleToolbarAction(action.id)}
-              >
-                {action.icon === "Plus" && <Plus className="h-4 w-4 mr-1" />}
-                {action.label}
-              </Button>
-            ))}
+    <ListTable<FlatDocumentRow>
+    columns={columns}
+    queryKey={["documents", typeId, currentMode, resolvedDetailTableId ?? ""]}
+    queryFn={queryFn}
+    title={schema.typeName}
+    titleIcon={<FileText className="h-5 w-5" />}
+    fixedRightColumnIds={fixedRightColumns}
+    enableRowSelection
+    onSelectionChange={setSelectedRows}
+    fixedLeftColumnIds={fixedLeftColumns}
+    toolbarActions={
+      <div className="flex items-center gap-1">
+        {/* 根据配置动态渲染工具栏按钮 */}
+        {resolvedToolbarActions
+          ?.filter((action) => !action.requiresSelection || hasSelection)
+          .map((action) => (
+          <Button
+            key={action.id}
+            variant={action.variant ?? "outline"}
+            size="sm"
+            onClick={() => handleToolbarAction(action.id)}
+          >
+            {action.icon === "Plus" && <Plus className="h-4 w-4 mr-1" />}
+            {action.label}
+          </Button>
+        ))}
 
-            {/* 模式切换按钮 (始终显示, 由明细表决定是否可用) */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleToggleMode}
-              disabled={!canToggleToDetail}
-              aria-pressed={isDetailMode}
-              title={
-                canToggleToDetail
-                  ? isDetailMode
-                    ? "切换到单据模式"
-                    : "切换到明细模式"
-                  : "当前单据无明细表"
-              }
-            >
-              {isDetailMode ? (
-                <FileText className="h-4 w-4" />
-              ) : (
-                <List className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-        }
-        defaultPageSize={20}
-        rowKey={(row) =>
-          isDetailMode
-            ? (row._detailRowId as string)
-            : (row._id as string)
-        }
-        exportFilename={schema.typeName}
-      />
-    </div>
+        {/* 模式切换按钮 (始终显示, 由明细表决定是否可用) */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleToggleMode}
+          disabled={!canToggleToDetail}
+          aria-pressed={isDetailMode}
+          title={
+            canToggleToDetail
+              ? isDetailMode
+                ? "切换到单据模式"
+                : "切换到明细模式"
+              : "当前单据无明细表"
+          }
+        >
+          {isDetailMode ? (
+            <FileText className="h-4 w-4" />
+          ) : (
+            <List className="h-4 w-4" />
+          )}
+        </Button>
+      </div>
+    }
+    defaultPageSize={20}
+    rowKey={(row) =>
+      isDetailMode
+        ? (row._detailRowId as string)
+        : (row._id as string)
+    }
+    exportFilename={schema.typeName}
+  />
   )
 }

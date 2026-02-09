@@ -420,7 +420,7 @@ const supplierFormActions: DocumentFormActionConfig = {
   ],
 }
 
-export function setupExampleSchemas(): void {
+export function setupSchemas(): void {
   // 注册单据 Schema
   registry.registerSchema(salesContractSchema)
   registry.registerSchema(purchasePlanSchema)

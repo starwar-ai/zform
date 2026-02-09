@@ -13,7 +13,7 @@ import {
   createBankAccountApi,
   updateBankAccountApi,
   deleteBankAccountApi,
-} from "@/lib/business-config-api"
+} from "@/apis/business-config-api"
 import {
   Dialog,
   DialogContent,
