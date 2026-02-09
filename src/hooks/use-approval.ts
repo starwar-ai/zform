@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useMemo } from "react"
 import { useApprovalStore } from "@/stores/approval-store"
 import { useAuthStore } from "@/stores/auth-store"
-import type { ApprovalInstanceResponse } from "@/lib/approval-api"
+import type { ApprovalInstanceResponse } from "@/apis/approval-api"
 
 /**
  * 单据审核操作 hook

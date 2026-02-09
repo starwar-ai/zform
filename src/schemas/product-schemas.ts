@@ -8,9 +8,9 @@
 import type { DocumentSchema, PushDownRule, ChangeRule, ComboboxOption } from "@/core/types"
 import type { HsCode, ProductCategoryTreeNode } from "@/types/category"
 import type { DepartmentTreeNode } from "@/types/department"
-import { fetchCategoryListApi } from "@/lib/category-api"
-import { fetchBrandsApi } from "@/lib/business-config-api"
-import { fetchDepartmentTreeApi } from "@/lib/department-api"
+import { fetchCategoryListApi } from "@/apis/category-api"
+import { fetchBrandsApi } from "@/apis/business-config-api"
+import { fetchDepartmentTreeApi } from "@/apis/department-api"
 
 // ============================================================
 // 工具函数：将树形分类拍平为 ComboboxOption[]

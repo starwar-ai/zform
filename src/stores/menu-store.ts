@@ -14,7 +14,7 @@ import {
   updateMenuApi,
   deleteMenuApi,
   reorderMenusApi,
-} from "@/lib/menu-api"
+} from "@/apis/menu-api"
 
 interface MenuStoreState {
   menus: Menu[]

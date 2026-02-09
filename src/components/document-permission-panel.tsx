@@ -13,8 +13,8 @@ import {
   upsertDocPermission,
   removeDocPermission,
   type DocPermissionRecord,
-} from "@/lib/doc-permission-api"
-import { fetchUsersApi } from "@/lib/user-api"
+} from "@/apis/doc-permission-api"
+import { fetchUsersApi } from "@/apis/user-api"
 import type { User } from "@/types/user"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"

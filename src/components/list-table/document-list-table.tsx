@@ -22,10 +22,10 @@ import {
   fetchDocumentListApi,
   deleteDocumentApi,
   deleteDocumentItemApi,
-} from "@/lib/document-api"
+} from "@/apis/document-api"
 import { useDocumentStore } from "@/stores/document-store"
 import { useUserPermissions } from "@/hooks/use-user-permissions"
-import type { FlatDocumentRow, ListMode } from "@/lib/document-api"
+import type { FlatDocumentRow, ListMode } from "@/apis/document-api"
 
 // ============================================================
 // Props

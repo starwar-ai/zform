@@ -18,7 +18,7 @@ import {
   createCategoryApi,
   updateCategoryApi,
   deleteCategoryApi,
-} from "@/lib/category-api"
+} from "@/apis/category-api"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"

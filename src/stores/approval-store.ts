@@ -10,14 +10,14 @@ import { immer } from "zustand/middleware/immer"
 import type {
   ApprovalInstanceResponse,
   ApprovalRecordResponse,
-} from "@/lib/approval-api"
+} from "@/apis/approval-api"
 import {
   submitApprovalApi,
   processApprovalApi,
   withdrawApprovalApi,
   getApprovalHistoryApi,
   getPendingApprovalsApi,
-} from "@/lib/approval-api"
+} from "@/apis/approval-api"
 
 interface ApprovalStoreState {
   /** 单据审核历史缓存, 按 "docType:docId" 索引 */

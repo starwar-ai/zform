@@ -7,7 +7,7 @@ import {
   updateUserApi,
   deleteUserApi,
   assignUserRolesApi,
-} from "@/lib/user-api"
+} from "@/apis/user-api"
 
 interface UserStoreState {
   users: User[]

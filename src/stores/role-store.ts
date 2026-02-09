@@ -8,7 +8,7 @@ import {
   deleteRoleApi,
   fetchRoleMenuIdsApi,
   assignRoleMenusApi,
-} from "@/lib/role-api"
+} from "@/apis/role-api"
 
 interface RoleStoreState {
   roles: Role[]

@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { useAuthStore } from "@/stores/auth-store"
-import { fetchUserPermissionsApi } from "@/lib/user-api"
+import { fetchUserPermissionsApi } from "@/apis/user-api"
 
 /** 权限缓存 (避免重复请求) */
 let cachedPermissions: string[] | null = null

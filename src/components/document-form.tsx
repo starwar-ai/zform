@@ -16,7 +16,7 @@ import { useTraceability, usePushDown, useImpactAssessment } from "@/hooks/use-d
 import { useApproval } from "@/hooks/use-approval"
 import { useDocumentFormActions } from "@/hooks/use-document-form-actions"
 import { registry } from "@/core/registry"
-import { createDocumentApi, updateDocumentApi, fetchDocumentApi } from "@/lib/document-api"
+import { createDocumentApi, updateDocumentApi, fetchDocumentApi } from "@/apis/document-api"
 import { MasterForm } from "./master-form"
 import { DetailTable } from "./detail-table"
 import { TracePanel } from "./trace-panel"

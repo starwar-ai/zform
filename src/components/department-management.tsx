@@ -14,7 +14,7 @@ import {
   createDepartmentApi,
   updateDepartmentApi,
   deleteDepartmentApi,
-} from "@/lib/department-api"
+} from "@/apis/department-api"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"

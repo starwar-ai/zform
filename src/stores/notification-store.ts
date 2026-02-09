@@ -6,8 +6,8 @@
 
 import { create } from "zustand"
 import { immer } from "zustand/middleware/immer"
-import { getPendingApprovalsApi } from "@/lib/approval-api"
-import type { ApprovalInstanceResponse } from "@/lib/approval-api"
+import { getPendingApprovalsApi } from "@/apis/approval-api"
+import type { ApprovalInstanceResponse } from "@/apis/approval-api"
 
 export interface Notification {
   id: string
