@@ -583,7 +583,7 @@ async function main() {
     update: {
       name: 'Blue River Trading',
       shortName: 'BlueRiver',
-      supplierType: SupplierType.TRADER,
+      supplierType: SupplierType.SERVICE_PROVIDER,
       supplierLevel: SupplierLevel.B,
       stage: SupplierStage.POTENTIAL,
       approvalStatus: ApprovalStatus.PENDING,
@@ -594,7 +594,7 @@ async function main() {
       code: 'SUP002',
       name: 'Blue River Trading',
       shortName: 'BlueRiver',
-      supplierType: SupplierType.TRADER,
+      supplierType: SupplierType.SERVICE_PROVIDER,
       supplierLevel: SupplierLevel.B,
       stage: SupplierStage.POTENTIAL,
       approvalStatus: ApprovalStatus.PENDING,
@@ -1097,45 +1097,6 @@ async function main() {
     },
   });
 
-  // 标准产品类型（用于按钮权限，不在侧边栏显示）
-  const stdProductMenu = await prisma.sysMenu.create({
-    data: {
-      title: '标准产品',
-      icon: 'Package',
-      path: null,
-      parentId: productManagementMenu.id,
-      orderNum: 1,
-      menuType: 'catalog',
-      status: 'visible',
-    },
-  });
-
-  // 客户产品类型（用于按钮权限，不在侧边栏显示）
-  const custProductMenu = await prisma.sysMenu.create({
-    data: {
-      title: '客户产品',
-      icon: 'Package',
-      path: null,
-      parentId: productManagementMenu.id,
-      orderNum: 2,
-      menuType: 'catalog',
-      status: 'visible',
-    },
-  });
-
-  // 自营产品类型（用于按钮权限，不在侧边栏显示）
-  const selfProductMenu = await prisma.sysMenu.create({
-    data: {
-      title: '自营产品',
-      icon: 'Package',
-      path: null,
-      parentId: productManagementMenu.id,
-      orderNum: 3,
-      menuType: 'catalog',
-      status: 'visible',
-    },
-  });
-
   // 客户管理菜单
   const customerMenu = await prisma.sysMenu.create({
     data: {
@@ -1213,12 +1174,6 @@ async function main() {
     { perm: 'close', title: '关闭' },
     { perm: 'void', title: '作废' },
   ]);
-  const stdProductBtnIds = await createDocPermButtons(stdProductMenu.id, 'standard_product', [
-    ...basicDocActions,
-    { perm: 'push_down', title: '下推' },
-  ]);
-  const custProductBtnIds = await createDocPermButtons(custProductMenu.id, 'customer_product', basicDocActions);
-  const selfProductBtnIds = await createDocPermButtons(selfProductMenu.id, 'self_owned_product', basicDocActions);
   const customerBtnIds = await createDocPermButtons(customerMenu.id, 'customer', [
     ...basicDocActions,
     { perm: 'close', title: '关闭' },
@@ -1228,16 +1183,24 @@ async function main() {
     { perm: 'close', title: '关闭' },
   ]);
 
+  // 产品类型按钮权限（挂在产品管理菜单下）
+  const stdProductBtnIds = await createDocPermButtons(productManagementMenu.id, 'standard_product', [
+    ...basicDocActions,
+    { perm: 'push_down', title: '下推' },
+  ]);
+  const custProductBtnIds = await createDocPermButtons(productManagementMenu.id, 'customer_product', basicDocActions);
+  const selfProductBtnIds = await createDocPermButtons(productManagementMenu.id, 'self_owned_product', basicDocActions);
+
   // 所有按钮权限 ID 汇总
   const allBtnIds = [
     ...salesContractBtnIds,
     ...purchasePlanBtnIds,
     ...purchaseContractBtnIds,
+    ...customerBtnIds,
+    ...supplierBtnIds,
     ...stdProductBtnIds,
     ...custProductBtnIds,
     ...selfProductBtnIds,
-    ...customerBtnIds,
-    ...supplierBtnIds,
   ];
 
   // 顶级菜单：系统管理
@@ -1432,6 +1395,8 @@ async function main() {
     ...salesContractBtnIds.slice(0, 3),
     ...purchasePlanBtnIds.slice(0, 3),
     ...purchaseContractBtnIds.slice(0, 3),
+    ...customerBtnIds.slice(0, 3),
+    ...supplierBtnIds.slice(0, 3),
     ...stdProductBtnIds.slice(0, 3),
     ...custProductBtnIds.slice(0, 3),
     ...selfProductBtnIds.slice(0, 3),

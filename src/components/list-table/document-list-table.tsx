@@ -44,6 +44,11 @@ interface DocumentListTableProps {
    * @param row       行数据
    */
   onAction?: (actionId: string, row: FlatDocumentRow) => void
+  /**
+   * 默认筛选条件: 始终附加到 API 请求中，不在筛选面板中显示。
+   * 用于预置分类筛选（如供应商管理页按类型过滤）。
+   */
+  defaultFilters?: import("./types").ColumnFilter[]
 }
 
 // ============================================================
@@ -144,6 +149,7 @@ export function DocumentListTable({
   mode = "document",
   detailTableId,
   onAction,
+  defaultFilters,
 }: DocumentListTableProps) {
   const schema = registry.getSchema(typeId)
   const actionConfig = registry.getActionConfig(typeId)
@@ -189,6 +195,12 @@ export function DocumentListTable({
     [actionConfig, permissions]
   )
 
+  // 将 defaultFilters 序列化为 queryKey 的一部分，确保不同筛选条件使用不同缓存
+  const defaultFiltersKey = useMemo(
+    () => (defaultFilters && defaultFilters.length > 0 ? JSON.stringify(defaultFilters) : ""),
+    [defaultFilters]
+  )
+
   // ============================================================
   // 内置操作 handler
   // ============================================================
@@ -215,10 +227,10 @@ export function DocumentListTable({
       if (!ok) return
       await deleteDocumentApi(typeId, docId)
       await queryClient.invalidateQueries({
-        queryKey: ["documents", typeId, currentMode, resolvedDetailTableId ?? ""],
+        queryKey: ["documents", typeId, currentMode, resolvedDetailTableId ?? "", defaultFiltersKey],
       })
     },
-    [typeId, currentMode, resolvedDetailTableId, queryClient]
+    [typeId, currentMode, resolvedDetailTableId, defaultFiltersKey, queryClient]
   )
 
   const handleDeleteDetail = useCallback(
@@ -228,10 +240,10 @@ export function DocumentListTable({
       if (!ok) return
       await deleteDocumentItemApi(typeId, docId, detailRowId)
       await queryClient.invalidateQueries({
-        queryKey: ["documents", typeId, currentMode, resolvedDetailTableId ?? ""],
+        queryKey: ["documents", typeId, currentMode, resolvedDetailTableId ?? "", defaultFiltersKey],
       })
     },
-    [typeId, currentMode, resolvedDetailTableId, queryClient]
+    [typeId, currentMode, resolvedDetailTableId, defaultFiltersKey, queryClient]
   )
 
   // ============================================================
@@ -362,9 +374,13 @@ export function DocumentListTable({
   // queryFn: 从服务端 API 获取数据 (分页/筛选/排序均由服务端处理)
   const queryFn = useCallback(
     async (params: FetchParams): Promise<FetchResult<FlatDocumentRow>> => {
-      return fetchDocumentListApi(typeId, params, currentMode, resolvedDetailTableId)
+      // 合并默认筛选条件: defaultFilters 始终附加到用户筛选条件之后
+      const mergedParams: FetchParams = defaultFilters && defaultFilters.length > 0
+        ? { ...params, filters: [...defaultFilters, ...params.filters] }
+        : params
+      return fetchDocumentListApi(typeId, mergedParams, currentMode, resolvedDetailTableId)
     },
-    [typeId, currentMode, resolvedDetailTableId]
+    [typeId, currentMode, resolvedDetailTableId, defaultFilters]
   )
 
   const handleToggleMode = useCallback(() => {
@@ -410,7 +426,7 @@ export function DocumentListTable({
   return (
     <ListTable<FlatDocumentRow>
     columns={columns}
-    queryKey={["documents", typeId, currentMode, resolvedDetailTableId ?? ""]}
+    queryKey={["documents", typeId, currentMode, resolvedDetailTableId ?? "", defaultFiltersKey]}
     queryFn={queryFn}
     title={schema.typeName}
     titleIcon={<FileText className="h-5 w-5" />}

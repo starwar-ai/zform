@@ -12,6 +12,11 @@ import {
   customerProductAdapter,
   selfOwnedProductAdapter,
 } from './product.adapter';
+import {
+  manufacturerAdapter,
+  serviceProviderAdapter,
+  logisticsAdapter,
+} from './supplier.adapter';
 
 export function registerAllAdapters(): void {
   // 销售合同
@@ -24,6 +29,11 @@ export function registerAllAdapters(): void {
   documentTypeRegistry.register(standardProductAdapter);
   documentTypeRegistry.register(customerProductAdapter);
   documentTypeRegistry.register(selfOwnedProductAdapter);
+
+  // 供应商 (三种子类型)
+  documentTypeRegistry.register(manufacturerAdapter);
+  documentTypeRegistry.register(serviceProviderAdapter);
+  documentTypeRegistry.register(logisticsAdapter);
 
   console.log(
     `[DocumentTypeRegistry] Registered ${documentTypeRegistry.getAllTypeIds().length} adapters:`,

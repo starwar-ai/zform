@@ -61,7 +61,7 @@ router.post('/', supplierController.create);
  *         name: supplierType
  *         schema:
  *           type: string
- *           enum: [MANUFACTURER, TRADER, SERVICE_PROVIDER, LOGISTICS, OTHER]
+ *           enum: [MANUFACTURER, SERVICE_PROVIDER, LOGISTICS]
  *       - in: query
  *         name: stage
  *         schema:

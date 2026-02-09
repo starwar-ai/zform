@@ -547,10 +547,8 @@ model ProductChangeLog {
 
 enum SupplierType {
   MANUFACTURER      // 生产商
-  TRADER           // 贸易商
   SERVICE_PROVIDER // 服务商
   LOGISTICS        // 物流商
-  OTHER            // 其他
 }
 
 enum SupplierLevel {
@@ -603,9 +601,9 @@ model Supplier {
 
   // 分类与等级
   isOverseas            Boolean        @default(false) @map("is_overseas") // 是否境外供应商
-  supplierType          SupplierType   @default(OTHER) @map("supplier_type") // 供应商类型
+  supplierType          SupplierType   @default(MANUFACTURER) @map("supplier_type") // 供应商类型
   supplierLevel         SupplierLevel? @map("supplier_level") // 供应商等级
-  stage                 SupplierStage  @default(POTENTIAL) // 客户阶段
+  stage                 SupplierStage  @default(POTENTIAL) // 供应商阶段
 
   // 财务信息
   countryCode           String?        @map("country_code") // 国家编号
@@ -616,7 +614,6 @@ model Supplier {
   // 业务信息
   buyerList             Json?          @map("buyer_list") // 采购员列表（JSON数组）
   buyer                 String?        // 主采购员
-  adminSupplierType     String?        @map("admin_supplier_type") // 行政供应商类型
 
   // 标识字段
   isInternalEnterprise  Boolean        @default(false) @map("is_internal_enterprise") // 内部企业标识 0-否 1-是
@@ -631,14 +628,6 @@ model Supplier {
   isFormal              Boolean        @default(false) @map("is_formal") // 转正标识
   formalTime            DateTime?      @map("formal_time") // 转正时间
   isEnabled             Boolean        @default(true) @map("is_enabled") // 是否启用
-
-  // 变更管理
-  isChanged             Boolean        @default(false) @map("is_changed") // 是否变更
-  changeStatus          ChangeStatus?  @map("change_status") // 变更状态
-  changeDeleted         Boolean        @default(false) @map("change_deleted") // 变更是否删除
-  version               Int            @default(1) // 版本号
-  impactScope           String?        @map("impact_scope") // 影响范围
-  processModelId        String?        @map("process_model_id") // 流程模型标识
 
   // 附件与备注
   attachments           Json?          // 附件（JSON数组）
