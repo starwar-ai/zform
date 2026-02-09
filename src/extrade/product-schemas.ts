@@ -6,7 +6,7 @@
  */
 
 import type { DocumentSchema, PushDownRule, ChangeRule, ComboboxOption } from "@/core/types"
-import type { ProductCategoryTreeNode } from "@/types/category"
+import type { HsCode, ProductCategoryTreeNode } from "@/types/category"
 import type { DepartmentTreeNode } from "@/types/department"
 import { fetchCategoryListApi } from "@/lib/category-api"
 import { fetchBrandsApi } from "@/lib/business-config-api"
@@ -41,6 +41,15 @@ function flattenCategoryTree(
 async function fetchProductCategoryOptions(): Promise<ComboboxOption[]> {
   const tree = await fetchCategoryListApi<ProductCategoryTreeNode>("product")
   return flattenCategoryTree(tree)
+}
+
+/** 获取海关编码选项（供 Combobox 使用） */
+async function fetchHsCodeOptions(): Promise<ComboboxOption[]> {
+  const hsCodes = await fetchCategoryListApi<HsCode>("product")
+  return hsCodes.map((item) => ({
+    value: item.id,
+    label: `${item.hsCode} ${item.name}`,
+  }))
 }
 
 /** 将部门树递归拍平为带 depth + isLeaf 的选项列表 */
@@ -268,9 +277,12 @@ export const standardProductSchema: DocumentSchema = {
     {
       id: "hsCodeId",
       label: "海关编码",
-      type: "text",
+      type: "combobox",
       placeholder: "选择海关编码",
       group: "报关信息",
+      comboboxConfig: {
+        fetchOptions: fetchHsCodeOptions,
+      },
     },
     {
       id: "isCustomsInspection",
