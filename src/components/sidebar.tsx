@@ -5,6 +5,11 @@ import { useMenuStore } from "@/stores/menu-store"
 import { useAuthStore } from "@/stores/auth-store"
 import type { MenuTreeNode } from "@/types/menu"
 import { Button } from "@/components/ui/button"
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import {
   ChevronLeft,
@@ -125,21 +130,77 @@ function MenuItemRenderer({
   const Icon = getIcon(node.icon)
   const hasChildren = node.children.length > 0
   const isMenuExpanded = expandedMenuIds.has(node.id)
+  const [popoverOpen, setPopoverOpen] = useState(false)
+
+  /** 收集所有叶子菜单项（扁平化子菜单） */
+  const collectLeafItems = (items: MenuTreeNode[]): MenuTreeNode[] => {
+    const result: MenuTreeNode[] = []
+    for (const item of items) {
+      if (item.children.length > 0) {
+        result.push(...collectLeafItems(item.children))
+      } else {
+        result.push(item)
+      }
+    }
+    return result
+  }
 
   if (!isSidebarExpanded) {
-    // 折叠模式：只显示图标
+    // 折叠模式
+    if (hasChildren) {
+      // 有子菜单：用 Popover 在右侧弹出子菜单列表
+      const leafItems = collectLeafItems(node.children)
+      return (
+        <div>
+          <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                className="w-full justify-center text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                title={node.title}
+              >
+                <Icon className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              side="right"
+              align="start"
+              sideOffset={8}
+              className="w-48 p-1"
+            >
+              <p className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                {node.title}
+              </p>
+              {leafItems.map((child) => {
+                const ChildIcon = getIcon(child.icon)
+                return (
+                  <Button
+                    key={child.id}
+                    variant="ghost"
+                    className="w-full justify-start text-sm h-8"
+                    onClick={() => {
+                      onClickMenu(child)
+                      setPopoverOpen(false)
+                    }}
+                  >
+                    <ChildIcon className="h-4 w-4 mr-2 shrink-0" />
+                    <span className="truncate">{child.title}</span>
+                  </Button>
+                )
+              })}
+            </PopoverContent>
+          </Popover>
+        </div>
+      )
+    }
+
+    // 无子菜单：直接导航
     return (
       <div>
         <Button
           variant="ghost"
           className="w-full justify-center text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-          onClick={() => {
-            if (hasChildren) {
-              onToggleExpand(node.id)
-            } else {
-              onClickMenu(node)
-            }
-          }}
+          onClick={() => onClickMenu(node)}
           title={node.title}
         >
           <Icon className="h-4 w-4" />

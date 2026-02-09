@@ -996,9 +996,9 @@ async function main() {
   await prisma.sysMenu.deleteMany({});
 
   // 顶级菜单：单据管理
-  const docMenu = await prisma.sysMenu.create({
+  const businessEntryMenu = await prisma.sysMenu.create({
     data: {
-      title: '单据管理',
+      title: '业务入口',
       icon: 'FileText',
       path: null,
       parentId: null,
@@ -1008,13 +1008,25 @@ async function main() {
     },
   });
 
-  // 单据管理子菜单
+  const oaEntryMenu = await prisma.sysMenu.create({
+    data: {
+      title: 'OA入口',
+      icon: 'Briefcase',
+      path: null,
+      parentId: null,
+      orderNum: 4,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  // 业务入口子菜单
   const salesContractMenu = await prisma.sysMenu.create({
     data: {
       title: '销售合同',
       icon: 'ClipboardList',
       path: '/type-list/sales_contract',
-      parentId: docMenu.id,
+      parentId: businessEntryMenu.id,
       orderNum: 1,
       menuType: 'menu',
       status: 'visible',
@@ -1026,21 +1038,60 @@ async function main() {
       title: '采购计划',
       icon: 'ShoppingCart',
       path: '/type-list/purchase_plan',
-      parentId: docMenu.id,
+      parentId: businessEntryMenu.id,
       orderNum: 2,
       menuType: 'menu',
       status: 'visible',
     },
   });
 
-  // 统一的产品管理菜单（包含标准产品、客户产品、自营产品）
+  // 采购合同菜单
+  const purchaseContractMenu = await prisma.sysMenu.create({
+    data: {
+      title: '采购合同',
+      icon: 'ClipboardList',
+      path: '/type-list/purchase_contract',
+      parentId: businessEntryMenu.id,
+      orderNum: 3,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  // 出运计划菜单
+  const shipmentPlanMenu = await prisma.sysMenu.create({
+    data: {
+      title: '出运计划',
+      icon: 'Ship',
+      path: '/type-list/shipment_plan',
+      parentId: businessEntryMenu.id,
+      orderNum: 4,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  // 出运明细菜单
+  const shipmentDetailMenu = await prisma.sysMenu.create({
+    data: {
+      title: '出运明细',
+      icon: 'Package',
+      path: '/type-list/shipment_detail',
+      parentId: businessEntryMenu.id,
+      orderNum: 5,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  // 产品管理菜单（无子菜单）
   const productManagementMenu = await prisma.sysMenu.create({
     data: {
       title: '产品管理',
       icon: 'Package',
       path: '/product-management',
-      parentId: docMenu.id,
-      orderNum: 3,
+      parentId: businessEntryMenu.id,
+      orderNum: 6,
       menuType: 'menu',
       status: 'visible',
     },
@@ -1085,26 +1136,13 @@ async function main() {
     },
   });
 
-  // 采购合同菜单
-  const purchaseContractMenu = await prisma.sysMenu.create({
-    data: {
-      title: '采购合同',
-      icon: 'ClipboardList',
-      path: '/type-list/purchase_contract',
-      parentId: docMenu.id,
-      orderNum: 6,
-      menuType: 'menu',
-      status: 'visible',
-    },
-  });
-
   // 客户管理菜单
   const customerMenu = await prisma.sysMenu.create({
     data: {
       title: '客户管理',
       icon: 'Users',
       path: '/type-list/customer',
-      parentId: docMenu.id,
+      parentId: businessEntryMenu.id,
       orderNum: 7,
       menuType: 'menu',
       status: 'visible',
@@ -1117,7 +1155,7 @@ async function main() {
       title: '供应商管理',
       icon: 'Truck',
       path: '/type-list/supplier',
-      parentId: docMenu.id,
+      parentId: businessEntryMenu.id,
       orderNum: 8,
       menuType: 'menu',
       status: 'visible',
@@ -1339,23 +1377,24 @@ async function main() {
   // -- 角色-菜单关联 --
   // 管理员角色：拥有全部菜单 + 全部按钮权限
   const allMenuIds = [
-    docMenu.id,
+    businessEntryMenu.id,
     salesContractMenu.id,
     purchasePlanMenu.id,
-    productManagementMenu.id,
-    stdProductMenu.id,
-    custProductMenu.id,
-    selfProductMenu.id,
     purchaseContractMenu.id,
+    shipmentPlanMenu.id,
+    shipmentDetailMenu.id,
+    productManagementMenu.id,
+    customerMenu.id,
+    supplierMenu.id,
     sysMenu.id,
     userMgmtMenu.id,
     roleMgmtMenu.id,
     menuMgmtMenu.id,
     deptMgmtMenu.id,
+    businessParentMenu.id,
     categoryMgmtMenu.id,
     businessConfigMenu.id,
-    customerMenu.id,
-    supplierMenu.id,
+    oaEntryMenu.id,
     ...allBtnIds,
   ];
 
@@ -1366,16 +1405,17 @@ async function main() {
     })),
   });
 
-  // 业务经理角色：单据管理菜单 + 全部按钮权限（含审批）
+  // 业务经理角色：业务入口菜单 + 全部按钮权限（含审批）
   const managerMenuIds = [
-    docMenu.id,
+    businessEntryMenu.id,
     salesContractMenu.id,
     purchasePlanMenu.id,
-    productManagementMenu.id,
-    stdProductMenu.id,
-    custProductMenu.id,
-    selfProductMenu.id,
     purchaseContractMenu.id,
+    shipmentPlanMenu.id,
+    shipmentDetailMenu.id,
+    productManagementMenu.id,
+    customerMenu.id,
+    supplierMenu.id,
     ...allBtnIds,
   ];
 
@@ -1386,7 +1426,7 @@ async function main() {
     })),
   });
 
-  // 普通用户角色：单据管理菜单 + 基础操作按钮权限 (新建/删除/提交，不含审批/关闭/作废/下推)
+  // 普通用户角色：业务入口菜单 + 基础操作按钮权限 (新建/删除/提交，不含审批/关闭/作废/下推)
   // 从每种类型的按钮中，只取 create/delete/submit (前3个)
   const userBtnIds = [
     ...salesContractBtnIds.slice(0, 3),
@@ -1398,14 +1438,16 @@ async function main() {
   ];
 
   const userMenuIds = [
-    docMenu.id,
+    businessEntryMenu.id,
     salesContractMenu.id,
     purchasePlanMenu.id,
-    productManagementMenu.id,
-    stdProductMenu.id,
-    custProductMenu.id,
-    selfProductMenu.id,
     purchaseContractMenu.id,
+    shipmentPlanMenu.id,
+    shipmentDetailMenu.id,
+    productManagementMenu.id,
+    customerMenu.id,
+    supplierMenu.id,
+    oaEntryMenu.id,
     ...userBtnIds,
   ];
 
