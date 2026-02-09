@@ -1,5 +1,5 @@
 /**
- * 业务实体管理 API
+ * 实体配置 API
  */
 
 import type { Company, CompanyBankAccount, Region, Country, Port, Brand } from '@/types/business-config';

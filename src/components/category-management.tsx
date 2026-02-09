@@ -1,7 +1,7 @@
 /**
  * CategoryManagement
  *
- * 统一业务属性配置组件。
+ * 统一参数配置组件。
  * 通过配置驱动渲染不同分类的 Tab 页，支持树形和扁平列表两种展示模式。
  * 新增分类只需在 CATEGORY_CONFIGS 数组中添加配置即可。
  */
@@ -749,7 +749,7 @@ export function CategoryManagement() {
       {/* 页面标题 */}
       <div className="flex items-center gap-2">
         <Tags className="h-5 w-5" />
-        <h1 className="text-xl font-bold">业务属性配置</h1>
+        <h1 className="text-xl font-bold">参数配置</h1>
       </div>
 
       {/* 分类 Tab 切换 */}

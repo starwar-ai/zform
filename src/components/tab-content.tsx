@@ -13,6 +13,7 @@ import { MenuManagement } from "@/components/menu-management"
 import { DepartmentManagement } from "@/components/department-management"
 import { CategoryManagement } from "@/components/category-management"
 import { BusinessConfig } from "@/components/business-config"
+import { ProductManagement } from "@/components/product-management"
 import { DashboardHome } from "@/components/dashboard-home"
 
 export function TabContent() {
@@ -96,6 +97,9 @@ export function TabContent() {
 
       case "business-config":
         return <BusinessConfig />
+
+      case "product-management":
+        return <ProductManagement />
 
       default:
         return (

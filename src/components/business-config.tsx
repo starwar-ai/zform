@@ -1,7 +1,7 @@
 /**
  * BusinessConfig
  *
- * 业务实体管理管理组件，包含子公司、国家、港口等配置。
+ * 实体配置管理组件，包含子公司、国家、港口等配置。
  * 每种配置一个Tab。
  */
 
@@ -23,7 +23,7 @@ export function BusinessConfig() {
       {/* 页面标题 */}
       <div className="flex items-center gap-2">
         <Settings className="h-5 w-5" />
-        <h1 className="text-xl font-bold">业务实体管理</h1>
+        <h1 className="text-xl font-bold">实体配置</h1>
       </div>
 
       {/* 配置 Tab 切换 */}

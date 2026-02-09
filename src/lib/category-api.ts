@@ -1,7 +1,7 @@
 /**
  * Category API Client
  *
- * 统一业务属性配置 API 前端封装。
+ * 统一参数配置 API 前端封装。
  */
 
 import type { CategoryTypeKey } from "@/types/category"

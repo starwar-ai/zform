@@ -1033,11 +1033,12 @@ async function main() {
     },
   });
 
-  const stdProductMenu = await prisma.sysMenu.create({
+  // 统一的产品管理菜单（包含标准产品、客户产品、自营产品）
+  const productManagementMenu = await prisma.sysMenu.create({
     data: {
-      title: '标准产品',
+      title: '产品管理',
       icon: 'Package',
-      path: '/type-list/standard_product',
+      path: '/product-management',
       parentId: docMenu.id,
       orderNum: 3,
       menuType: 'menu',
@@ -1045,26 +1046,41 @@ async function main() {
     },
   });
 
-  const custProductMenu = await prisma.sysMenu.create({
+  // 标准产品类型（用于按钮权限，不在侧边栏显示）
+  const stdProductMenu = await prisma.sysMenu.create({
     data: {
-      title: '客户产品',
+      title: '标准产品',
       icon: 'Package',
-      path: '/type-list/customer_product',
-      parentId: docMenu.id,
-      orderNum: 4,
-      menuType: 'menu',
+      path: null,
+      parentId: productManagementMenu.id,
+      orderNum: 1,
+      menuType: 'catalog',
       status: 'visible',
     },
   });
 
+  // 客户产品类型（用于按钮权限，不在侧边栏显示）
+  const custProductMenu = await prisma.sysMenu.create({
+    data: {
+      title: '客户产品',
+      icon: 'Package',
+      path: null,
+      parentId: productManagementMenu.id,
+      orderNum: 2,
+      menuType: 'catalog',
+      status: 'visible',
+    },
+  });
+
+  // 自营产品类型（用于按钮权限，不在侧边栏显示）
   const selfProductMenu = await prisma.sysMenu.create({
     data: {
       title: '自营产品',
       icon: 'Package',
-      path: '/type-list/self_owned_product',
-      parentId: docMenu.id,
-      orderNum: 5,
-      menuType: 'menu',
+      path: null,
+      parentId: productManagementMenu.id,
+      orderNum: 3,
+      menuType: 'catalog',
       status: 'visible',
     },
   });
@@ -1199,6 +1215,19 @@ async function main() {
     },
   });
 
+  // 顶级菜单：业务配置
+  const businessParentMenu = await prisma.sysMenu.create({
+    data: {
+      title: '业务配置',
+      icon: 'Briefcase',
+      path: null,
+      parentId: null,
+      orderNum: 3,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
   const userMgmtMenu = await prisma.sysMenu.create({
     data: {
       title: '用户管理',
@@ -1249,11 +1278,11 @@ async function main() {
 
   const categoryMgmtMenu = await prisma.sysMenu.create({
     data: {
-      title: '业务属性配置',
+      title: '参数配置',
       icon: 'Tags',
       path: '/category-management',
-      parentId: sysMenu.id,
-      orderNum: 5,
+      parentId: businessParentMenu.id,
+      orderNum: 1,
       menuType: 'menu',
       status: 'visible',
     },
@@ -1261,11 +1290,11 @@ async function main() {
 
   const businessConfigMenu = await prisma.sysMenu.create({
     data: {
-      title: '业务实体管理',
-      icon: 'Settings',
+      title: '实体配置',
+      icon: 'Database',
       path: '/business-config',
-      parentId: sysMenu.id,
-      orderNum: 6,
+      parentId: businessParentMenu.id,
+      orderNum: 2,
       menuType: 'menu',
       status: 'visible',
     },
@@ -1313,6 +1342,7 @@ async function main() {
     docMenu.id,
     salesContractMenu.id,
     purchasePlanMenu.id,
+    productManagementMenu.id,
     stdProductMenu.id,
     custProductMenu.id,
     selfProductMenu.id,
@@ -1341,6 +1371,7 @@ async function main() {
     docMenu.id,
     salesContractMenu.id,
     purchasePlanMenu.id,
+    productManagementMenu.id,
     stdProductMenu.id,
     custProductMenu.id,
     selfProductMenu.id,
@@ -1370,6 +1401,7 @@ async function main() {
     docMenu.id,
     salesContractMenu.id,
     purchasePlanMenu.id,
+    productManagementMenu.id,
     stdProductMenu.id,
     custProductMenu.id,
     selfProductMenu.id,
