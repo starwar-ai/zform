@@ -1115,7 +1115,7 @@ async function main() {
     data: {
       title: '供应商管理',
       icon: 'Truck',
-      path: '/type-list/supplier',
+      path: '/supplier-management',
       parentId: businessEntryMenu.id,
       orderNum: 8,
       menuType: 'menu',
