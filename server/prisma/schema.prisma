@@ -23,6 +23,12 @@ enum ProductStatus {
   DISCONTINUED  // 停产
 }
 
+enum MaterialSource {
+  COMPANY_DEV     // 公司开发
+  PURCHASE_DEV    // 采购开发
+  DEPARTMENT_DEV  // 部门开发
+}
+
 enum ApprovalStatus {
   PENDING       // 待审核
   APPROVED      // 已审核
@@ -364,7 +370,7 @@ model Product {
   descriptionEn     String?         @map("description_en")
   isSelfBrand       Boolean         @default(false) @map("is_self_brand")
   isAdvantage       Boolean         @default(false) @map("is_advantage")
-  source            String?
+  source            MaterialSource?
   material          String?
   accessoryMaterial String?         @map("accessory_material")
   unit              String          @default("PCS")

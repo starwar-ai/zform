@@ -186,25 +186,20 @@ export const standardProductSchema: DocumentSchema = {
 
     // === 规格尺寸 ===
     {
-      id: "length",
-      label: "长度 (cm)",
-      type: "number",
-      placeholder: "0.00",
+      id: "dimensions",
+      label: "规格尺寸(cm)",
+      type: "dimensions",
       group: "规格尺寸",
-    },
-    {
-      id: "width",
-      label: "宽度 (cm)",
-      type: "number",
-      placeholder: "0.00",
-      group: "规格尺寸",
-    },
-    {
-      id: "height",
-      label: "高度 (cm)",
-      type: "number",
-      placeholder: "0.00",
-      group: "规格尺寸",
+      dimensionConfig: {
+        lengthId: "length",
+        widthId: "width",
+        heightId: "height",
+        placeholders: {
+          length: "长",
+          width: "宽",
+          height: "高",
+        },
+      },
     },
     {
       id: "netWeight",
@@ -218,7 +213,12 @@ export const standardProductSchema: DocumentSchema = {
     {
       id: "source",
       label: "来源",
-      type: "text",
+      type: "select",
+      options: [
+        { label: "公司开发", value: "COMPANY_DEV" },
+        { label: "采购开发", value: "PURCHASE_DEV" },
+        { label: "部门开发", value: "DEPARTMENT_DEV" },
+      ],
       group: "材料信息",
     },
     {
@@ -554,25 +554,21 @@ export const customerProductSchema: DocumentSchema = {
 
     // === 规格尺寸（可调整）===
     {
-      id: "length",
-      label: "长度 (cm)",
-      type: "number",
-      placeholder: "0.00",
+      id: "dimensions",
+      label: "规格尺寸(cm)",
+      type: "dimensions",
       group: "规格尺寸",
-    },
-    {
-      id: "width",
-      label: "宽度 (cm)",
-      type: "number",
-      placeholder: "0.00",
-      group: "规格尺寸",
-    },
-    {
-      id: "height",
-      label: "高度 (cm)",
-      type: "number",
-      placeholder: "0.00",
-      group: "规格尺寸",
+      span: 3,
+      dimensionConfig: {
+        lengthId: "length",
+        widthId: "width",
+        heightId: "height",
+        placeholders: {
+          length: "长",
+          width: "宽",
+          height: "高",
+        },
+      },
     },
     {
       id: "netWeight",
@@ -802,25 +798,21 @@ export const selfOwnedProductSchema: DocumentSchema = {
 
     // === 规格尺寸 ===
     {
-      id: "length",
-      label: "长度 (cm)",
-      type: "number",
-      placeholder: "0.00",
+      id: "dimensions",
+      label: "规格尺寸(cm)",
+      type: "dimensions",
       group: "规格尺寸",
-    },
-    {
-      id: "width",
-      label: "宽度 (cm)",
-      type: "number",
-      placeholder: "0.00",
-      group: "规格尺寸",
-    },
-    {
-      id: "height",
-      label: "高度 (cm)",
-      type: "number",
-      placeholder: "0.00",
-      group: "规格尺寸",
+      span: 3,
+      dimensionConfig: {
+        lengthId: "length",
+        widthId: "width",
+        heightId: "height",
+        placeholders: {
+          length: "长",
+          width: "宽",
+          height: "高",
+        },
+      },
     },
     {
       id: "netWeight",

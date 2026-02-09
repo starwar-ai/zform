@@ -57,8 +57,14 @@ export function MasterForm({
           >
             {group.fields.map((field) => {
               // 计算值 (computed 字段)
-              const value =
-                field.type === "computed" && field.compute
+              const isDimensions = field.type === "dimensions" && field.dimensionConfig
+              const value = isDimensions
+                ? {
+                    length: data[field.dimensionConfig.lengthId],
+                    width: data[field.dimensionConfig.widthId],
+                    height: data[field.dimensionConfig.heightId],
+                  }
+                : field.type === "computed" && field.compute
                   ? field.compute(data)
                   : data[field.id]
 
@@ -72,7 +78,20 @@ export function MasterForm({
                   <FieldRenderer
                     field={field}
                     value={value}
-                    onChange={(v) => onChange(field.id, v)}
+                    onChange={(v) => {
+                      if (isDimensions && field.dimensionConfig) {
+                        const next = v as {
+                          length?: unknown
+                          width?: unknown
+                          height?: unknown
+                        }
+                        onChange(field.dimensionConfig.lengthId, next.length)
+                        onChange(field.dimensionConfig.widthId, next.width)
+                        onChange(field.dimensionConfig.heightId, next.height)
+                        return
+                      }
+                      onChange(field.id, v)
+                    }}
                     disabled={disabled}
                   />
                 </div>

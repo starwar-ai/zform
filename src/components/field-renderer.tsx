@@ -128,6 +128,49 @@ export function FieldRenderer({
           />
         )
 
+      case "dimensions": {
+        const config = field.dimensionConfig
+        if (!config) return null
+        const current = (value as { length?: unknown; width?: unknown; height?: unknown }) ?? {}
+        const placeholders = config.placeholders ?? {}
+        const placeholder =
+          field.placeholder ??
+          `${placeholders.length ?? "长"}/${placeholders.width ?? "宽"}/${placeholders.height ?? "高"}`
+        const formatPart = (v: unknown) =>
+          v === null || v === undefined || v === "" ? "" : String(v)
+        const displayValue = [
+          formatPart(current.length),
+          formatPart(current.width),
+          formatPart(current.height),
+        ].join("/")
+        const toNumberOrUndefined = (raw: string | undefined) => {
+          const trimmed = (raw ?? "").trim()
+          if (trimmed === "") return undefined
+          const num = Number(trimmed)
+          return Number.isNaN(num) ? undefined : num
+        }
+
+        return (
+          <div className="flex items-center gap-2">
+            <Input
+              value={displayValue}
+              onChange={(e) => {
+                const parts = e.target.value.split("/")
+                const next = {
+                  length: toNumberOrUndefined(parts[0]),
+                  width: toNumberOrUndefined(parts[1]),
+                  height: toNumberOrUndefined(parts[2]),
+                }
+                onChange(next)
+              }}
+              placeholder={placeholder}
+              disabled={isDisabled}
+              aria-label="规格尺寸"
+            />
+          </div>
+        )
+      }
+
       default:
         return (
           <Input

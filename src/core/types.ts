@@ -37,6 +37,7 @@ export type FieldType =
   | "checkbox"
   | "computed"
   | "combobox"
+  | "dimensions"
 
 /** Combobox 下拉选项 */
 export interface ComboboxOption {
@@ -56,6 +57,18 @@ export interface ComboboxConfig {
   fetchOptions: () => Promise<ComboboxOption[]>
   /** 是否树形数据（启用缩进 + 仅叶子可选） */
   isTree?: boolean
+}
+
+/** 规格尺寸字段配置 */
+export interface DimensionsFieldConfig {
+  lengthId: FieldId
+  widthId: FieldId
+  heightId: FieldId
+  placeholders?: {
+    length?: string
+    width?: string
+    height?: string
+  }
 }
 
 /** 字段定义 */
@@ -84,6 +97,8 @@ export interface FieldDef {
   group?: string
   /** Combobox 配置 (type=combobox 时) */
   comboboxConfig?: ComboboxConfig
+  /** 规格尺寸配置 (type=dimensions 时) */
+  dimensionConfig?: DimensionsFieldConfig
 }
 
 // ============================================================
