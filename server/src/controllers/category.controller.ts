@@ -70,43 +70,43 @@ export const categoryController = {
     }
   },
 
-  // ==================== 产品分类（海关编码） ====================
+  // ==================== 海关编码 ====================
 
-  /** GET /categories/product - 获取产品分类树 */
+  /** GET /categories/product - 获取海关编码列表 */
   async getProductTree(_req: Request, res: Response, next: NextFunction) {
     try {
-      const tree = await hsCodeService.getTree();
-      res.json(successResponse(tree));
+      const list = await hsCodeService.findAll();
+      res.json(successResponse(list));
     } catch (error) {
       next(error);
     }
   },
 
-  /** POST /categories/product - 创建产品分类 */
+  /** POST /categories/product - 创建海关编码 */
   async createProduct(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await hsCodeService.create(req.body, getUserId(req));
-      res.status(201).json(successResponse(result, '产品分类创建成功'));
+      res.status(201).json(successResponse(result, '海关编码创建成功'));
     } catch (error) {
       next(error);
     }
   },
 
-  /** PUT /categories/product/:id - 更新产品分类 */
+  /** PUT /categories/product/:id - 更新海关编码 */
   async updateProduct(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await hsCodeService.update(param(req, 'id'), req.body, getUserId(req));
-      res.json(successResponse(result, '产品分类更新成功'));
+      res.json(successResponse(result, '海关编码更新成功'));
     } catch (error) {
       next(error);
     }
   },
 
-  /** DELETE /categories/product/:id - 删除产品分类 */
+  /** DELETE /categories/product/:id - 删除海关编码 */
   async deleteProduct(req: Request, res: Response, next: NextFunction) {
     try {
       await hsCodeService.delete(param(req, 'id'));
-      res.json(successResponse(null, '产品分类删除成功'));
+      res.json(successResponse(null, '海关编码删除成功'));
     } catch (error) {
       next(error);
     }

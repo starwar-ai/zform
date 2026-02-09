@@ -43,8 +43,21 @@ async function main() {
 
   const hsCode = await prisma.hsCode.upsert({
     where: { code: 'HS001' },
-    update: { name: 'Plastic Products', hsCode: '3926909090' },
-    create: { code: 'HS001', name: 'Plastic Products', hsCode: '3926909090' },
+    update: {
+      name: 'Plastic Products',
+      hsCode: '3926909090',
+      customsUnit: 'PCS',
+      taxRefundRate: 13.0,
+      taxRate: 17.0,
+    },
+    create: {
+      code: 'HS001',
+      name: 'Plastic Products',
+      hsCode: '3926909090',
+      customsUnit: 'PCS',
+      taxRefundRate: 13.0,
+      taxRate: 17.0,
+    },
   });
 
   const packageMethod = await prisma.packageMethod.upsert({
@@ -92,115 +105,113 @@ async function main() {
     create: { code: 'CC003', name: 'C类客户' },
   });
 
-  // ---- 产品分类 / 海关编码（树形结构）----
-  // 一级分类
+  // ---- 海关编码 ----
   const hsCodeElectronics = await prisma.hsCode.upsert({
     where: { code: 'HS-ELEC' },
     update: {
       name: '电子产品',
       hsCode: '85',
-      categoryCode: 'P-ELEC',
-      level: 1,
-      serialLength: 6,
+      customsUnit: 'PCS',
+      taxRefundRate: 13.0,
+      taxRate: 17.0,
+      fullName: '电子产品（含手机配件等）',
     },
     create: {
       code: 'HS-ELEC',
       name: '电子产品',
       hsCode: '85',
-      categoryCode: 'P-ELEC',
-      level: 1,
-      serialLength: 6,
-      type: '成品',
+      customsUnit: 'PCS',
+      taxRefundRate: 13.0,
+      taxRate: 17.0,
+      fullName: '电子产品（含手机配件等）',
     },
   });
 
-  // 二级分类：手机配件
   const hsCodePhoneAccessories = await prisma.hsCode.upsert({
     where: { code: 'HS-PHONE-ACC' },
     update: {
       name: '手机配件',
       hsCode: '8517',
-      categoryCode: 'P-PHONE-ACC',
-      parentId: hsCodeElectronics.id,
-      level: 2,
-      serialLength: 6,
+      customsUnit: 'PCS',
+      taxRefundRate: 13.0,
+      taxRate: 17.0,
+      fullName: '手机配件及零件',
     },
     create: {
       code: 'HS-PHONE-ACC',
       name: '手机配件',
       hsCode: '8517',
-      categoryCode: 'P-PHONE-ACC',
-      parentId: hsCodeElectronics.id,
-      level: 2,
-      serialLength: 6,
-      type: '成品',
+      customsUnit: 'PCS',
+      taxRefundRate: 13.0,
+      taxRate: 17.0,
+      fullName: '手机配件及零件',
     },
   });
 
-  // 三级分类：手机壳
   const hsCodePhoneCase = await prisma.hsCode.upsert({
     where: { code: 'HS-PHONE-CASE' },
     update: {
       name: '手机壳',
       hsCode: '85177090',
-      categoryCode: 'P-PHONE-CASE',
-      parentId: hsCodePhoneAccessories.id,
-      level: 3,
-      serialLength: 6,
+      customsUnit: 'PCS',
+      taxRefundRate: 13.0,
+      taxRate: 17.0,
+      fullName: '手机保护壳',
+      secondUnit: 'KG',
     },
     create: {
       code: 'HS-PHONE-CASE',
       name: '手机壳',
       hsCode: '85177090',
-      categoryCode: 'P-PHONE-CASE',
-      parentId: hsCodePhoneAccessories.id,
-      level: 3,
-      serialLength: 6,
-      type: '成品',
+      customsUnit: 'PCS',
+      taxRefundRate: 13.0,
+      taxRate: 17.0,
+      fullName: '手机保护壳',
+      secondUnit: 'KG',
     },
   });
 
-  // 一级分类：塑料制品
   const hsCodePlastic = await prisma.hsCode.upsert({
     where: { code: 'HS-PLASTIC' },
     update: {
       name: '塑料制品',
       hsCode: '39',
-      categoryCode: 'P-PLASTIC',
-      level: 1,
-      serialLength: 6,
+      customsUnit: 'KG',
+      taxRefundRate: 13.0,
+      taxRate: 17.0,
+      fullName: '塑料制品及其制品',
     },
     create: {
       code: 'HS-PLASTIC',
       name: '塑料制品',
       hsCode: '39',
-      categoryCode: 'P-PLASTIC',
-      level: 1,
-      serialLength: 6,
-      type: '成品',
+      customsUnit: 'KG',
+      taxRefundRate: 13.0,
+      taxRate: 17.0,
+      fullName: '塑料制品及其制品',
     },
   });
 
-  // 二级分类：塑料包装
   const hsCodePlasticPackaging = await prisma.hsCode.upsert({
     where: { code: 'HS-PLASTIC-PKG' },
     update: {
       name: '塑料包装',
       hsCode: '3923',
-      categoryCode: 'P-PLASTIC-PKG',
-      parentId: hsCodePlastic.id,
-      level: 2,
-      serialLength: 6,
+      customsUnit: 'KG',
+      taxRefundRate: 13.0,
+      taxRate: 17.0,
+      fullName: '塑料包装制品',
+      secondUnit: 'PCS',
     },
     create: {
       code: 'HS-PLASTIC-PKG',
       name: '塑料包装',
       hsCode: '3923',
-      categoryCode: 'P-PLASTIC-PKG',
-      parentId: hsCodePlastic.id,
-      level: 2,
-      serialLength: 6,
-      type: '成品',
+      customsUnit: 'KG',
+      taxRefundRate: 13.0,
+      taxRate: 17.0,
+      fullName: '塑料包装制品',
+      secondUnit: 'PCS',
     },
   });
 

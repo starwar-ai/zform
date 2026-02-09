@@ -248,24 +248,25 @@ model ProductCategory {
 // ==================== 海关编码表 ====================
 
 model HsCode {
-  id           String    @id @default(cuid())
-  code         String    @unique
-  name         String
-  hsCode       String    @map("hs_code")
-  categoryCode String?   @map("category_code")
-  parentId     String?   @map("parent_id")
-  parent       HsCode?   @relation("HsCodeTree", fields: [parentId], references: [id], onDelete: Cascade)
-  children     HsCode[]  @relation("HsCodeTree")
-  type         String?
-  level        Int       @default(1)
-  serialLength Int       @default(6) @map("serial_length")
-  createdBy    String?   @map("created_by")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedBy    String?   @map("updated_by")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-  deletedAt    DateTime? @map("deleted_at")
+  id             String    @id @default(cuid())
+  code           String    @unique                        // 编号（必填）
+  hsCode         String    @map("hs_code")                // 编码（必填）
+  name           String                                   // 商品名称（必填）
+  customsUnit    String    @map("customs_unit")           // 报关单位（必填）
+  taxRefundRate  Decimal   @db.Decimal(5, 2) @map("tax_refund_rate") // 退税率（必填）
+  taxRate        Decimal?  @db.Decimal(5, 2) @map("tax_rate")        // 征税率
+  remark         String?                                  // 备注
+  fullName       String?   @map("full_name")              // 商品全称
+  levyRate       Decimal?  @db.Decimal(5, 2) @map("levy_rate")       // 征收率
+  secondUnit     String?   @map("second_unit")            // 第二单位
+  
+  createdBy      String?   @map("created_by")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedBy      String?   @map("updated_by")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
 
-  products     Product[]
+  products       Product[]
 
   @@map("hs_codes")
 }

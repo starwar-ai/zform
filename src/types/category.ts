@@ -41,44 +41,56 @@ export interface UpdateCustomerCategoryInput {
   parentId?: string | null
 }
 
-// ==================== 产品分类（海关编码） ====================
+// ==================== 海关编码 ====================
 
-export interface ProductCategory extends BaseCategoryFields {
+export interface HsCode extends BaseCategoryFields {
+  code: string              // 编号（必填）
+  hsCode: string           // 编码（必填）
+  name: string             // 商品名称（必填）
+  customsUnit: string      // 报关单位（必填）
+  taxRefundRate: number    // 退税率（必填）
+  taxRate: number | null   // 征税率
+  remark: string | null    // 备注
+  fullName: string | null  // 商品全称
+  levyRate: number | null  // 征收率
+  secondUnit: string | null // 第二单位
+}
+
+// 保留旧类型别名以兼容现有代码
+export type ProductCategory = HsCode
+export type ProductCategoryTreeNode = HsCode
+
+export interface CreateHsCodeInput {
   code: string
-  name: string
   hsCode: string
-  categoryCode: string | null
-  parentId: string | null
-  type: string | null
-  level: number
-  serialLength: number
-}
-
-export interface ProductCategoryTreeNode extends ProductCategory {
-  children: ProductCategoryTreeNode[]
-}
-
-export interface CreateProductCategoryInput {
-  code: string
   name: string
-  hsCode: string
-  categoryCode?: string | null
-  parentId?: string | null
-  type?: string | null
-  level?: number
-  serialLength?: number
+  customsUnit: string
+  taxRefundRate: number
+  taxRate?: number | null
+  remark?: string | null
+  fullName?: string | null
+  levyRate?: number | null
+  secondUnit?: string | null
 }
 
-export interface UpdateProductCategoryInput {
+// 保留旧类型别名以兼容现有代码
+export type CreateProductCategoryInput = CreateHsCodeInput
+
+export interface UpdateHsCodeInput {
   code?: string
-  name?: string
   hsCode?: string
-  categoryCode?: string | null
-  parentId?: string | null
-  type?: string | null
-  level?: number
-  serialLength?: number
+  name?: string
+  customsUnit?: string
+  taxRefundRate?: number
+  taxRate?: number | null
+  remark?: string | null
+  fullName?: string | null
+  levyRate?: number | null
+  secondUnit?: string | null
 }
+
+// 保留旧类型别名以兼容现有代码
+export type UpdateProductCategoryInput = UpdateHsCodeInput
 
 // ==================== 展会分类 ====================
 
