@@ -20,7 +20,7 @@
 
 import type { FetchParams, FetchResult, AggregateItem } from "@/components/list-table/types"
 import type { DocumentData } from "@/core/types"
-import { normalizeDocumentData } from "./document-transform"
+import { normalizeDocumentData } from "../lib/document-transform";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3001/api"
 
