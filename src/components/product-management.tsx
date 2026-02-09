@@ -23,11 +23,6 @@ export function ProductManagement() {
 
   return (
     <div className="space-y-6 p-6">
-      {/* 页面标题 */}
-      <div className="flex items-center gap-2">
-        <Package className="h-5 w-5" />
-        <h1 className="text-xl font-bold">产品管理</h1>
-      </div>
 
       {/* 产品类型 Tab 切换 */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ProductTab)}>

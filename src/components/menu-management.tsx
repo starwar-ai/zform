@@ -56,6 +56,7 @@ import {
   Menu as MenuIcon,
   ChevronRight,
   ChevronDown,
+  ChevronsUpDown,
   GripVertical,
   Loader2,
   RefreshCw,
@@ -465,6 +466,24 @@ export function MenuManagement() {
     })
   }
 
+  const expandAll = () => {
+    const allIds = new Set<string>()
+    const collectIds = (nodes: MenuTreeNode[]) => {
+      nodes.forEach((n) => {
+        if (n.children.length > 0) {
+          allIds.add(n.id)
+          collectIds(n.children)
+        }
+      })
+    }
+    collectIds(menuTree)
+    setExpandedIds(allIds)
+  }
+
+  const collapseAll = () => {
+    setExpandedIds(new Set())
+  }
+
   /** 拖拽排序结束 */
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event
@@ -543,6 +562,24 @@ export function MenuManagement() {
           菜单管理
         </h1>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={expandAll}
+            title="展开全部"
+          >
+            <ChevronsUpDown className="h-4 w-4 mr-1" />
+            展开全部
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={collapseAll}
+            title="折叠全部"
+          >
+            <ChevronsUpDown className="h-4 w-4 mr-1 rotate-180" />
+            折叠全部
+          </Button>
           <Button
             variant="outline"
             size="sm"
