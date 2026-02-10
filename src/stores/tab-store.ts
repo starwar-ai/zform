@@ -24,7 +24,6 @@ export type TabType =
   | "warehouse-inventory" // 库存查询
   | "warehouse-inbound" // 入库管理
   | "warehouse-outbound" // 出库管理
-  | "quality-management"
 
 // 标签数据结构
 export interface Tab {
@@ -111,7 +110,7 @@ export const useTabStore = create<TabStoreState>()(
           type,
           title,
           closable:
-            (type !== "dashboard" && type !== "document-list") ||
+            type !== "dashboard" ||
             Object.keys(params).length > 0, // 首页不可关闭
           params,
           createdAt: Date.now(),
@@ -377,6 +376,24 @@ export const useTabStore = create<TabStoreState>()(
         tabs: state.tabs,
         activeTabId: state.activeTabId,
       }),
+      // 从持久化恢复时，清理已废弃的标签类型
+      merge: (persisted, current) => {
+        const persistedState = persisted as Partial<TabStoreState>
+        const cleanedTabs = (persistedState.tabs || []).filter(
+          (tab) => tab.type !== "document-list" || Object.keys(tab.params || {}).length > 0
+        )
+        const activeTabId = persistedState.activeTabId
+        const isActiveValid = cleanedTabs.some((tab) => tab.id === activeTabId)
+        return {
+          ...current,
+          tabs: cleanedTabs,
+          activeTabId: isActiveValid
+            ? activeTabId!
+            : cleanedTabs.length > 0
+              ? cleanedTabs[0].id
+              : null,
+        }
+      },
     }
   )
 )

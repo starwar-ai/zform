@@ -1136,14 +1136,40 @@ async function main() {
     },
   });
 
-  // 质检管理菜单
-  const qualityMenu = await prisma.sysMenu.create({
+  // ---- 质检入口（一级菜单） ----
+  const qualityEntryMenu = await prisma.sysMenu.create({
     data: {
-      title: '质检管理',
-      icon: 'ClipboardList',
-      path: '/quality-management',
-      parentId: businessEntryMenu.id,
-      orderNum: 9,
+      title: '质检入口',
+      icon: 'ShieldCheck',
+      path: null,
+      parentId: null,
+      orderNum: 7,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  // 验货单菜单（质检入口子菜单）
+  const inspectionOrderMenu = await prisma.sysMenu.create({
+    data: {
+      title: '验货单',
+      icon: 'ClipboardCheck',
+      path: '/type-list/inspection_order',
+      parentId: qualityEntryMenu.id,
+      orderNum: 2,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  // 让步接收单菜单（质检入口子菜单）
+  const concessionAcceptanceMenu = await prisma.sysMenu.create({
+    data: {
+      title: '让步接收单',
+      icon: 'FileCheck2',
+      path: '/type-list/concession_acceptance',
+      parentId: qualityEntryMenu.id,
+      orderNum: 3,
       menuType: 'menu',
       status: 'visible',
     },
@@ -1283,11 +1309,15 @@ async function main() {
     ...warehouseOutboundNoticeBtnIds,
   ];
 
-  // 质检管理按钮权限
-  const qualityBtnIds = await createDocPermButtons(qualityMenu.id, 'quality', [
+  // 验货单按钮权限
+  const inspectionOrderBtnIds = await createDocPermButtons(inspectionOrderMenu.id, 'inspection_order', [
     ...basicDocActions,
     { perm: 'close', title: '关闭' },
+    { perm: 'void', title: '作废' },
   ]);
+
+  // 让步接收单按钮权限
+  const concessionAcceptanceBtnIds = await createDocPermButtons(concessionAcceptanceMenu.id, 'concession_acceptance', basicDocActions);
 
   // 所有按钮权限 ID 汇总
   const allBtnIds = [
@@ -1300,7 +1330,8 @@ async function main() {
     ...custProductBtnIds,
     ...selfProductBtnIds,
     ...warehouseBtnIds,
-    ...qualityBtnIds,
+    ...inspectionOrderBtnIds,
+    ...concessionAcceptanceBtnIds,
   ];
 
   // 顶级菜单：系统管理
@@ -1450,7 +1481,9 @@ async function main() {
     productManagementMenu.id,
     customerMenu.id,
     supplierMenu.id,
-    qualityMenu.id,
+    qualityEntryMenu.id,
+    inspectionOrderMenu.id,
+    concessionAcceptanceMenu.id,
     warehouseEntryMenu.id,
     warehouseInventoryMenu.id,
     warehouseInboundMenu.id,
@@ -1486,7 +1519,9 @@ async function main() {
     productManagementMenu.id,
     customerMenu.id,
     supplierMenu.id,
-    qualityMenu.id,
+    qualityEntryMenu.id,
+    inspectionOrderMenu.id,
+    concessionAcceptanceMenu.id,
     warehouseEntryMenu.id,
     warehouseInventoryMenu.id,
     warehouseInboundMenu.id,
@@ -1516,7 +1551,8 @@ async function main() {
     ...warehouseOutboundBtnIds.slice(0, 3),
     ...warehouseInboundNoticeBtnIds.slice(0, 3),
     ...warehouseOutboundNoticeBtnIds.slice(0, 3),
-    ...qualityBtnIds.slice(0, 3),
+    ...inspectionOrderBtnIds.slice(0, 3),
+    ...concessionAcceptanceBtnIds.slice(0, 3),
   ];
 
   const userMenuIds = [
@@ -1530,7 +1566,9 @@ async function main() {
     productManagementMenu.id,
     customerMenu.id,
     supplierMenu.id,
-    qualityMenu.id,
+    qualityEntryMenu.id,
+    inspectionOrderMenu.id,
+    concessionAcceptanceMenu.id,
     warehouseEntryMenu.id,
     warehouseInventoryMenu.id,
     warehouseInboundMenu.id,
@@ -1558,7 +1596,7 @@ async function main() {
   console.log(`Menus: ${allMenuIds.length} menus (incl. ${allBtnIds.length} button permissions)`);
   console.log(`System management menus: ${userMgmtMenu.title}, ${roleMgmtMenu.title}, ${menuMgmtMenu.title}, ${deptMgmtMenu.title}, ${categoryMgmtMenu.title}, ${businessConfigMenu.title}`);
   console.log(`Data Entry menus: ${dataEntryMenu.title} (${productManagementMenu.title}, ${customerMenu.title}, ${supplierMenu.title})`);
-  console.log(`Warehouse & Quality menus: ${warehouseEntryMenu.title} (${warehouseInventoryMenu.title}, ${warehouseInboundMenu.title}, ${warehouseOutboundMenu.title}), ${qualityMenu.title}`);
+  console.log(`Warehouse & Quality menus: ${warehouseEntryMenu.title} (${warehouseInventoryMenu.title}, ${warehouseInboundMenu.title}, ${warehouseOutboundMenu.title})`);
   console.log(`Data permissions: admin=all, manager=department, user=personal`);
   console.log(`Customer categories: ${customerCategoryA.code} (${customerCategoryA1.code}, ${customerCategoryA2.code}), ${customerCategoryB.code} (${customerCategoryB1.code}), ${customerCategoryC.code}`);
   console.log(`Product categories (HsCode): ${hsCodeElectronics.code} -> ${hsCodePhoneAccessories.code} -> ${hsCodePhoneCase.code}, ${hsCodePlastic.code} -> ${hsCodePlasticPackaging.code}`);

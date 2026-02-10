@@ -55,6 +55,14 @@ import {
   warehouseInboundNoticeSchema,
   warehouseOutboundNoticeSchema,
 } from "./warehouse-schemas"
+import {
+  inspectionOrderSchema,
+  inspectionOrderChangeRule,
+} from "./inspection-order-schemas"
+import {
+  concessionAcceptanceSchema,
+  concessionAcceptanceChangeRule,
+} from "./concession-acceptance-schemas"
 
 // ============================================================
 // 单据列表操作配置
@@ -378,6 +386,46 @@ const logisticsActionConfig: DocumentListActionConfig = {
   ],
 }
 
+/** 验货单 - 列表操作 */
+const inspectionOrderActionConfig: DocumentListActionConfig = {
+  typeId: "inspection_order",
+  rowActions: [
+    { id: "open", label: "打开" },
+    { id: "copy-id", label: "复制ID" },
+    {
+      id: "delete",
+      label: "删除",
+      danger: true,
+      modes: ["document"],
+      visible: (row) => row._status === "draft",
+      permission: "inspection_order:delete",
+    },
+  ],
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "inspection_order:create" },
+  ],
+}
+
+/** 让步接收单 - 列表操作 */
+const concessionAcceptanceActionConfig: DocumentListActionConfig = {
+  typeId: "concession_acceptance",
+  rowActions: [
+    { id: "open", label: "打开" },
+    { id: "copy-id", label: "复制ID" },
+    {
+      id: "delete",
+      label: "删除",
+      danger: true,
+      modes: ["document"],
+      visible: (row) => row._status === "draft",
+      permission: "concession_acceptance:delete",
+    },
+  ],
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "concession_acceptance:create" },
+  ],
+}
+
 /** 仓库单据通用行操作 */
 const warehouseRowActions = (typeId: string) => [
   { id: "open", label: "打开" },
@@ -630,6 +678,56 @@ const packagingPurchaseContractFormActions: DocumentFormActionConfig = {
   ],
 }
 
+/** 验货单 - 表单操作 */
+const inspectionOrderFormActions: DocumentFormActionConfig = {
+  typeId: "inspection_order",
+  actions: [
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["draft"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["draft"], permission: "inspection_order:submit", order: 2 },
+    {
+      id: "approve", label: "审批", icon: "Check", allowedStatuses: ["submitted"],
+      permission: "inspection_order:approve", order: 3,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "reject", label: "拒绝", icon: "X", variant: "destructive", allowedStatuses: ["submitted"],
+      permission: "inspection_order:approve", order: 4,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "withdraw", label: "撤回", icon: "Undo2", variant: "outline", allowedStatuses: ["submitted"], order: 5,
+      visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
+    },
+    { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["approved"], permission: "inspection_order:close", order: 6 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["draft"], order: 7 },
+    { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["approved"], permission: "inspection_order:void", order: 8 },
+  ],
+}
+
+/** 让步接收单 - 表单操作 */
+const concessionAcceptanceFormActions: DocumentFormActionConfig = {
+  typeId: "concession_acceptance",
+  actions: [
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["draft"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["draft"], permission: "concession_acceptance:submit", order: 2 },
+    {
+      id: "approve", label: "审批", icon: "Check", allowedStatuses: ["submitted"],
+      permission: "concession_acceptance:approve", order: 3,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "reject", label: "拒绝", icon: "X", variant: "destructive", allowedStatuses: ["submitted"],
+      permission: "concession_acceptance:approve", order: 4,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "withdraw", label: "撤回", icon: "Undo2", variant: "outline", allowedStatuses: ["submitted"], order: 5,
+      visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
+    },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["draft"], order: 7 },
+  ],
+}
+
 /** 标准产品 - 表单操作 */
 const standardProductFormActions: DocumentFormActionConfig = {
   typeId: "standard_product",
@@ -796,6 +894,12 @@ export function setupSchemas(): void {
   registry.registerSchema(warehouseInboundNoticeSchema)
   registry.registerSchema(warehouseOutboundNoticeSchema)
 
+  // 注册验货单 Schema
+  registry.registerSchema(inspectionOrderSchema)
+
+  // 注册让步接收单 Schema
+  registry.registerSchema(concessionAcceptanceSchema)
+
   // 注册采购流程下推规则
   registry.registerPushDownRule(salesContractToPurchasePlanRule)
   registry.registerPushDownRule(purchasePlanToPurchaseContractRule)
@@ -815,6 +919,12 @@ export function setupSchemas(): void {
 
   // 注册客户变更规则
   registry.registerChangeRule(customerChangeRule)
+
+  // 注册验货单变更规则
+  registry.registerChangeRule(inspectionOrderChangeRule)
+
+  // 注册让步接收单变更规则
+  registry.registerChangeRule(concessionAcceptanceChangeRule)
 
   // 注册供应商变更规则 (三种子类型)
   registry.registerChangeRule(manufacturerChangeRule)
@@ -843,6 +953,8 @@ export function setupSchemas(): void {
   registry.registerActionConfig(warehouseOutboundActionConfig)
   registry.registerActionConfig(warehouseInboundNoticeActionConfig)
   registry.registerActionConfig(warehouseOutboundNoticeActionConfig)
+  registry.registerActionConfig(inspectionOrderActionConfig)
+  registry.registerActionConfig(concessionAcceptanceActionConfig)
 
   // 注册表单操作配置
   registry.registerFormActionConfig(salesContractFormActions)
@@ -859,6 +971,8 @@ export function setupSchemas(): void {
   registry.registerFormActionConfig(manufacturerFormActions)
   registry.registerFormActionConfig(serviceProviderFormActions)
   registry.registerFormActionConfig(logisticsFormActions)
+  registry.registerFormActionConfig(inspectionOrderFormActions)
+  registry.registerFormActionConfig(concessionAcceptanceFormActions)
 
   // 用户和角色数据已迁移到后端数据库，通过 seed 初始化
   // 审核规则已迁移到服务端数据库，无需前端注册
