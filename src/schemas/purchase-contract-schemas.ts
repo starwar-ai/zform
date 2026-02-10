@@ -1,7 +1,9 @@
 /**
  * Purchase Contract Schemas
  *
- * 采购合同单据定义
+ * 采购合同单据定义（基于采购计划模式）
+ * 采购流程: 销售合同 → 采购计划 → 采购合同
+ * 分为：商品采购合同(Product Purchase Contract) 和 包材采购合同(Packaging Purchase Contract)
  */
 
 import type { DocumentSchema, PushDownRule, ChangeRule } from "@/core/types"
@@ -729,4 +731,872 @@ export const purchaseContractChangeRule: ChangeRule = {
 
     return impacts
   },
+}
+
+// ============================================================
+// 商品采购合同 (Product Purchase Contract)
+// ============================================================
+
+export const productPurchaseContractSchema: DocumentSchema = {
+  typeId: "product_purchase_contract",
+  typeName: "商品采购合同",
+  masterFields: [
+    // === 基本信息 ===
+    {
+      id: "code",
+      label: "合同编号",
+      type: "text",
+      readOnly: true,
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "internalCode",
+      label: "内部编号",
+      type: "text",
+      readOnly: true,
+      group: "基本信息",
+    },
+    {
+      id: "purchasePlanCode",
+      label: "采购计划编号",
+      type: "text",
+      readOnly: true,
+      group: "基本信息",
+    },
+    {
+      id: "contractType",
+      label: "合同类型",
+      type: "select",
+      options: [
+        { label: "标准合同", value: "STANDARD" },
+        { label: "框架合同", value: "FRAMEWORK" },
+        { label: "补充合同", value: "SUPPLEMENTARY" },
+        { label: "紧急采购", value: "URGENT" },
+      ],
+      defaultValue: "STANDARD",
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "status",
+      label: "合同状态",
+      type: "select",
+      options: [
+        { label: "草稿", value: "DRAFT" },
+        { label: "待审核", value: "PENDING" },
+        { label: "已审核", value: "APPROVED" },
+        { label: "执行中", value: "IN_PROGRESS" },
+        { label: "已完成", value: "COMPLETED" },
+        { label: "已取消", value: "CANCELLED" },
+      ],
+      defaultValue: "DRAFT",
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "approvalStatus",
+      label: "审核状态",
+      type: "select",
+      options: [
+        { label: "待审核", value: "PENDING" },
+        { label: "已审核", value: "APPROVED" },
+        { label: "已拒绝", value: "REJECTED" },
+      ],
+      defaultValue: "PENDING",
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "purchaseType",
+      label: "采购类型",
+      type: "select",
+      options: [
+        { label: "商品采购", value: "PRODUCT" },
+      ],
+      defaultValue: "PRODUCT",
+      readOnly: true,
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "signDate",
+      label: "签约日期",
+      type: "date",
+      required: true,
+      defaultValue: new Date().toISOString().split("T")[0],
+      group: "基本信息",
+    },
+
+    // === 供应商信息 ===
+    {
+      id: "supplierId",
+      label: "供应商ID",
+      type: "text",
+      required: true,
+      group: "供应商信息",
+    },
+    {
+      id: "supplierCode",
+      label: "供应商编号",
+      type: "text",
+      required: true,
+      group: "供应商信息",
+    },
+    {
+      id: "supplierName",
+      label: "供应商名称",
+      type: "text",
+      required: true,
+      group: "供应商信息",
+    },
+    {
+      id: "supplierContact",
+      label: "供应商联系人",
+      type: "text",
+      group: "供应商信息",
+    },
+    {
+      id: "supplierPhone",
+      label: "供应商电话",
+      type: "text",
+      group: "供应商信息",
+    },
+
+    // === 采购主体与人员 ===
+    {
+      id: "purchasingEntity",
+      label: "采购主体",
+      type: "text",
+      group: "采购信息",
+    },
+    {
+      id: "buyer",
+      label: "采购员",
+      type: "text",
+      required: true,
+      group: "采购信息",
+    },
+    {
+      id: "merchandiser",
+      label: "跟单员",
+      type: "text",
+      group: "采购信息",
+    },
+
+    // === 金额与汇率 ===
+    {
+      id: "currency",
+      label: "交易币别",
+      type: "select",
+      options: [
+        { label: "CNY", value: "CNY" },
+        { label: "USD", value: "USD" },
+        { label: "EUR", value: "EUR" },
+        { label: "GBP", value: "GBP" },
+        { label: "JPY", value: "JPY" },
+      ],
+      defaultValue: "CNY",
+      required: true,
+      group: "金额信息",
+    },
+    {
+      id: "exchangeRate",
+      label: "汇率",
+      type: "number",
+      placeholder: "0.000000",
+      group: "金额信息",
+    },
+    {
+      id: "totalAmount",
+      label: "合同总额",
+      type: "computed",
+      compute: (data) => {
+        return data.totalAmount ?? 0
+      },
+      group: "金额信息",
+    },
+
+    // === 付款信息 ===
+    {
+      id: "paymentTerms",
+      label: "付款条款",
+      type: "select",
+      options: [
+        { label: "预付全款", value: "PREPAID" },
+        { label: "货到付款", value: "COD" },
+        { label: "月结30天", value: "NET30" },
+        { label: "月结60天", value: "NET60" },
+        { label: "月结90天", value: "NET90" },
+        { label: "分期付款", value: "INSTALLMENT" },
+      ],
+      group: "付款信息",
+    },
+    {
+      id: "paymentMethod",
+      label: "付款方式",
+      type: "select",
+      options: [
+        { label: "电汇", value: "TT" },
+        { label: "信用证", value: "LC" },
+        { label: "承兑汇票", value: "ACCEPTANCE" },
+        { label: "现金", value: "CASH" },
+        { label: "支票", value: "CHECK" },
+      ],
+      group: "付款信息",
+    },
+
+    // === 交货信息 ===
+    {
+      id: "deliveryDate",
+      label: "交货日期",
+      type: "date",
+      required: true,
+      group: "交货信息",
+    },
+    {
+      id: "deliveryAddress",
+      label: "交货地址",
+      type: "textarea",
+      span: 4,
+      group: "交货信息",
+    },
+    {
+      id: "deliveryMethod",
+      label: "交货方式",
+      type: "select",
+      options: [
+        { label: "供应商送货", value: "SUPPLIER_DELIVERY" },
+        { label: "自提", value: "SELF_PICKUP" },
+        { label: "物流配送", value: "LOGISTICS" },
+        { label: "快递", value: "EXPRESS" },
+      ],
+      group: "交货信息",
+    },
+
+    // === 税务信息 ===
+    {
+      id: "taxRate",
+      label: "税率(%)",
+      type: "number",
+      defaultValue: 13,
+      group: "税务信息",
+    },
+    {
+      id: "includeTax",
+      label: "是否含税",
+      type: "checkbox",
+      defaultValue: true,
+      group: "税务信息",
+    },
+
+    // === 备注 ===
+    {
+      id: "remark",
+      label: "备注",
+      type: "textarea",
+      span: 4,
+      group: "备注信息",
+    },
+  ],
+  detailTables: [
+    {
+      id: "items",
+      label: "商品采购明细",
+      editable: true,
+      fields: [
+        {
+          id: "lineNumber",
+          label: "行号",
+          type: "number",
+          readOnly: true,
+        },
+        {
+          id: "productId",
+          label: "产品ID",
+          type: "text",
+        },
+        {
+          id: "productCode",
+          label: "SKU编号",
+          type: "text",
+          required: true,
+        },
+        {
+          id: "productName",
+          label: "产品名称",
+          type: "text",
+          required: true,
+        },
+        {
+          id: "barcode",
+          label: "条形码",
+          type: "text",
+        },
+        {
+          id: "customerProductNo",
+          label: "客户货号",
+          type: "text",
+        },
+        {
+          id: "specification",
+          label: "规格",
+          type: "text",
+        },
+        {
+          id: "quantity",
+          label: "采购数量",
+          type: "number",
+          required: true,
+        },
+        {
+          id: "unit",
+          label: "单位",
+          type: "select",
+          options: [
+            { label: "PCS", value: "PCS" },
+            { label: "SET", value: "SET" },
+            { label: "UNIT", value: "UNIT" },
+          ],
+          defaultValue: "PCS",
+        },
+        {
+          id: "unitPrice",
+          label: "单价",
+          type: "number",
+          required: true,
+        },
+        {
+          id: "currency",
+          label: "币种",
+          type: "select",
+          options: [
+            { label: "CNY", value: "CNY" },
+            { label: "USD", value: "USD" },
+            { label: "EUR", value: "EUR" },
+          ],
+          defaultValue: "CNY",
+        },
+        {
+          id: "amount",
+          label: "金额",
+          type: "computed",
+          compute: (row) => {
+            const qty = (row.quantity as number) ?? 0
+            const price = (row.unitPrice as number) ?? 0
+            return qty * price
+          },
+        },
+        {
+          id: "taxRate",
+          label: "税率(%)",
+          type: "number",
+          defaultValue: 13,
+        },
+        {
+          id: "taxAmount",
+          label: "税额",
+          type: "computed",
+          compute: (row) => {
+            const amount = (row.amount as number) ?? 0
+            const taxRate = (row.taxRate as number) ?? 0
+            return amount * (taxRate / 100)
+          },
+        },
+        {
+          id: "totalAmount",
+          label: "含税金额",
+          type: "computed",
+          compute: (row) => {
+            const amount = (row.amount as number) ?? 0
+            const taxAmount = (row.taxAmount as number) ?? 0
+            return amount + taxAmount
+          },
+        },
+        {
+          id: "deliveryDate",
+          label: "交货日期",
+          type: "date",
+        },
+        {
+          id: "receivedQuantity",
+          label: "已收货数量",
+          type: "number",
+          defaultValue: 0,
+          readOnly: true,
+        },
+        {
+          id: "pendingQuantity",
+          label: "待收货数量",
+          type: "computed",
+          compute: (row) => {
+            const qty = (row.quantity as number) ?? 0
+            const received = (row.receivedQuantity as number) ?? 0
+            return qty - received
+          },
+        },
+        {
+          id: "purchaseType",
+          label: "采购类型",
+          type: "select",
+          options: [
+            { label: "商品采购", value: "PRODUCT" },
+          ],
+          defaultValue: "PRODUCT",
+          readOnly: true,
+        },
+        {
+          id: "isSelfBrand",
+          label: "是否自主品牌",
+          type: "checkbox",
+          defaultValue: false,
+        },
+        {
+          id: "isGift",
+          label: "是否赠品",
+          type: "checkbox",
+          defaultValue: false,
+        },
+        {
+          id: "remark",
+          label: "备注",
+          type: "text",
+        },
+      ],
+    },
+  ],
+}
+
+// ============================================================
+// 包材采购合同 (Packaging Purchase Contract)
+// ============================================================
+
+export const packagingPurchaseContractSchema: DocumentSchema = {
+  typeId: "packaging_purchase_contract",
+  typeName: "包材采购合同",
+  masterFields: [
+    // === 基本信息 ===
+    {
+      id: "code",
+      label: "合同编号",
+      type: "text",
+      readOnly: true,
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "internalCode",
+      label: "内部编号",
+      type: "text",
+      readOnly: true,
+      group: "基本信息",
+    },
+    {
+      id: "purchasePlanCode",
+      label: "采购计划编号",
+      type: "text",
+      readOnly: true,
+      group: "基本信息",
+    },
+    {
+      id: "contractType",
+      label: "合同类型",
+      type: "select",
+      options: [
+        { label: "标准合同", value: "STANDARD" },
+        { label: "框架合同", value: "FRAMEWORK" },
+        { label: "补充合同", value: "SUPPLEMENTARY" },
+        { label: "紧急采购", value: "URGENT" },
+      ],
+      defaultValue: "STANDARD",
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "status",
+      label: "合同状态",
+      type: "select",
+      options: [
+        { label: "草稿", value: "DRAFT" },
+        { label: "待审核", value: "PENDING" },
+        { label: "已审核", value: "APPROVED" },
+        { label: "执行中", value: "IN_PROGRESS" },
+        { label: "已完成", value: "COMPLETED" },
+        { label: "已取消", value: "CANCELLED" },
+      ],
+      defaultValue: "DRAFT",
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "approvalStatus",
+      label: "审核状态",
+      type: "select",
+      options: [
+        { label: "待审核", value: "PENDING" },
+        { label: "已审核", value: "APPROVED" },
+        { label: "已拒绝", value: "REJECTED" },
+      ],
+      defaultValue: "PENDING",
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "purchaseType",
+      label: "采购类型",
+      type: "select",
+      options: [
+        { label: "包材采购", value: "PACKAGING" },
+      ],
+      defaultValue: "PACKAGING",
+      readOnly: true,
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "signDate",
+      label: "签约日期",
+      type: "date",
+      required: true,
+      defaultValue: new Date().toISOString().split("T")[0],
+      group: "基本信息",
+    },
+
+    // === 供应商信息 ===
+    {
+      id: "supplierId",
+      label: "供应商ID",
+      type: "text",
+      required: true,
+      group: "供应商信息",
+    },
+    {
+      id: "supplierCode",
+      label: "供应商编号",
+      type: "text",
+      required: true,
+      group: "供应商信息",
+    },
+    {
+      id: "supplierName",
+      label: "供应商名称",
+      type: "text",
+      required: true,
+      group: "供应商信息",
+    },
+    {
+      id: "supplierContact",
+      label: "供应商联系人",
+      type: "text",
+      group: "供应商信息",
+    },
+    {
+      id: "supplierPhone",
+      label: "供应商电话",
+      type: "text",
+      group: "供应商信息",
+    },
+
+    // === 采购主体与人员 ===
+    {
+      id: "purchasingEntity",
+      label: "采购主体",
+      type: "text",
+      group: "采购信息",
+    },
+    {
+      id: "buyer",
+      label: "采购员",
+      type: "text",
+      required: true,
+      group: "采购信息",
+    },
+    {
+      id: "merchandiser",
+      label: "跟单员",
+      type: "text",
+      group: "采购信息",
+    },
+
+    // === 金额与汇率 ===
+    {
+      id: "currency",
+      label: "交易币别",
+      type: "select",
+      options: [
+        { label: "CNY", value: "CNY" },
+        { label: "USD", value: "USD" },
+        { label: "EUR", value: "EUR" },
+        { label: "GBP", value: "GBP" },
+        { label: "JPY", value: "JPY" },
+      ],
+      defaultValue: "CNY",
+      required: true,
+      group: "金额信息",
+    },
+    {
+      id: "exchangeRate",
+      label: "汇率",
+      type: "number",
+      placeholder: "0.000000",
+      group: "金额信息",
+    },
+    {
+      id: "totalAmount",
+      label: "合同总额",
+      type: "computed",
+      compute: (data) => {
+        return data.totalAmount ?? 0
+      },
+      group: "金额信息",
+    },
+
+    // === 付款信息 ===
+    {
+      id: "paymentTerms",
+      label: "付款条款",
+      type: "select",
+      options: [
+        { label: "预付全款", value: "PREPAID" },
+        { label: "货到付款", value: "COD" },
+        { label: "月结30天", value: "NET30" },
+        { label: "月结60天", value: "NET60" },
+        { label: "月结90天", value: "NET90" },
+        { label: "分期付款", value: "INSTALLMENT" },
+      ],
+      group: "付款信息",
+    },
+    {
+      id: "paymentMethod",
+      label: "付款方式",
+      type: "select",
+      options: [
+        { label: "电汇", value: "TT" },
+        { label: "信用证", value: "LC" },
+        { label: "承兑汇票", value: "ACCEPTANCE" },
+        { label: "现金", value: "CASH" },
+        { label: "支票", value: "CHECK" },
+      ],
+      group: "付款信息",
+    },
+
+    // === 交货信息 ===
+    {
+      id: "deliveryDate",
+      label: "交货日期",
+      type: "date",
+      required: true,
+      group: "交货信息",
+    },
+    {
+      id: "deliveryAddress",
+      label: "交货地址",
+      type: "textarea",
+      span: 4,
+      group: "交货信息",
+    },
+    {
+      id: "deliveryMethod",
+      label: "交货方式",
+      type: "select",
+      options: [
+        { label: "供应商送货", value: "SUPPLIER_DELIVERY" },
+        { label: "自提", value: "SELF_PICKUP" },
+        { label: "物流配送", value: "LOGISTICS" },
+        { label: "快递", value: "EXPRESS" },
+      ],
+      group: "交货信息",
+    },
+
+    // === 税务信息 ===
+    {
+      id: "taxRate",
+      label: "税率(%)",
+      type: "number",
+      defaultValue: 13,
+      group: "税务信息",
+    },
+    {
+      id: "includeTax",
+      label: "是否含税",
+      type: "checkbox",
+      defaultValue: true,
+      group: "税务信息",
+    },
+
+    // === 备注 ===
+    {
+      id: "remark",
+      label: "备注",
+      type: "textarea",
+      span: 4,
+      group: "备注信息",
+    },
+  ],
+  detailTables: [
+    {
+      id: "items",
+      label: "包材采购明细",
+      editable: true,
+      fields: [
+        {
+          id: "lineNumber",
+          label: "行号",
+          type: "number",
+          readOnly: true,
+        },
+        {
+          id: "productId",
+          label: "包材ID",
+          type: "text",
+        },
+        {
+          id: "productCode",
+          label: "包材编号",
+          type: "text",
+          required: true,
+        },
+        {
+          id: "productName",
+          label: "包材名称",
+          type: "text",
+          required: true,
+        },
+        {
+          id: "barcode",
+          label: "条形码",
+          type: "text",
+        },
+        {
+          id: "specification",
+          label: "规格",
+          type: "text",
+        },
+        {
+          id: "quantity",
+          label: "采购数量",
+          type: "number",
+          required: true,
+        },
+        {
+          id: "unit",
+          label: "单位",
+          type: "select",
+          options: [
+            { label: "PCS", value: "PCS" },
+            { label: "SET", value: "SET" },
+            { label: "TON", value: "TON" },
+            { label: "KG", value: "KG" },
+          ],
+          defaultValue: "PCS",
+        },
+        {
+          id: "unitPrice",
+          label: "单价",
+          type: "number",
+          required: true,
+        },
+        {
+          id: "currency",
+          label: "币种",
+          type: "select",
+          options: [
+            { label: "CNY", value: "CNY" },
+            { label: "USD", value: "USD" },
+            { label: "EUR", value: "EUR" },
+          ],
+          defaultValue: "CNY",
+        },
+        {
+          id: "amount",
+          label: "金额",
+          type: "computed",
+          compute: (row) => {
+            const qty = (row.quantity as number) ?? 0
+            const price = (row.unitPrice as number) ?? 0
+            return qty * price
+          },
+        },
+        {
+          id: "taxRate",
+          label: "税率(%)",
+          type: "number",
+          defaultValue: 13,
+        },
+        {
+          id: "taxAmount",
+          label: "税额",
+          type: "computed",
+          compute: (row) => {
+            const amount = (row.amount as number) ?? 0
+            const taxRate = (row.taxRate as number) ?? 0
+            return amount * (taxRate / 100)
+          },
+        },
+        {
+          id: "totalAmount",
+          label: "含税金额",
+          type: "computed",
+          compute: (row) => {
+            const amount = (row.amount as number) ?? 0
+            const taxAmount = (row.taxAmount as number) ?? 0
+            return amount + taxAmount
+          },
+        },
+        {
+          id: "deliveryDate",
+          label: "交货日期",
+          type: "date",
+        },
+        {
+          id: "receivedQuantity",
+          label: "已收货数量",
+          type: "number",
+          defaultValue: 0,
+          readOnly: true,
+        },
+        {
+          id: "pendingQuantity",
+          label: "待收货数量",
+          type: "computed",
+          compute: (row) => {
+            const qty = (row.quantity as number) ?? 0
+            const received = (row.receivedQuantity as number) ?? 0
+            return qty - received
+          },
+        },
+        {
+          id: "purchaseType",
+          label: "采购类型",
+          type: "select",
+          options: [
+            { label: "包材采购", value: "PACKAGING" },
+          ],
+          defaultValue: "PACKAGING",
+          readOnly: true,
+        },
+        {
+          id: "packageMethod",
+          label: "包装方式",
+          type: "text",
+        },
+        {
+          id: "packagePrice",
+          label: "包装价",
+          type: "number",
+        },
+        {
+          id: "isCommonAccessory",
+          label: "是否通用辅料",
+          type: "checkbox",
+          defaultValue: false,
+        },
+        {
+          id: "remark",
+          label: "备注",
+          type: "text",
+        },
+      ],
+    },
+  ],
 }

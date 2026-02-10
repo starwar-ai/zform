@@ -106,6 +106,7 @@ function parseMenuPath(path?: string | null): {
     "/supplier-management": "supplier-management",
     "/sales-management": "sales-management",
     "/purchase-plan-management": "purchase-plan-management",
+    "/purchase-contract-management": "purchase-contract-management",
     "/warehouse-management": "warehouse-management",
     "/quality-management": "quality-management",
   }

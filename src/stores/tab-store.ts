@@ -19,6 +19,7 @@ export type TabType =
   | "supplier-management"
   | "sales-management"
   | "purchase-plan-management"
+  | "purchase-contract-management"
   | "warehouse-management"
   | "quality-management"
 

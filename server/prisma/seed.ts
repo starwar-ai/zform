@@ -1050,7 +1050,7 @@ async function main() {
     data: {
       title: '采购合同',
       icon: 'ClipboardList',
-      path: '/type-list/purchase_contract',
+      path: '/purchase-contract-management',
       parentId: businessEntryMenu.id,
       orderNum: 3,
       menuType: 'menu',
