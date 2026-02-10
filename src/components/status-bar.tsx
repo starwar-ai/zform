@@ -42,7 +42,6 @@ export function StatusBar() {
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors min-w-0">
                 <User className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate max-w-[120px]">{currentUser.name}</span>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" side="top" className="w-56">
