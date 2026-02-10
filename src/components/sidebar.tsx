@@ -111,6 +111,7 @@ function parseMenuPath(path?: string | null): {
     "/warehouse-inventory": "warehouse-inventory",
     "/warehouse-inbound": "warehouse-inbound",
     "/warehouse-outbound": "warehouse-outbound",
+    "/shipping-document-management": "shipping-document-management",
   }
 
   const tabType = pathToTabType[path]

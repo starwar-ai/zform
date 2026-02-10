@@ -1,7 +1,7 @@
 /**
  * ShippingDocumentManagement
  *
- * 出运单证管理组件，包含商检单、报关单两个 Tab。
+ * 出运单证管理组件，包含出运单、商检单、报关单三个 Tab。
  * 每个 Tab 复用 DocumentListTable 渲染各自的列表。
  */
 
@@ -10,10 +10,10 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DocumentListTable } from "@/components/list-table"
 import { useTabStore } from "@/stores/tab-store"
 
-type ShippingDocumentTab = "inspection" | "customs"
+type ShippingDocumentTab = "shipping_order" | "inspection" | "customs"
 
 export function ShippingDocumentManagement() {
-  const [activeTab, setActiveTab] = useState<ShippingDocumentTab>("inspection")
+  const [activeTab, setActiveTab] = useState<ShippingDocumentTab>("shipping_order")
   const openTab = useTabStore((s) => s.openTab)
 
   const handleOpenDocument = (docId: string, typeId?: string) => {
@@ -23,12 +23,14 @@ export function ShippingDocumentManagement() {
   // 根据当前tab获取对应的typeId
   const getTypeId = (): string => {
     switch (activeTab) {
+      case "shipping_order":
+        return "shipping_order"
       case "inspection":
         return "inspection_declaration"
       case "customs":
         return "customs_declaration"
       default:
-        return "inspection_declaration"
+        return "shipping_order"
     }
   }
 
@@ -37,6 +39,7 @@ export function ShippingDocumentManagement() {
       {/* 出运单证类型 Tab 切换 */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ShippingDocumentTab)}>
         <TabsList>
+          <TabsTrigger value="shipping_order">出运单</TabsTrigger>
           <TabsTrigger value="inspection">商检单</TabsTrigger>
           <TabsTrigger value="customs">报关单</TabsTrigger>
         </TabsList>

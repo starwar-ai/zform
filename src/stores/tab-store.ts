@@ -24,6 +24,7 @@ export type TabType =
   | "warehouse-inventory" // 库存查询
   | "warehouse-inbound" // 入库管理
   | "warehouse-outbound" // 出库管理
+  | "shipping-document-management" // 出运单证管理
 
 // 标签数据结构
 export interface Tab {

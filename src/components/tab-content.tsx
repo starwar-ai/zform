@@ -22,6 +22,7 @@ import { WarehouseManagement } from "@/components/warehouse-management"
 import { WarehouseInventory } from "@/components/warehouse-inventory"
 import { WarehouseInbound } from "@/components/warehouse-inbound"
 import { WarehouseOutbound } from "@/components/warehouse-outbound"
+import { ShippingDocumentManagement } from "@/components/shipping-document-management"
 
 import { DashboardHome } from "@/components/dashboard-home"
 
@@ -133,6 +134,9 @@ export function TabContent() {
 
       case "warehouse-outbound":
         return <WarehouseOutbound />
+
+      case "shipping-document-management":
+        return <ShippingDocumentManagement />
 
       default:
         return (

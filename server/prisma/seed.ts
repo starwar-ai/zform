@@ -1084,20 +1084,7 @@ async function main() {
     },
   });
 
-  // 出运单菜单 - 移到单证入口下
-  const shipmentOrderMenu = await prisma.sysMenu.create({
-    data: {
-      title: '出运单',
-      icon: 'Package',
-      path: '/type-list/shipping_order',
-      parentId: documentEntryMenu.id,
-      orderNum: 2,
-      menuType: 'menu',
-      status: 'visible',
-    },
-  });
-
-  // 出运单证菜单（商检单、报关单）- 使用Tab切换
+    // 出运单证菜单（出运单、商检单、报关单）- 使用Tab切换
   const shippingDocumentMenu = await prisma.sysMenu.create({
     data: {
       title: '出运单证',
@@ -1502,7 +1489,6 @@ async function main() {
     purchasePlanMenu.id,
     purchaseContractMenu.id,
     shipmentPlanMenu.id,
-    shipmentOrderMenu.id,
     shippingDocumentMenu.id,
     dataEntryMenu.id,
     productManagementMenu.id,
@@ -1541,7 +1527,6 @@ async function main() {
     purchasePlanMenu.id,
     purchaseContractMenu.id,
     shipmentPlanMenu.id,
-    shipmentOrderMenu.id,
     shippingDocumentMenu.id,
     dataEntryMenu.id,
     productManagementMenu.id,
@@ -1589,7 +1574,6 @@ async function main() {
     purchasePlanMenu.id,
     purchaseContractMenu.id,
     shipmentPlanMenu.id,
-    shipmentOrderMenu.id,
     shippingDocumentMenu.id,
     dataEntryMenu.id,
     productManagementMenu.id,
