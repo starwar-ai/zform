@@ -63,6 +63,15 @@ import {
   concessionAcceptanceSchema,
   concessionAcceptanceChangeRule,
 } from "./concession-acceptance-schemas"
+import {
+  shippingPlanSchema,
+  shippingPlanToShippingOrderRule,
+  shippingPlanChangeRule,
+} from "./shipping-plan-schemas"
+import {
+  shippingOrderSchema,
+  shippingOrderChangeRule,
+} from "./shipping-order-schemas"
 
 // ============================================================
 // 单据列表操作配置
@@ -426,6 +435,46 @@ const concessionAcceptanceActionConfig: DocumentListActionConfig = {
   ],
 }
 
+/** 出运计划单 - 列表操作 */
+const shippingPlanActionConfig: DocumentListActionConfig = {
+  typeId: "shipping_plan",
+  rowActions: [
+    { id: "open", label: "打开" },
+    { id: "copy-id", label: "复制ID" },
+    {
+      id: "delete",
+      label: "删除",
+      danger: true,
+      modes: ["document"],
+      visible: (row) => row._status === "draft",
+      permission: "shipping_plan:delete",
+    },
+  ],
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "shipping_plan:create" },
+  ],
+}
+
+/** 出运单 - 列表操作 */
+const shippingOrderActionConfig: DocumentListActionConfig = {
+  typeId: "shipping_order",
+  rowActions: [
+    { id: "open", label: "打开" },
+    { id: "copy-id", label: "复制ID" },
+    {
+      id: "delete",
+      label: "删除",
+      danger: true,
+      modes: ["document"],
+      visible: (row) => row._status === "draft",
+      permission: "shipping_order:delete",
+    },
+  ],
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "shipping_order:create" },
+  ],
+}
+
 /** 仓库单据通用行操作 */
 const warehouseRowActions = (typeId: string) => [
   { id: "open", label: "打开" },
@@ -678,6 +727,62 @@ const packagingPurchaseContractFormActions: DocumentFormActionConfig = {
   ],
 }
 
+/** 出运计划单 - 表单操作 */
+const shippingPlanFormActions: DocumentFormActionConfig = {
+  typeId: "shipping_plan",
+  actions: [
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["draft"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["draft"], permission: "shipping_plan:submit", order: 2 },
+    {
+      id: "approve", label: "审批", icon: "Check", allowedStatuses: ["submitted"],
+      permission: "shipping_plan:approve", order: 3,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "reject", label: "拒绝", icon: "X", variant: "destructive", allowedStatuses: ["submitted"],
+      permission: "shipping_plan:approve", order: 4,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "withdraw", label: "撤回", icon: "Undo2", variant: "outline", allowedStatuses: ["submitted"], order: 5,
+      visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
+    },
+    { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["approved"], permission: "shipping_plan:close", order: 6 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["draft"], order: 7 },
+    { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["approved"], permission: "shipping_plan:void", order: 8 },
+    {
+      id: "push-down:0", label: "生成出运单", icon: "ArrowDownToLine", variant: "outline",
+      allowedStatuses: ["approved"], permission: "shipping_plan:push_down", order: 10,
+    },
+  ],
+}
+
+/** 出运单 - 表单操作 */
+const shippingOrderFormActions: DocumentFormActionConfig = {
+  typeId: "shipping_order",
+  actions: [
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["draft"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["draft"], permission: "shipping_order:submit", order: 2 },
+    {
+      id: "approve", label: "审批", icon: "Check", allowedStatuses: ["submitted"],
+      permission: "shipping_order:approve", order: 3,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "reject", label: "拒绝", icon: "X", variant: "destructive", allowedStatuses: ["submitted"],
+      permission: "shipping_order:approve", order: 4,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "withdraw", label: "撤回", icon: "Undo2", variant: "outline", allowedStatuses: ["submitted"], order: 5,
+      visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
+    },
+    { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["approved"], permission: "shipping_order:close", order: 6 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["draft"], order: 7 },
+    { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["approved"], permission: "shipping_order:void", order: 8 },
+  ],
+}
+
 /** 验货单 - 表单操作 */
 const inspectionOrderFormActions: DocumentFormActionConfig = {
   typeId: "inspection_order",
@@ -900,9 +1005,16 @@ export function setupSchemas(): void {
   // 注册让步接收单 Schema
   registry.registerSchema(concessionAcceptanceSchema)
 
+  // 注册出运计划单 & 出运单 Schema
+  registry.registerSchema(shippingPlanSchema)
+  registry.registerSchema(shippingOrderSchema)
+
   // 注册采购流程下推规则
   registry.registerPushDownRule(salesContractToPurchasePlanRule)
   registry.registerPushDownRule(purchasePlanToPurchaseContractRule)
+
+  // 注册出运流程下推规则
+  registry.registerPushDownRule(shippingPlanToShippingOrderRule)
 
   // 注册产品下推规则
   registry.registerPushDownRule(standardToCustomerProductRule)
@@ -931,6 +1043,10 @@ export function setupSchemas(): void {
   registry.registerChangeRule(serviceProviderChangeRule)
   registry.registerChangeRule(logisticsChangeRule)
 
+  // 注册出运流程变更规则
+  registry.registerChangeRule(shippingPlanChangeRule)
+  registry.registerChangeRule(shippingOrderChangeRule)
+
   // 注册列表操作配置
   registry.registerActionConfig(salesContractActionConfig)
   registry.registerActionConfig(exportSalesContractActionConfig)
@@ -955,6 +1071,8 @@ export function setupSchemas(): void {
   registry.registerActionConfig(warehouseOutboundNoticeActionConfig)
   registry.registerActionConfig(inspectionOrderActionConfig)
   registry.registerActionConfig(concessionAcceptanceActionConfig)
+  registry.registerActionConfig(shippingPlanActionConfig)
+  registry.registerActionConfig(shippingOrderActionConfig)
 
   // 注册表单操作配置
   registry.registerFormActionConfig(salesContractFormActions)
@@ -973,6 +1091,8 @@ export function setupSchemas(): void {
   registry.registerFormActionConfig(logisticsFormActions)
   registry.registerFormActionConfig(inspectionOrderFormActions)
   registry.registerFormActionConfig(concessionAcceptanceFormActions)
+  registry.registerFormActionConfig(shippingPlanFormActions)
+  registry.registerFormActionConfig(shippingOrderFormActions)
 
   // 用户和角色数据已迁移到后端数据库，通过 seed 初始化
   // 审核规则已迁移到服务端数据库，无需前端注册
