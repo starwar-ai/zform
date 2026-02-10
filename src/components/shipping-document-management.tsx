@@ -10,7 +10,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DocumentListTable } from "@/components/list-table"
 import { useTabStore } from "@/stores/tab-store"
 
-type ShippingDocumentTab = "shipping_order" | "inspection" | "customs"
+type ShippingDocumentTab = "shipping_order" | "inspection" | "customs" | "exchange_settlement"
 
 export function ShippingDocumentManagement() {
   const [activeTab, setActiveTab] = useState<ShippingDocumentTab>("shipping_order")
@@ -29,6 +29,8 @@ export function ShippingDocumentManagement() {
         return "inspection_declaration"
       case "customs":
         return "customs_declaration"
+      case "exchange_settlement":
+        return "exchange_settlement"
       default:
         return "shipping_order"
     }
@@ -42,6 +44,7 @@ export function ShippingDocumentManagement() {
           <TabsTrigger value="shipping_order">出运单</TabsTrigger>
           <TabsTrigger value="inspection">商检单</TabsTrigger>
           <TabsTrigger value="customs">报关单</TabsTrigger>
+          <TabsTrigger value="exchange_settlement">结汇单</TabsTrigger>
         </TabsList>
       </Tabs>
 

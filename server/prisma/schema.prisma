@@ -3609,3 +3609,596 @@ model CustomsDeclarationItem {
   @@index([customerId])
   @@map("customs_declaration_items")
 }
+
+// ============================================================
+// 结汇单 (Exchange Settlement)
+// ============================================================
+
+enum ExchangeSettlementStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// ==================== 结汇单主表 ====================
+
+model ExchangeSettlement {
+  id String @id @default(cuid())
+
+  // 基本信息
+  code         String                   @unique // 编号
+  planCode     String?                  @map("plan_code") // 计划编号
+  status       ExchangeSettlementStatus @default(DRAFT) // 状态
+  invoiceNo    String?                  @map("invoice_no") // 发票号
+  invoiceDate  DateTime?                @map("invoice_date") // 发票日期
+  entryDate    DateTime?                @map("entry_date") // 制单日期
+  shippingDate DateTime?                @map("shipping_date") // 出运日期
+
+  // 来源信息
+  orderLinkCode String? @map("order_link_code") // 订单链路编号
+  sourceCode    String? @map("source_code") // 来源编号
+
+  // 发票箱单
+  invoicePackingList String? @map("invoice_packing_list") // 发票箱单
+
+  // 唛头信息
+  frontMark String? @map("front_mark") // 正面唛头
+  sideMark  String? @map("side_mark") // 侧面唛头
+
+  // 收货人/通知人
+  consignee   String? // 收货人
+  notifyParty String? @map("notify_party") // 通知人
+
+  // 人员信息
+  salesPerson String? @map("sales_person") // 业务员
+  buyer       String? // 采购员
+  entryPerson String? @map("entry_person") // 录入人
+
+  // 价格与运输
+  priceTerms      String? @map("price_terms") // 价格条款
+  transportMethod String? @map("transport_method") // 运输方式
+  tradeMethod     String? @map("trade_method") // 贸易方式
+  currency        String? @map("currency") // 外销币种
+
+  // 结汇方式
+  settlementMethodId   String? @map("settlement_method_id") // 结汇方式主键
+  settlementMethodName String? @map("settlement_method_name") // 结汇名称
+
+  // 出运国信息
+  shippingCountryId     String? @map("shipping_country_id") // 出运国主键
+  shippingCountryName   String? @map("shipping_country_name") // 出运国名称
+  shippingCountryRegion String? @map("shipping_country_region") // 出运国区域
+
+  // 出运口岸信息
+  departurePortId   String? @map("departure_port_id") // 出运口岸主键
+  departurePortName String? @map("departure_port_name") // 出运口岸名称
+
+  // 贸易国别信息
+  tradeCountryId     String? @map("trade_country_id") // 贸易国别主键
+  tradeCountryName   String? @map("trade_country_name") // 贸易国别名称
+  tradeCountryRegion String? @map("trade_country_region") // 贸易国别区域
+
+  // 目的口岸信息
+  destinationPortId   String? @map("destination_port_id") // 目的口岸主键
+  destinationPortName String? @map("destination_port_name") // 目的口岸名称
+
+  // 外贸公司主体
+  tradingCompanyId   String? @map("trading_company_id") // 外贸公司主体主键
+  tradingCompanyName String? @map("trading_company_name") // 外贸公司主体名称
+
+  // 船运信息
+  shippingAgentId         String?   @map("shipping_agent_id") // 船代公司主键
+  shippingAgentName       String?   @map("shipping_agent_name") // 船代公司名称
+  expectedPortArrivalDate DateTime? @map("expected_port_arrival_date") // 预计结港日期
+  shippingOrderNo         String?   @map("shipping_order_no") // 出运单号
+
+  // 柜型信息
+  container20ft Int?     @default(0) @map("container_20ft") // 20尺柜
+  container40ft Int?     @default(0) @map("container_40ft") // 40尺柜
+  container40hq Int?     @default(0) @map("container_40hq") // 40尺高柜
+  bulkCargo     Decimal? @map("bulk_cargo") @db.Decimal(10, 2) // 散货
+
+  // 集装箱数量
+  containerCount Int? @default(0) @map("container_count") // 集装箱数量
+
+  // 汇总统计
+  totalQuantity    Decimal? @default(0) @map("total_quantity") @db.Decimal(10, 2) // 数量合计
+  totalBoxes       Int?     @default(0) @map("total_boxes") // 箱数合计
+  totalGrossWeight Decimal? @default(0) @map("total_gross_weight") @db.Decimal(10, 3) // 毛重合计
+  totalNetWeight   Decimal? @default(0) @map("total_net_weight") @db.Decimal(10, 3) // 净重合计
+  totalVolume      Decimal? @default(0) @map("total_volume") @db.Decimal(10, 3) // 体积合计
+
+  // 金额统计
+  totalAmount      Decimal? @default(0) @map("total_amount") @db.Decimal(15, 2) // 金额合计
+  totalValue       Decimal? @default(0) @map("total_value") @db.Decimal(15, 2) // 货值合计
+  receivedValue    Decimal? @default(0) @map("received_value") @db.Decimal(15, 2) // 已收货值
+  unreceivedValue  Decimal? @default(0) @map("unreceived_value") @db.Decimal(15, 2) // 未收货值
+
+  // 附件与备注
+  remark String? // 备注
+
+  // 时间戳
+  createdBy String?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedBy String?   @map("updated_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // 关联关系
+  items ExchangeSettlementItem[] @relation("ExchangeSettlementItems")
+
+  @@index([code])
+  @@index([status])
+  @@index([planCode])
+  @@index([createdAt])
+  @@map("exchange_settlements")
+}
+
+// ==================== 结汇单明细表 ====================
+
+model ExchangeSettlementItem {
+  id String @id @default(cuid())
+
+  // 关联结汇单
+  exchangeSettlementId String             @map("exchange_settlement_id")
+  exchangeSettlement   ExchangeSettlement @relation("ExchangeSettlementItems", fields: [exchangeSettlementId], references: [id], onDelete: Cascade)
+
+  // 产品基本信息
+  productId         String? @map("product_id") // 产品主键
+  skuCode           String? @map("sku_code") // SKU编号
+  barcode           String? // 条形码
+  customerProductNo String? @map("customer_product_no") // 客户货号
+  productNameCn     String? @map("product_name_cn") // 中文名称
+  productNameEn     String? @map("product_name_en") // 英文名称
+  baseProductCode   String? @map("base_product_code") // 基础产品编号
+  specification     String? // 规格
+
+  // 数量信息
+  shippingQuantity   Decimal? @map("shipping_quantity") @db.Decimal(10, 2) // 出运数量
+  exchangeQuantity   Decimal? @map("exchange_quantity") @db.Decimal(10, 2) // 结汇数量
+  purchaseQuantity   Decimal? @map("purchase_quantity") @db.Decimal(10, 2) // 总采购数量
+  customsQuantity    Decimal? @map("customs_quantity") @db.Decimal(10, 2) // 报关数量
+  reportedCustomsQty Decimal? @default(0) @map("reported_customs_qty") @db.Decimal(10, 2) // 已报关数
+  unit               String? // 计量单位
+  customsUnit        String? @map("customs_unit") // 海关计量单位
+
+  // 供应商信息
+  supplierId   String? @map("supplier_id") // 供应商id
+  supplierCode String? @map("supplier_code") // 供应商编号
+  supplierName String? @map("supplier_name") // 供应商名称
+
+  // 客户信息
+  customerId         String? @map("customer_id") // 客户主键
+  customerCode       String? @map("customer_code") // 客户编号
+  customerName       String? @map("customer_name") // 客户名称
+  customerContractNo String? @map("customer_contract_no") // 客户合同号
+
+  // 销售信息
+  salesPerson       String?   @map("sales_person") // 业务员
+  saleUnitPrice     Decimal?  @map("sale_unit_price") @db.Decimal(15, 4) // 销售单价
+  saleAmount        Decimal?  @map("sale_amount") @db.Decimal(15, 2) // 销售金额
+  currency          String?   @default("USD") @map("currency") // 交易币别
+  salesContractCode String?   @map("sales_contract_code") // 外销合同号
+  deliveryDate      DateTime? @map("delivery_date") // 交货日期
+
+  // 采购信息
+  purchaseContractCode String?  @map("purchase_contract_code") // 采购合同编号
+  buyerId              String?  @map("buyer_id") // 采购员id
+  buyerName            String?  @map("buyer_name") // 采购员姓名
+  buyerDeptId          String?  @map("buyer_dept_id") // 采购员部门id
+  buyerDeptName        String?  @map("buyer_dept_name") // 采购员部门名称
+  purchaseCurrency     String?  @default("CNY") @map("purchase_currency") // 采购币种
+  purchaseUnitPrice    Decimal? @map("purchase_unit_price") @db.Decimal(15, 4) // 采购单价
+  purchaseTaxPrice     Decimal? @map("purchase_tax_price") @db.Decimal(15, 4) // 采购含税价
+
+  // 报关信息
+  customsUnitPrice Decimal? @map("customs_unit_price") @db.Decimal(15, 4) // 报关单价
+  customsAmount    Decimal? @map("customs_amount") @db.Decimal(15, 2) // 报关金额
+  customsNameCn    String?  @map("customs_name_cn") // 报关中文品名
+  customsNameEn    String?  @map("customs_name_en") // 报关英文品名
+  hsCode           String?  @map("hs_code") // 海关编码
+  inspectionType   String?  @map("inspection_type") // 商检类型
+  taxRefundRate    Decimal? @map("tax_refund_rate") @db.Decimal(5, 2) // 退税率
+  taxRefundAmount  Decimal? @map("tax_refund_amount") @db.Decimal(15, 2) // 退税金额
+
+  // 收款方式
+  paymentMethodId   String? @map("payment_method_id") // 收款方式主键
+  paymentMethodName String? @map("payment_method_name") // 收款方式名称
+  priceTerms        String? @map("price_terms") // 价格条款
+
+  // 包装信息
+  packageMethod       String?  @map("package_method") // 包装方式
+  outerBoxQuantity    Int?     @map("outer_box_quantity") // 外箱装量
+  innerBoxQuantity    Int?     @map("inner_box_quantity") // 内盒装量
+  boxCount            Int?     @map("box_count") // 箱数
+  outerBoxUnit        String?  @map("outer_box_unit") // 外箱单位
+  outerBoxLength      Decimal? @map("outer_box_length") @db.Decimal(10, 2) // 外箱长度
+  outerBoxWidth       Decimal? @map("outer_box_width") @db.Decimal(10, 2) // 外箱宽度
+  outerBoxHeight      Decimal? @map("outer_box_height") @db.Decimal(10, 2) // 外箱高度
+  outerBoxVolume      Decimal? @map("outer_box_volume") @db.Decimal(10, 4) // 外箱体积
+  totalVolume         Decimal? @map("total_volume") @db.Decimal(10, 4) // 总体积
+  outerBoxNetWeight   Decimal? @map("outer_box_net_weight") @db.Decimal(10, 3) // 外箱净重
+  totalNetWeight      Decimal? @map("total_net_weight") @db.Decimal(10, 3) // 总净重
+  outerBoxGrossWeight Decimal? @map("outer_box_gross_weight") @db.Decimal(10, 3) // 外箱毛重
+  totalGrossWeight    Decimal? @map("total_gross_weight") @db.Decimal(10, 3) // 总毛重
+
+  // 费用信息
+  insuranceFee      Decimal? @map("insurance_fee") @db.Decimal(15, 2) // 保险费
+  commissionAmount  Decimal? @map("commission_amount") @db.Decimal(15, 2) // 佣金金额
+  grossProfitMargin Decimal? @map("gross_profit_margin") @db.Decimal(5, 2) // 毛利率
+
+  // 货值信息
+  receivedValue   Decimal? @map("received_value") @db.Decimal(15, 2) // 已收货值
+  unreceivedValue Decimal? @map("unreceived_value") @db.Decimal(15, 2) // 未收货值
+
+  // 出仓信息
+  isWarehouseOut   Boolean   @default(false) @map("is_warehouse_out") // 是否出仓
+  warehouseOutDate DateTime? @map("warehouse_out_date") // 出仓日期
+  customsReportUnit String?  @map("customs_report_unit") // 报关单位
+
+  // 拉柜信息
+  expectedContainerDate DateTime? @map("expected_container_date") // 预计拉柜时间
+
+  // 仓库信息
+  warehouseCode String? @map("warehouse_code") // 仓库编号
+  warehouseName String? @map("warehouse_name") // 仓库名称
+
+  // 产品描述
+  productDescription   String? @map("product_description") // 产品描述
+  productDescriptionEn String? @map("product_description_en") // 产品英文描述
+
+  // 其他标识
+  isIncludeGift Boolean @default(false) @map("is_include_gift") // 是否包含赠品
+  isSeparateBox Boolean @default(false) @map("is_separate_box") // 是否分箱
+  isInspectionRequired Boolean @default(false) @map("is_inspection_required") // 是否商检
+
+  // 报关要素
+  customsElements  String? @map("customs_elements") // 报关要素
+  shippingLocation String? @map("shipping_location") // 发货地点
+
+  // 出运明细关联
+  shippingDetailId String? @map("shipping_detail_id") // 出运明细id
+
+  // 转单信息
+  isConvertedToInspection   Boolean   @default(false) @map("is_converted_to_inspection") // 是否转商检单
+  convertedToInspectionDate DateTime? @map("converted_to_inspection_date") // 转商检单时间
+  convertedToInspectionBy   String?   @map("converted_to_inspection_by") // 转商检单人
+  isConvertedToCustoms      Boolean   @default(false) @map("is_converted_to_customs") // 是否转报关单
+  convertedToCustomsDate    DateTime? @map("converted_to_customs_date") // 转报关单时间
+  convertedToCustomsBy      String?   @map("converted_to_customs_by") // 转报关单人
+
+  // 备注
+  remark String? // 备注
+
+  // 时间戳
+  createdBy String?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedBy String?   @map("updated_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([exchangeSettlementId])
+  @@index([productId])
+  @@index([supplierId])
+  @@index([customerId])
+  @@map("exchange_settlement_items")
+}
+
+// ============================================================
+// 开票通知 (Invoicing Notice)
+// ============================================================
+
+enum InvoicingNoticeStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum InvoicingNoticeSourceType {
+  AUTO
+  MANUAL
+}
+
+// ==================== 开票通知主表 ====================
+
+model InvoicingNotice {
+  id String @id @default(cuid())
+
+  // 基本信息
+  code         String                @unique // 编号
+  entryDate    DateTime?             @map("entry_date") // 登票日期
+  status       InvoicingNoticeStatus @default(DRAFT) // 状态
+  sourceType   InvoicingNoticeSourceType @default(AUTO) @map("source_type") // 来源类型
+  isManual     Boolean               @default(false) @map("is_manual") // 手工开票通知
+
+  // 流程信息
+  processInstanceId     String? @map("process_instance_id") // 流程实例主键
+  approvalStatus        String? @map("approval_status") // 审核状态
+
+  // 关联信息
+  orderLinkCode       String? @map("order_link_code") // 订单链路编号
+  shippingInvoiceNo   String? @map("shipping_invoice_no") // 出运发票号
+  shippingOrderNo     String? @map("shipping_order_no") // 出运单号
+  purchaseOrderNo     String? @map("purchase_order_no") // 采购单号
+
+  // 公司信息
+  companyId   String? @map("company_id") // 归属公司主键
+  companyName String? @map("company_name") // 归属公司名称
+
+  // 供应商信息
+  supplierId   String? @map("supplier_id") // 供应商编号
+  supplierName String? @map("supplier_name") // 供应商名称
+
+  // 人员信息
+  entryPerson    String? @map("entry_person") // 录入人
+  entryPersonId  String? @map("entry_person_id") // 录入人ID
+  merchandiser   String? // 跟单员
+  merchandiserId String? @map("merchandiser_id") // 跟单员ID
+
+  // 发票信息
+  invoiceNo       String?   @map("invoice_no") // 发票编号
+  invoiceDate     DateTime? @map("invoice_date") // 出运日期
+  invoiceStatus   String?   @map("invoice_status") // 开票状态
+  printStatus     String?   @map("print_status") // 打印状态
+  printDate       DateTime? @map("print_date") // 打印日期
+
+  // 备注
+  remark String? // 备注
+
+  // 时间戳
+  createdBy String?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedBy String?   @map("updated_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // 关联关系
+  items InvoicingNoticeItem[] @relation("InvoicingNoticeItems")
+
+  @@index([code])
+  @@index([status])
+  @@index([entryDate])
+  @@index([createdAt])
+  @@map("invoicing_notices")
+}
+
+// ==================== 开票通知明细表 ====================
+
+model InvoicingNoticeItem {
+  id String @id @default(cuid())
+
+  // 关联开票通知
+  invoicingNoticeId String          @map("invoicing_notice_id")
+  invoicingNotice   InvoicingNotice @relation("InvoicingNoticeItems", fields: [invoicingNoticeId], references: [id], onDelete: Cascade)
+
+  // 产品信息
+  productId         String? @map("product_id") // 产品主键
+  skuCode           String? @map("sku_code") // SKU编号
+  productName       String? @map("product_name") // 产品名称
+  baseProductCode   String? @map("base_product_code") // 基础产品编号
+  customerProductNo String? @map("customer_product_no") // 客户货号
+  specification     String? // 规格
+
+  // 数量信息
+  outerBoxQuantity  Int?     @map("outer_box_quantity") // 外箱装量
+  isSeparateBox     Boolean  @default(false) @map("is_separate_box") // 是否分箱
+  quantityBefore    Decimal? @map("quantity_before") @db.Decimal(10, 2) // 转换前数量
+  noticeQuantity    Decimal? @map("notice_quantity") @db.Decimal(10, 2) // 通知开票数量
+  customsQuantity   Decimal? @map("customs_quantity") @db.Decimal(10, 2) // 报关数量
+  totalPurchaseQty  Decimal? @map("total_purchase_qty") @db.Decimal(10, 2) // 总采购数量
+
+  // 价格信息
+  purchaseTaxPrice  Decimal? @map("purchase_tax_price") @db.Decimal(15, 4) // 采购含税单价
+  invoiceUnitPrice  Decimal? @map("invoice_unit_price") @db.Decimal(15, 4) // 开票单价
+  taxRate           Decimal? @map("tax_rate") @db.Decimal(5, 2) // 税率
+
+  // 海关信息
+  hsCode           String? @map("hs_code") // 海关编码
+  customsUnit      String? @map("customs_unit") // 海关计量单位
+  invoiceProductName String? @map("invoice_product_name") // 开票品名
+
+  // 关联信息
+  shippingDetailId      String? @map("shipping_detail_id") // 出运明细主键
+  purchaseContractId    String? @map("purchase_contract_id") // 采购合同编号
+  purchaseContractItemId String? @map("purchase_contract_item_id") // 采购合同明细主键
+  salesItemId           String? @map("sales_item_id") // 销售明细主键
+  purchaseSeq           Int?    @map("purchase_seq") // 采购序号
+  sourceCode            String? @map("source_code") // 来源编号
+  uniqueCode            String? @map("unique_code") // 唯一编号
+
+  // 人员信息
+  merchandiser   String? // 跟单员
+  merchandiserId String? @map("merchandiser_id") // 跟单员ID
+
+  // 发票信息
+  shippingInvoiceNo String? @map("shipping_invoice_no") // 出运发票号
+  invoicingStatus   String? @map("invoicing_status") // 开票状态
+  invoiceRegStatus  String? @map("invoice_reg_status") // 发票登记状态
+  invoiceRegQty     Decimal? @map("invoice_reg_qty") @db.Decimal(10, 2) // 发票登记数量
+
+  // 客户信息
+  customerId   String? @map("customer_id") // 客户编号
+  customerName String? @map("customer_name") // 客户名称
+  salesContractCode String? @map("sales_contract_code") // 销售合同编号
+
+  // 采购信息
+  purchaseCurrency String? @map("purchase_currency") // 采购币种
+  isManual         Boolean @default(false) @map("is_manual") // 手工开票通知
+
+  // 时间戳
+  createdBy String?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedBy String?   @map("updated_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([invoicingNoticeId])
+  @@index([productId])
+  @@index([purchaseContractId])
+  @@map("invoicing_notice_items")
+}
+
+// ============================================================
+// 付款申请 (Payment Apply)
+// ============================================================
+
+enum PaymentApplyStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentApplyType {
+  PURCHASE
+  EXPENSE
+  OTHER
+}
+
+enum PaymentStatus {
+  UNPAID
+  PARTIAL
+  PAID
+}
+
+// ==================== 付款申请主表 ====================
+
+model PaymentApply {
+  id String @id @default(cuid())
+
+  // 基本信息
+  code         String             @unique // 编号
+  applyDate    DateTime?          @map("apply_date") // 申请日期
+  status       PaymentApplyStatus @default(DRAFT) // 状态
+  applyType    PaymentApplyType   @default(PURCHASE) @map("apply_type") // 申请类型
+
+  // 流程信息
+  processInstanceId     String? @map("process_instance_id") // 流程实例主键
+  processInstanceStatus String? @map("process_instance_status") // 流程实例状态
+  approvalStatus        String? @map("approval_status") // 审核状态
+
+  // 关联信息
+  orderLinkCode String? @map("order_link_code") // 订单链路编号
+  paymentPlanId String? @map("payment_plan_id") // 付款计划id
+
+  // 申请方信息
+  applicantId   String? @map("applicant_id") // 申请人id
+  applicantName String? @map("applicant_name") // 申请人姓名
+  buyerId       String? @map("buyer_id") // 采购员id
+  buyerName     String? @map("buyer_name") // 采购员姓名
+
+  // 下单主体信息
+  orderSubjectId   String? @map("order_subject_id") // 下单主体主键
+  orderSubjectName String? @map("order_subject_name") // 下单主体
+
+  // 供应商信息
+  supplierId   String? @map("supplier_id") // 应付供应商主键
+  supplierCode String? @map("supplier_code") // 应付供应商编码
+  supplierName String? @map("supplier_name") // 应付供应商名称
+
+  // 付款信息
+  paymentMethodId   String? @map("payment_method_id") // 付款方式id
+  paymentMethodName String? @map("payment_method_name") // 付款方式名称
+  paymentType       String? @map("payment_type") // 支付方式
+  acceptanceDays    Int?    @map("acceptance_days") // 承兑天数
+  applyPaymentDate  DateTime? @map("apply_payment_date") // 申请付款日
+  actualPaymentDate DateTime? @map("actual_payment_date") // 付款日期
+  payerId           String? @map("payer_id") // 付款人id
+  payerName         String? @map("payer_name") // 付款人
+
+  // 金额信息
+  applyTotalAmount    Decimal? @map("apply_total_amount") @db.Decimal(15, 2) // 申请总金额
+  goodsTotalAmount    Decimal? @map("goods_total_amount") @db.Decimal(15, 2) // 货款总金额
+  adjustmentAmount    Decimal? @map("adjustment_amount") @db.Decimal(15, 2) // 加减项总金额
+  actualPaymentAmount Decimal? @map("actual_payment_amount") @db.Decimal(15, 2) // 实际支付金额
+
+  // 币种与账户
+  currency      String? @map("currency") // 应付币种
+  taxRate       Decimal? @map("tax_rate") @db.Decimal(5, 2) // 税率
+  bankAccount   String? @map("bank_account") // 银行账号
+  bankName      String? @map("bank_name") // 开户行
+
+  // 供应商银行信息
+  supplierBankName    String? @map("supplier_bank_name") // 供应商银行
+  supplierBankAccount String? @map("supplier_bank_account") // 供应商银行账号
+  supplierBankContact String? @map("supplier_bank_contact") // 供应商开户行联系人
+
+  // 状态信息
+  paymentStatus PaymentStatus @default(UNPAID) @map("payment_status") // 支付状态
+  printStatus   String?       @map("print_status") // 打印状态
+
+  // 备注与附件
+  remark          String? @map("remark") // 申请备注
+  remarkType      String? @map("remark_type") // 付款备注类型
+  attachments     String? @map("attachments") // 附件
+
+  // 作废信息
+  voidReason String?   @map("void_reason") // 作废原因
+  voidTime   DateTime? @map("void_time") // 作废时间
+  voidBy     String?   @map("void_by") // 作废人
+
+  // 扩展信息 (JSON存储列表信息)
+  paymentPlanInfo Json? @map("payment_plan_info") // 付款计划信息
+  purchaseDetails Json? @map("purchase_details") // 采购明细
+  adjustments     Json? @map("adjustments") // 加减项
+  purchaseContractCodes Json? @map("purchase_contract_codes") // 采购合同编号列表
+
+  // 时间戳
+  createdBy String?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedBy String?   @map("updated_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // 关联关系
+  items PaymentApplyItem[] @relation("PaymentApplyItems")
+
+  @@index([code])
+  @@index([status])
+  @@index([applyDate])
+  @@index([supplierId])
+  @@index([createdAt])
+  @@map("payment_applies")
+}
+
+// ==================== 付款申请子表 ====================
+
+model PaymentApplyItem {
+  id String @id @default(cuid())
+
+  // 关联付款申请
+  paymentApplyId String       @map("payment_apply_id")
+  paymentApply   PaymentApply @relation("PaymentApplyItems", fields: [paymentApplyId], references: [id], onDelete: Cascade)
+
+  // 采购合同信息
+  purchaseContractId     String? @map("purchase_contract_id") // 采购合同编号
+  purchaseContractItemId String? @map("purchase_contract_item_id") // 采购合同明细id
+
+  // 金额信息
+  paidAmount       Decimal? @map("paid_amount") @db.Decimal(15, 2) // 已付金额
+  appliedAmount    Decimal? @map("applied_amount") @db.Decimal(15, 2) // 已申请金额
+  currentApplyAmount Decimal? @map("current_apply_amount") @db.Decimal(15, 2) // 本次请款金额
+
+  // 状态信息
+  invoiceStatus String? @map("invoice_status") // 开票状态
+  paymentStep   String? @map("payment_step") // 付款步骤
+
+  // 时间戳
+  createdBy String?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedBy String?   @map("updated_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([paymentApplyId])
+  @@index([purchaseContractId])
+  @@map("payment_apply_items")
+}
