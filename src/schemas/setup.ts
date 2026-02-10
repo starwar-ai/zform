@@ -49,6 +49,12 @@ import {
   serviceProviderChangeRule,
   logisticsChangeRule,
 } from "./supplier-schemas"
+import {
+  warehouseInboundSchema,
+  warehouseOutboundSchema,
+  warehouseInboundNoticeSchema,
+  warehouseOutboundNoticeSchema,
+} from "./warehouse-schemas"
 
 // ============================================================
 // 单据列表操作配置
@@ -369,6 +375,56 @@ const logisticsActionConfig: DocumentListActionConfig = {
   rowActions: supplierRowActions("logistics"),
   toolbarActions: [
     { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "logistics:create" },
+  ],
+}
+
+/** 仓库单据通用行操作 */
+const warehouseRowActions = (typeId: string) => [
+  { id: "open", label: "打开" },
+  { id: "copy-id", label: "复制ID" },
+  {
+    id: "delete",
+    label: "删除",
+    danger: true,
+    modes: ["document"] as const,
+    visible: (row: any) => row._status === "DRAFT",
+    permission: `${typeId}:delete`,
+  },
+]
+
+/** 入库单 - 列表操作 */
+const warehouseInboundActionConfig: DocumentListActionConfig = {
+  typeId: "warehouse_inbound",
+  rowActions: warehouseRowActions("warehouse_inbound"),
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "warehouse_inbound:create" },
+  ],
+}
+
+/** 出库单 - 列表操作 */
+const warehouseOutboundActionConfig: DocumentListActionConfig = {
+  typeId: "warehouse_outbound",
+  rowActions: warehouseRowActions("warehouse_outbound"),
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "warehouse_outbound:create" },
+  ],
+}
+
+/** 入库通知单 - 列表操作 */
+const warehouseInboundNoticeActionConfig: DocumentListActionConfig = {
+  typeId: "warehouse_inbound_notice",
+  rowActions: warehouseRowActions("warehouse_inbound_notice"),
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "warehouse_inbound_notice:create" },
+  ],
+}
+
+/** 出库通知单 - 列表操作 */
+const warehouseOutboundNoticeActionConfig: DocumentListActionConfig = {
+  typeId: "warehouse_outbound_notice",
+  rowActions: warehouseRowActions("warehouse_outbound_notice"),
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "warehouse_outbound_notice:create" },
   ],
 }
 
@@ -734,6 +790,12 @@ export function setupSchemas(): void {
   registry.registerSchema(serviceProviderSchema)
   registry.registerSchema(logisticsSchema)
 
+  // 注册仓库 Schema (四种单据)
+  registry.registerSchema(warehouseInboundSchema)
+  registry.registerSchema(warehouseOutboundSchema)
+  registry.registerSchema(warehouseInboundNoticeSchema)
+  registry.registerSchema(warehouseOutboundNoticeSchema)
+
   // 注册采购流程下推规则
   registry.registerPushDownRule(salesContractToPurchasePlanRule)
   registry.registerPushDownRule(purchasePlanToPurchaseContractRule)
@@ -777,6 +839,10 @@ export function setupSchemas(): void {
   registry.registerActionConfig(manufacturerActionConfig)
   registry.registerActionConfig(serviceProviderActionConfig)
   registry.registerActionConfig(logisticsActionConfig)
+  registry.registerActionConfig(warehouseInboundActionConfig)
+  registry.registerActionConfig(warehouseOutboundActionConfig)
+  registry.registerActionConfig(warehouseInboundNoticeActionConfig)
+  registry.registerActionConfig(warehouseOutboundNoticeActionConfig)
 
   // 注册表单操作配置
   registry.registerFormActionConfig(salesContractFormActions)

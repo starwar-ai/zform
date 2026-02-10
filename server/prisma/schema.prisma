@@ -1930,3 +1930,315 @@ model PurchaseContractItem {
   @@index([salesContractItemId])
   @@map("purchase_contract_items")
 }
+
+// ==================== 仓库管理模块 ====================
+
+enum WarehouseType {
+  COMPANY    // 公司仓库
+  SUPPLIER   // 供应商仓库
+}
+
+enum WarehouseOrderType {
+  INBOUND    // 入库
+  OUTBOUND   // 出库
+}
+
+enum WarehouseOrderStatus {
+  DRAFT        // 草稿
+  PENDING      // 待处理
+  IN_PROGRESS  // 处理中
+  COMPLETED    // 已完成
+  CANCELLED    // 已取消
+}
+
+enum WarehouseNoticeType {
+  INBOUND    // 入库通知
+  OUTBOUND   // 出库通知
+}
+
+enum WarehouseNoticeStatus {
+  DRAFT        // 草稿
+  PENDING      // 待处理
+  IN_PROGRESS  // 处理中
+  COMPLETED    // 已完成
+  CANCELLED    // 已取消
+}
+
+// 仓库表
+model Warehouse {
+  id              String         @id @default(cuid())
+  code            String         @unique @map("code") // 仓库编码
+  name            String         @map("name") // 仓库名称
+  type            WarehouseType  @default(COMPANY) @map("type") // 仓库类型
+  address         String?        @map("address") // 仓库地址
+  keeperIds       Json?          @map("keeper_ids") // 仓管主键数组
+  keeperId        String?        @map("keeper_id") // 仓管主键
+  isDefault       Boolean        @default(false) @map("is_default") // 默认仓库标记
+  isEnabled       Boolean        @default(true) @map("is_enabled") // 启用标识
+  supplierCode    String?        @map("supplier_code") // 供应商编码
+  supplierName    String?        @map("supplier_name") // 供应商名称
+  remark          String?        @map("remark") // 备注
+  createdBy       String?        @map("created_by")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedBy       String?        @map("updated_by")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+  deletedAt       DateTime?      @map("deleted_at")
+
+  @@map("warehouses")
+}
+
+// 出入库单表
+model WarehouseOrder {
+  id                        String               @id @default(cuid())
+  code                      String               @unique @map("code") // 单号
+  internalCode              String?              @map("internal_code") // 内部生成编号
+  shippingInvoiceNo         String?              @map("shipping_invoice_no") // 出运发票号
+  sourceId                  String?              @map("source_id") // 来源id
+  sourceCode                String?              @map("source_code") // 来源编号
+  sourceType                String?              @map("source_type") // 出片文件（来源类型）
+  productCode               String?              @map("product_code") // 产品编码
+  thumbnail                 String?              @map("thumbnail") // 图片
+  type                      WarehouseOrderType   @map("type") // 入/出库类型
+  approvalStatus            ApprovalStatus       @default(PENDING) @map("approval_status") // 审核状态
+  orderStatus               WarehouseOrderStatus @default(DRAFT) @map("order_status") // 单据状态
+  noticeCode                String?              @map("notice_code") // 入/出库通知单号
+  salesContractId           String?              @map("sales_contract_id") // 销售合同主键
+  salesContractCode         String?              @map("sales_contract_code") // 销售合同号
+  orderTime                 DateTime?            @map("order_time") // 入/出库时间
+  warehouseId               String?              @map("warehouse_id") // 仓库主键
+  warehouseCode             String?              @map("warehouse_code") // 仓库编码
+  warehouseName             String?              @map("warehouse_name") // 仓库名称
+  printStatus               PrintStatus          @default(NOT_PRINTED) @map("print_status") // 打印状态
+  printCount                Int                  @default(0) @map("print_count") // 打印次数
+  companyId                 String?              @map("company_id") // 归属公司主键
+  companyName               String?              @map("company_name") // 归属公司名称
+  remark                    String?              @map("remark") // 备注
+  createdBy                 String?              @map("created_by")
+  createdAt                 DateTime             @default(now()) @map("created_at")
+  updatedBy                 String?              @map("updated_by")
+  updatedAt                 DateTime             @updatedAt @map("updated_at")
+  deletedAt                 DateTime?            @map("deleted_at")
+
+  items                     WarehouseOrderItem[]
+
+  @@index([code])
+  @@index([type])
+  @@index([warehouseId])
+  @@index([salesContractId])
+  @@map("warehouse_orders")
+}
+
+// 出入库单明细表
+model WarehouseOrderItem {
+  id                        String          @id @default(cuid())
+  warehouseOrderId          String          @map("warehouse_order_id") // 出入库单主键
+  warehouseOrder            WarehouseOrder  @relation(fields: [warehouseOrderId], references: [id], onDelete: Cascade)
+  lineNumber                Int             @map("line_number") // 行号
+  barcode                   String?         @map("barcode") // 条形码
+  selfOwnedProductNo        String?         @map("self_owned_product_no") // 自营货号
+  merchandiser              String?         @map("merchandiser") // 跟单员
+  isSeparateBox             Boolean         @default(false) @map("is_separate_box") // 是否分箱
+  specification             String?         @map("specification") // 规格
+  shippingDetailId          String?         @map("shipping_detail_id") // 出运明细id
+  baseProductCode           String?         @map("base_product_code") // 基础产品编号
+  price                     Decimal?        @db.Decimal(15, 4) @map("price") // 价格
+  salesperson               String?         @map("salesperson") // 销售人员
+  buyerDepartment           String?         @map("buyer_department") // 采购员部门
+  buyer                     String?         @map("buyer") // 采购员
+  purchaseContractCode      String?         @map("purchase_contract_code") // 采购合同编号
+  purchaseContractId        String?         @map("purchase_contract_id") // 采购合同id
+  salesPurchaseDetailCode   String?         @map("sales_purchase_detail_code") // 销售/采购明细唯一编号
+  exceptionDescription      String?         @map("exception_description") // 异常说明
+  exceptionStatus           String?         @map("exception_status") // 异常状态
+  sourceCode                String?         @map("source_code") // 来源编号
+  sourceUniqueCode          String?         @map("source_unique_code") // 来源唯一编号
+  batchNumber               String?         @map("batch_number") // 批次号
+  skuId                     String?         @map("sku_id") // SKU id
+  skuCode                   String?         @map("sku_code") // SKU code
+  skuName                   String?         @map("sku_name") // SKU name
+  customerProductNo         String?         @map("customer_product_no") // 客户货号
+  supplierId                String?         @map("supplier_id") // 供应商id
+  supplierCode              String?         @map("supplier_code") // 供应商编码
+  supplierName              String?         @map("supplier_name") // 供应商名称
+  customerId                String?         @map("customer_id") // 客户id
+  customerCode              String?         @map("customer_code") // 客户编码
+  customerName              String?         @map("customer_name") // 客户名称
+  expectedQuantity          Decimal?        @db.Decimal(10, 2) @map("expected_quantity") // 应收出数量
+  expectedBoxes             Int?            @map("expected_boxes") // 应收出箱数
+  actualQuantity            Decimal?        @db.Decimal(10, 2) @map("actual_quantity") // 实收出数量
+  actualBoxes               Int?            @map("actual_boxes") // 实收出箱数
+  outerBoxLength            Decimal?        @db.Decimal(10, 2) @map("outer_box_length") // 外箱长
+  outerBoxWidth             Decimal?        @db.Decimal(10, 2) @map("outer_box_width") // 外箱宽
+  outerBoxHeight            Decimal?        @db.Decimal(10, 2) @map("outer_box_height") // 外箱高
+  outerBoxVolume            Decimal?        @db.Decimal(10, 4) @map("outer_box_volume") // 外箱体积
+  outerBoxGrossWeight       Decimal?        @db.Decimal(10, 3) @map("outer_box_gross_weight") // 外箱毛重
+  totalVolume               Decimal?        @db.Decimal(10, 4) @map("total_volume") // 总体积
+  totalGrossWeight          Decimal?        @db.Decimal(10, 3) @map("total_gross_weight") // 总毛重
+  remark                    String?         @map("remark") // 备注
+  createdBy                 String?         @map("created_by")
+  createdAt                 DateTime        @default(now()) @map("created_at")
+  updatedBy                 String?         @map("updated_by")
+  updatedAt                 DateTime        @updatedAt @map("updated_at")
+  deletedAt                 DateTime?       @map("deleted_at")
+
+  @@index([warehouseOrderId])
+  @@index([lineNumber])
+  @@index([skuId])
+  @@index([supplierId])
+  @@index([customerId])
+  @@map("warehouse_order_items")
+}
+
+// 出入库通知单表
+model WarehouseNotice {
+  id                        String                 @id @default(cuid())
+  code                      String                 @unique @map("code") // 单号
+  manualFlag                Boolean                @default(false) @map("manual_flag") // 手动标识
+  approvalStatus            ApprovalStatus         @default(PENDING) @map("approval_status") // 审核状态
+  workflowInstanceId        String?                @map("workflow_instance_id") // 流程实例id
+  shippingMethod            String?                @map("shipping_method") // 出运方式
+  shippingInvoiceNo         String?                @map("shipping_invoice_no") // 出运发票号
+  orderLinkCode             String?                @map("order_link_code") // 订单链路编号
+  shippingDetailCode        String?                @map("shipping_detail_code") // 出运明细单号
+  contractCodes             String?                @map("contract_codes") // 采购/销售合同编号列表
+  applicant                 String?                @map("applicant") // 申请人
+  isContainerNotice         Boolean                @default(false) @map("is_container_notice") // 是否拉柜通知单
+  billOfLadingNo            String?                @map("bill_of_lading_no") // 提单号
+  warehouseEntryDate        DateTime?              @map("warehouse_entry_date") // 进仓日期
+  type                      WarehouseNoticeType    @map("type") // 通知类型
+  noticeStatus              WarehouseNoticeStatus  @default(DRAFT) @map("notice_status") // 通知单状态
+  noticeTime                DateTime?              @map("notice_time") // 通知时间
+  expectedDate              DateTime?              @map("expected_date") // 预计到/出货日期
+  companyId                 String?                @map("company_id") // 归属公司主键
+  companyName               String?                @map("company_name") // 归属公司名称
+  totalVolume               Decimal?               @db.Decimal(10, 4) @map("total_volume") // 总体积
+  totalGrossWeight          Decimal?               @db.Decimal(10, 3) @map("total_gross_weight") // 总毛重
+  printStatus               PrintStatus            @default(NOT_PRINTED) @map("print_status") // 打印状态
+  printCount                Int                    @default(0) @map("print_count") // 打印次数
+  remark                    String?                @map("remark") // 备注
+  createdBy                 String?                @map("created_by")
+  createdAt                 DateTime               @default(now()) @map("created_at")
+  updatedBy                 String?                @map("updated_by")
+  updatedAt                 DateTime               @updatedAt @map("updated_at")
+  deletedAt                 DateTime?              @map("deleted_at")
+
+  items                     WarehouseNoticeItem[]
+
+  @@index([code])
+  @@index([type])
+  @@index([companyId])
+  @@map("warehouse_notices")
+}
+
+// 出入库通知单明细表
+model WarehouseNoticeItem {
+  id                        String           @id @default(cuid())
+  warehouseNoticeId         String           @map("warehouse_notice_id") // 出入库通知单主键
+  warehouseNotice           WarehouseNotice  @relation(fields: [warehouseNoticeId], references: [id], onDelete: Cascade)
+  lineNumber                Int              @map("line_number") // 行号
+  inventoryDetailId         String?          @map("inventory_detail_id") // 库存明细id
+  convertedToOrderFlag      Boolean          @default(false) @map("converted_to_order_flag") // 转出入库单标识
+  isSeparateBox             Boolean          @default(false) @map("is_separate_box") // 是否分箱
+  specification             String?          @map("specification") // 规格
+  shippingDetailId          String?          @map("shipping_detail_id") // 出运明细id
+  salesPurchaseDetailCode   String?          @map("sales_purchase_detail_code") // 销售/采购明细唯一编号
+  merchandiser              String?          @map("merchandiser") // 跟单员
+  salesperson               String?          @map("salesperson") // 销售人员
+  buyer                     String?          @map("buyer") // 采购员
+  buyerDepartment           String?          @map("buyer_department") // 采购员部门
+  warehouseId               String?          @map("warehouse_id") // 仓库id
+  warehouseCode             String?          @map("warehouse_code") // 仓库编码
+  warehouseName             String?          @map("warehouse_name") // 仓库名称
+  pendingInboundQuantity    Decimal?         @db.Decimal(10, 2) @map("pending_inbound_quantity") // 待入库数量
+  inboundingQuantity        Decimal?         @db.Decimal(10, 2) @map("inbounding_quantity") // 入库中数量
+  actualInboundQuantity     Decimal?         @db.Decimal(10, 2) @map("actual_inbound_quantity") // 实际入库数量
+  skuId                     String?          @map("sku_id") // SKU id
+  skuCode                   String?          @map("sku_code") // SKU code
+  skuName                   String?          @map("sku_name") // SKU name
+  customerId                String?          @map("customer_id") // 客户id
+  customerCode              String?          @map("customer_code") // 客户编码
+  customerName              String?          @map("customer_name") // 客户名称
+  customerProductNo         String?          @map("customer_product_no") // 客户货号
+  supplierId                String?          @map("supplier_id") // 供应商id
+  supplierCode              String?          @map("supplier_code") // 供应商编码
+  supplierName              String?          @map("supplier_name") // 供应商名称
+  expectedQuantity          Decimal?         @db.Decimal(10, 2) @map("expected_quantity") // 应收出数量
+  expectedBoxes             Int?             @map("expected_boxes") // 应收出箱数
+  outerBoxLength            Decimal?         @db.Decimal(10, 2) @map("outer_box_length") // 外箱长
+  outerBoxWidth             Decimal?         @db.Decimal(10, 2) @map("outer_box_width") // 外箱宽
+  outerBoxHeight            Decimal?         @db.Decimal(10, 2) @map("outer_box_height") // 外箱高
+  outerBoxVolume            Decimal?         @db.Decimal(10, 4) @map("outer_box_volume") // 外箱体积
+  outerBoxGrossWeight       Decimal?         @db.Decimal(10, 3) @map("outer_box_gross_weight") // 外箱毛重
+  totalVolume               Decimal?         @db.Decimal(10, 4) @map("total_volume") // 总体积
+  totalGrossWeight          Decimal?         @db.Decimal(10, 3) @map("total_gross_weight") // 总毛重
+  remark                    String?          @map("remark") // 备注
+  createdBy                 String?          @map("created_by")
+  createdAt                 DateTime         @default(now()) @map("created_at")
+  updatedBy                 String?          @map("updated_by")
+  updatedAt                 DateTime         @updatedAt @map("updated_at")
+  deletedAt                 DateTime?        @map("deleted_at")
+
+  @@index([warehouseNoticeId])
+  @@index([lineNumber])
+  @@index([skuId])
+  @@index([warehouseId])
+  @@map("warehouse_notice_items")
+}
+
+// 库存明细表
+model InventoryDetail {
+  id                        String    @id @default(cuid())
+  selfOwnedProductNo        String?   @map("self_owned_product_no") // 自营货号
+  isSeparateBox             Boolean   @default(false) @map("is_separate_box") // 是否分箱
+  specification             String?   @map("specification") // 规格
+  containerTransferQuantity Decimal?  @db.Decimal(10, 2) @map("container_transfer_quantity") // 转拉柜数量
+  buyer                     String?   @map("buyer") // 采购员
+  buyerDepartment           String?   @map("buyer_department") // 采购员部门
+  stocktakingDifference     Decimal?  @db.Decimal(10, 2) @map("stocktaking_difference") // 盘点差异数量
+  remainingTotalAmount      Decimal?  @db.Decimal(15, 2) @map("remaining_total_amount") // 剩余总金额
+  workInProgressQuantity    Decimal?  @db.Decimal(10, 2) @map("work_in_progress_quantity") // 在制数量
+  inboundOrderId            String?   @map("inbound_order_id") // 入库单id
+  inboundOrderCode          String?   @map("inbound_order_code") // 入库单编号
+  batchNumber               String?   @map("batch_number") // 批次号
+  skuId                     String?   @map("sku_id") // SKU id
+  skuCode                   String?   @map("sku_code") // SKU编码
+  skuName                   String?   @map("sku_name") // SKU名称
+  customerProductNo         String?   @map("customer_product_no") // 客户货号
+  inboundTime               DateTime? @map("inbound_time") // 入库时间
+  initialQuantity           Decimal   @default(0) @db.Decimal(10, 2) @map("initial_quantity") // 初始库存数量
+  usedQuantity              Decimal   @default(0) @db.Decimal(10, 2) @map("used_quantity") // 已用数量
+  lockedQuantity            Decimal   @default(0) @db.Decimal(10, 2) @map("locked_quantity") // 锁定数量
+  availableQuantity         Decimal   @default(0) @db.Decimal(10, 2) @map("available_quantity") // 可用数量
+  outerBoxLength            Decimal?  @db.Decimal(10, 2) @map("outer_box_length") // 外箱长
+  outerBoxWidth             Decimal?  @db.Decimal(10, 2) @map("outer_box_width") // 外箱宽
+  outerBoxHeight            Decimal?  @db.Decimal(10, 2) @map("outer_box_height") // 外箱高
+  outerBoxVolume            Decimal?  @db.Decimal(10, 4) @map("outer_box_volume") // 外箱体积
+  outerBoxGrossWeight       Decimal?  @db.Decimal(10, 3) @map("outer_box_gross_weight") // 外箱毛重
+  purchaseContractId        String?   @map("purchase_contract_id") // 采购合同id
+  purchaseContractCode      String?   @map("purchase_contract_code") // 采购合同编号
+  salesContractId           String?   @map("sales_contract_id") // 销售合同id
+  salesContractCode         String?   @map("sales_contract_code") // 销售合同编号
+  warehouseId               String?   @map("warehouse_id") // 仓库id
+  warehouseCode             String?   @map("warehouse_code") // 仓库编码
+  warehouseName             String?   @map("warehouse_name") // 仓库名称
+  warehouseLocation         String?   @map("warehouse_location") // 仓库位置
+  supplierId                String?   @map("supplier_id") // 供应商id
+  supplierCode              String?   @map("supplier_code") // 供应商编码
+  supplierName              String?   @map("supplier_name") // 供应商名称
+  customerId                String?   @map("customer_id") // 客户id
+  customerCode              String?   @map("customer_code") // 客户编码
+  customerName              String?   @map("customer_name") // 客户名称
+  remark                    String?   @map("remark") // 备注
+  createdBy                 String?   @map("created_by")
+  createdAt                 DateTime  @default(now()) @map("created_at")
+  updatedBy                 String?   @map("updated_by")
+  updatedAt                 DateTime  @updatedAt @map("updated_at")
+  deletedAt                 DateTime? @map("deleted_at")
+
+  @@index([skuId])
+  @@index([warehouseId])
+  @@index([supplierId])
+  @@index([customerId])
+  @@index([batchNumber])
+  @@map("inventory_details")
+}

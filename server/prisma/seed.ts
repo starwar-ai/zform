@@ -1123,18 +1123,6 @@ async function main() {
     },
   });
 
-  // 仓库管理菜单
-  const warehouseMenu = await prisma.sysMenu.create({
-    data: {
-      title: '仓库管理',
-      icon: 'Package',
-      path: '/warehouse-management',
-      parentId: businessEntryMenu.id,
-      orderNum: 9,
-      menuType: 'menu',
-      status: 'visible',
-    },
-  });
 
   // 质检管理菜单
   const qualityMenu = await prisma.sysMenu.create({
@@ -1143,7 +1131,59 @@ async function main() {
       icon: 'ClipboardList',
       path: '/quality-management',
       parentId: businessEntryMenu.id,
-      orderNum: 10,
+      orderNum: 9,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  // ---- 仓库入口（一级菜单） ----
+  const warehouseEntryMenu = await prisma.sysMenu.create({
+    data: {
+      title: '仓库入口',
+      icon: 'Warehouse',
+      path: null,
+      parentId: null,
+      orderNum: 5,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  // 库存查询菜单
+  const warehouseInventoryMenu = await prisma.sysMenu.create({
+    data: {
+      title: '库存查询',
+      icon: 'PackageSearch',
+      path: '/warehouse-inventory',
+      parentId: warehouseEntryMenu.id,
+      orderNum: 1,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  // 入库管理菜单
+  const warehouseInboundMenu = await prisma.sysMenu.create({
+    data: {
+      title: '入库管理',
+      icon: 'PackageOpen',
+      path: '/warehouse-inbound',
+      parentId: warehouseEntryMenu.id,
+      orderNum: 2,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  // 出库管理菜单
+  const warehouseOutboundMenu = await prisma.sysMenu.create({
+    data: {
+      title: '出库管理',
+      icon: 'PackageX',
+      path: '/warehouse-outbound',
+      parentId: warehouseEntryMenu.id,
+      orderNum: 3,
       menuType: 'menu',
       status: 'visible',
     },
@@ -1217,11 +1257,19 @@ async function main() {
   const custProductBtnIds = await createDocPermButtons(productManagementMenu.id, 'customer_product', basicDocActions);
   const selfProductBtnIds = await createDocPermButtons(productManagementMenu.id, 'self_owned_product', basicDocActions);
 
-  // 仓库管理按钮权限
-  const warehouseBtnIds = await createDocPermButtons(warehouseMenu.id, 'warehouse', [
-    ...basicDocActions,
-    { perm: 'close', title: '关闭' },
-  ]);
+  // 仓库管理按钮权限（挂在入库管理菜单下）
+  const warehouseInboundBtnIds = await createDocPermButtons(warehouseInboundMenu.id, 'warehouse_inbound', basicDocActions);
+  const warehouseOutboundBtnIds = await createDocPermButtons(warehouseOutboundMenu.id, 'warehouse_outbound', basicDocActions);
+  const warehouseInboundNoticeBtnIds = await createDocPermButtons(warehouseInboundMenu.id, 'warehouse_inbound_notice', basicDocActions);
+  const warehouseOutboundNoticeBtnIds = await createDocPermButtons(warehouseOutboundMenu.id, 'warehouse_outbound_notice', basicDocActions);
+
+  // 汇总仓库按钮权限
+  const warehouseBtnIds = [
+    ...warehouseInboundBtnIds,
+    ...warehouseOutboundBtnIds,
+    ...warehouseInboundNoticeBtnIds,
+    ...warehouseOutboundNoticeBtnIds,
+  ];
 
   // 质检管理按钮权限
   const qualityBtnIds = await createDocPermButtons(qualityMenu.id, 'quality', [
@@ -1389,8 +1437,11 @@ async function main() {
     productManagementMenu.id,
     customerMenu.id,
     supplierMenu.id,
-    warehouseMenu.id,
     qualityMenu.id,
+    warehouseEntryMenu.id,
+    warehouseInventoryMenu.id,
+    warehouseInboundMenu.id,
+    warehouseOutboundMenu.id,
     sysMenu.id,
     userMgmtMenu.id,
     roleMgmtMenu.id,
@@ -1410,7 +1461,7 @@ async function main() {
     })),
   });
 
-  // 业务经理角色：业务入口菜单 + 全部按钮权限（含审批）
+  // 业务经理角色：业务入口菜单 + 仓库入口菜单 + 全部按钮权限（含审批）
   const managerMenuIds = [
     businessEntryMenu.id,
     salesContractMenu.id,
@@ -1421,8 +1472,11 @@ async function main() {
     productManagementMenu.id,
     customerMenu.id,
     supplierMenu.id,
-    warehouseMenu.id,
     qualityMenu.id,
+    warehouseEntryMenu.id,
+    warehouseInventoryMenu.id,
+    warehouseInboundMenu.id,
+    warehouseOutboundMenu.id,
     ...allBtnIds,
   ];
 
@@ -1444,7 +1498,10 @@ async function main() {
     ...stdProductBtnIds.slice(0, 3),
     ...custProductBtnIds.slice(0, 3),
     ...selfProductBtnIds.slice(0, 3),
-    ...warehouseBtnIds.slice(0, 3),
+    ...warehouseInboundBtnIds.slice(0, 3),
+    ...warehouseOutboundBtnIds.slice(0, 3),
+    ...warehouseInboundNoticeBtnIds.slice(0, 3),
+    ...warehouseOutboundNoticeBtnIds.slice(0, 3),
     ...qualityBtnIds.slice(0, 3),
   ];
 
@@ -1458,8 +1515,11 @@ async function main() {
     productManagementMenu.id,
     customerMenu.id,
     supplierMenu.id,
-    warehouseMenu.id,
     qualityMenu.id,
+    warehouseEntryMenu.id,
+    warehouseInventoryMenu.id,
+    warehouseInboundMenu.id,
+    warehouseOutboundMenu.id,
     oaEntryMenu.id,
     ...userBtnIds,
   ];
@@ -1482,7 +1542,7 @@ async function main() {
   console.log(`Users: admin (password: admin123, dept: ${techDept.code}), demo (password: 123456, dept: ${salesDept.code})`);
   console.log(`Menus: ${allMenuIds.length} menus (incl. ${allBtnIds.length} button permissions)`);
   console.log(`System management menus: ${userMgmtMenu.title}, ${roleMgmtMenu.title}, ${menuMgmtMenu.title}, ${deptMgmtMenu.title}, ${categoryMgmtMenu.title}, ${businessConfigMenu.title}`);
-  console.log(`Warehouse & Quality menus: ${warehouseMenu.title}, ${qualityMenu.title}`);
+  console.log(`Warehouse & Quality menus: ${warehouseEntryMenu.title} (${warehouseInventoryMenu.title}, ${warehouseInboundMenu.title}, ${warehouseOutboundMenu.title}), ${qualityMenu.title}`);
   console.log(`Data permissions: admin=all, manager=department, user=personal`);
   console.log(`Customer categories: ${customerCategoryA.code} (${customerCategoryA1.code}, ${customerCategoryA2.code}), ${customerCategoryB.code} (${customerCategoryB1.code}), ${customerCategoryC.code}`);
   console.log(`Product categories (HsCode): ${hsCodeElectronics.code} -> ${hsCodePhoneAccessories.code} -> ${hsCodePhoneCase.code}, ${hsCodePlastic.code} -> ${hsCodePlasticPackaging.code}`);

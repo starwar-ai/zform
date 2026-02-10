@@ -17,6 +17,10 @@ import {
   serviceProviderAdapter,
   logisticsAdapter,
 } from './supplier.adapter';
+import { warehouseInboundAdapter } from './warehouse-inbound.adapter';
+import { warehouseOutboundAdapter } from './warehouse-outbound.adapter';
+import { warehouseInboundNoticeAdapter } from './warehouse-inbound-notice.adapter';
+import { warehouseOutboundNoticeAdapter } from './warehouse-outbound-notice.adapter';
 
 export function registerAllAdapters(): void {
   // 销售合同
@@ -34,6 +38,12 @@ export function registerAllAdapters(): void {
   documentTypeRegistry.register(manufacturerAdapter);
   documentTypeRegistry.register(serviceProviderAdapter);
   documentTypeRegistry.register(logisticsAdapter);
+
+  // 仓库管理 (四种单据)
+  documentTypeRegistry.register(warehouseInboundAdapter);
+  documentTypeRegistry.register(warehouseOutboundAdapter);
+  documentTypeRegistry.register(warehouseInboundNoticeAdapter);
+  documentTypeRegistry.register(warehouseOutboundNoticeAdapter);
 
   console.log(
     `[DocumentTypeRegistry] Registered ${documentTypeRegistry.getAllTypeIds().length} adapters:`,

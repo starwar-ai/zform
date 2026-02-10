@@ -18,6 +18,8 @@ import regionRoutes from './regions';
 import countryRoutes from './countries';
 import portRoutes from './ports';
 import brandRoutes from './brands';
+import warehouseRoutes from './warehouses';
+import inventoryRoutes from './inventory';
 import documentRoutes from '../documents/document.routes';
 
 const router = Router();
@@ -40,6 +42,8 @@ router.use('/regions', regionRoutes);
 router.use('/countries', countryRoutes);
 router.use('/ports', portRoutes);
 router.use('/brands', brandRoutes);
+router.use('/warehouses', warehouseRoutes);
+router.use('/inventory', inventoryRoutes);
 
 // ---- 旧路由 (保留兼容) ----
 router.use('/products', productRoutes);

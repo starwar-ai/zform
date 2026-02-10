@@ -20,7 +20,10 @@ export type TabType =
   | "sales-management"
   | "purchase-plan-management"
   | "purchase-contract-management"
-  | "warehouse-management"
+  | "warehouse-management" // 保留兼容
+  | "warehouse-inventory" // 库存查询
+  | "warehouse-inbound" // 入库管理
+  | "warehouse-outbound" // 出库管理
   | "quality-management"
 
 // 标签数据结构

@@ -19,6 +19,9 @@ import { SalesContractManagement } from "@/components/sales-contract-management"
 import { PurchasePlanManagement } from "@/components/purchase-plan-management"
 import { PurchaseContractManagement } from "@/components/purchase-contract-management"
 import { WarehouseManagement } from "@/components/warehouse-management"
+import { WarehouseInventory } from "@/components/warehouse-inventory"
+import { WarehouseInbound } from "@/components/warehouse-inbound"
+import { WarehouseOutbound } from "@/components/warehouse-outbound"
 import { QualityManagement } from "@/components/quality-management"
 import { DashboardHome } from "@/components/dashboard-home"
 
@@ -121,6 +124,15 @@ export function TabContent() {
 
       case "warehouse-management":
         return <WarehouseManagement />
+
+      case "warehouse-inventory":
+        return <WarehouseInventory />
+
+      case "warehouse-inbound":
+        return <WarehouseInbound />
+
+      case "warehouse-outbound":
+        return <WarehouseOutbound />
 
       case "quality-management":
         return <QualityManagement />

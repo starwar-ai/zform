@@ -4,7 +4,7 @@
 
 // ==================== 通用类型 ====================
 
-export type ConfigTypeKey = 'company' | 'region' | 'country' | 'port' | 'brand';
+export type ConfigTypeKey = 'company' | 'region' | 'country' | 'port' | 'brand' | 'warehouse';
 
 // ==================== 公司性质枚举 ====================
 
@@ -137,6 +137,40 @@ export interface Port {
   address?: string | null;
   isCommon: boolean;
   status: PortStatus;
+  createdBy?: string | null;
+  createdAt: string;
+  updatedBy?: string | null;
+  updatedAt: string;
+  deletedAt?: string | null;
+}
+
+// ==================== 仓库类型枚举 ====================
+
+export enum WarehouseType {
+  COMPANY = 'COMPANY',
+  SUPPLIER = 'SUPPLIER',
+}
+
+export const WarehouseTypeLabels: Record<WarehouseType, string> = {
+  [WarehouseType.COMPANY]: '公司仓库',
+  [WarehouseType.SUPPLIER]: '供应商仓库',
+};
+
+// ==================== 仓库相关 ====================
+
+export interface Warehouse {
+  id: string;
+  code: string;
+  name: string;
+  type: WarehouseType;
+  address?: string | null;
+  keeperIds?: any;
+  keeperId?: string | null;
+  isDefault: boolean;
+  isEnabled: boolean;
+  supplierCode?: string | null;
+  supplierName?: string | null;
+  remark?: string | null;
   createdBy?: string | null;
   createdAt: string;
   updatedBy?: string | null;

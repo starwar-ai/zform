@@ -2,7 +2,7 @@
  * 实体配置 API
  */
 
-import type { Company, CompanyBankAccount, Region, Country, Port, Brand } from '@/types/business-config';
+import type { Company, CompanyBankAccount, Region, Country, Port, Brand, Warehouse } from '@/types/business-config';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 
@@ -304,5 +304,62 @@ export async function deleteBrandApi(id: string): Promise<void> {
   if (!res.ok) {
     const error = await res.json();
     throw new Error(error.error || '删除品牌失败');
+  }
+}
+
+// ==================== 仓库 API ====================
+
+export async function fetchWarehousesApi(): Promise<Warehouse[]> {
+  const res = await fetch(`${API_BASE}/warehouses`, {
+    credentials: 'include',
+  });
+  if (!res.ok) throw new Error('获取仓库列表失败');
+  return res.json();
+}
+
+export async function fetchWarehouseByIdApi(id: string): Promise<Warehouse> {
+  const res = await fetch(`${API_BASE}/warehouses/${id}`, {
+    credentials: 'include',
+  });
+  if (!res.ok) throw new Error('获取仓库详情失败');
+  return res.json();
+}
+
+export async function createWarehouseApi(data: Partial<Warehouse>): Promise<Warehouse> {
+  const res = await fetch(`${API_BASE}/warehouses`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || '创建仓库失败');
+  }
+  return res.json();
+}
+
+export async function updateWarehouseApi(id: string, data: Partial<Warehouse>): Promise<Warehouse> {
+  const res = await fetch(`${API_BASE}/warehouses/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || '更新仓库失败');
+  }
+  return res.json();
+}
+
+export async function deleteWarehouseApi(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/warehouses/${id}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || '删除仓库失败');
   }
 }
