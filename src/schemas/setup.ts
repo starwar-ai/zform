@@ -72,6 +72,14 @@ import {
   shippingOrderSchema,
   shippingOrderChangeRule,
 } from "./shipping-order-schemas"
+import {
+  inspectionDeclarationSchema,
+  inspectionDeclarationChangeRule,
+} from "./inspection-declaration-schemas"
+import {
+  customsDeclarationSchema,
+  customsDeclarationChangeRule,
+} from "./customs-declaration-schemas"
 
 // ============================================================
 // 单据列表操作配置
@@ -475,6 +483,46 @@ const shippingOrderActionConfig: DocumentListActionConfig = {
   ],
 }
 
+/** 商检单 - 列表操作 */
+const inspectionDeclarationActionConfig: DocumentListActionConfig = {
+  typeId: "inspection_declaration",
+  rowActions: [
+    { id: "open", label: "打开" },
+    { id: "copy-id", label: "复制ID" },
+    {
+      id: "delete",
+      label: "删除",
+      danger: true,
+      modes: ["document"],
+      visible: (row) => row._status === "draft",
+      permission: "inspection_declaration:delete",
+    },
+  ],
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "inspection_declaration:create" },
+  ],
+}
+
+/** 报关单 - 列表操作 */
+const customsDeclarationActionConfig: DocumentListActionConfig = {
+  typeId: "customs_declaration",
+  rowActions: [
+    { id: "open", label: "打开" },
+    { id: "copy-id", label: "复制ID" },
+    {
+      id: "delete",
+      label: "删除",
+      danger: true,
+      modes: ["document"],
+      visible: (row) => row._status === "draft",
+      permission: "customs_declaration:delete",
+    },
+  ],
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "customs_declaration:create" },
+  ],
+}
+
 /** 仓库单据通用行操作 */
 const warehouseRowActions = (typeId: string) => [
   { id: "open", label: "打开" },
@@ -783,6 +831,58 @@ const shippingOrderFormActions: DocumentFormActionConfig = {
   ],
 }
 
+/** 商检单 - 表单操作 */
+const inspectionDeclarationFormActions: DocumentFormActionConfig = {
+  typeId: "inspection_declaration",
+  actions: [
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["draft"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["draft"], permission: "inspection_declaration:submit", order: 2 },
+    {
+      id: "approve", label: "审批", icon: "Check", allowedStatuses: ["submitted"],
+      permission: "inspection_declaration:approve", order: 3,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "reject", label: "拒绝", icon: "X", variant: "destructive", allowedStatuses: ["submitted"],
+      permission: "inspection_declaration:approve", order: 4,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "withdraw", label: "撤回", icon: "Undo2", variant: "outline", allowedStatuses: ["submitted"], order: 5,
+      visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
+    },
+    { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["approved"], permission: "inspection_declaration:close", order: 6 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["draft"], order: 7 },
+    { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["approved"], permission: "inspection_declaration:void", order: 8 },
+  ],
+}
+
+/** 报关单 - 表单操作 */
+const customsDeclarationFormActions: DocumentFormActionConfig = {
+  typeId: "customs_declaration",
+  actions: [
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["draft"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["draft"], permission: "customs_declaration:submit", order: 2 },
+    {
+      id: "approve", label: "审批", icon: "Check", allowedStatuses: ["submitted"],
+      permission: "customs_declaration:approve", order: 3,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "reject", label: "拒绝", icon: "X", variant: "destructive", allowedStatuses: ["submitted"],
+      permission: "customs_declaration:approve", order: 4,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "withdraw", label: "撤回", icon: "Undo2", variant: "outline", allowedStatuses: ["submitted"], order: 5,
+      visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
+    },
+    { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["approved"], permission: "customs_declaration:close", order: 6 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["draft"], order: 7 },
+    { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["approved"], permission: "customs_declaration:void", order: 8 },
+  ],
+}
+
 /** 验货单 - 表单操作 */
 const inspectionOrderFormActions: DocumentFormActionConfig = {
   typeId: "inspection_order",
@@ -1009,6 +1109,10 @@ export function setupSchemas(): void {
   registry.registerSchema(shippingPlanSchema)
   registry.registerSchema(shippingOrderSchema)
 
+  // 注册商检单 & 报关单 Schema
+  registry.registerSchema(inspectionDeclarationSchema)
+  registry.registerSchema(customsDeclarationSchema)
+
   // 注册采购流程下推规则
   registry.registerPushDownRule(salesContractToPurchasePlanRule)
   registry.registerPushDownRule(purchasePlanToPurchaseContractRule)
@@ -1047,6 +1151,10 @@ export function setupSchemas(): void {
   registry.registerChangeRule(shippingPlanChangeRule)
   registry.registerChangeRule(shippingOrderChangeRule)
 
+  // 注册商检单 & 报关单变更规则
+  registry.registerChangeRule(inspectionDeclarationChangeRule)
+  registry.registerChangeRule(customsDeclarationChangeRule)
+
   // 注册列表操作配置
   registry.registerActionConfig(salesContractActionConfig)
   registry.registerActionConfig(exportSalesContractActionConfig)
@@ -1073,6 +1181,8 @@ export function setupSchemas(): void {
   registry.registerActionConfig(concessionAcceptanceActionConfig)
   registry.registerActionConfig(shippingPlanActionConfig)
   registry.registerActionConfig(shippingOrderActionConfig)
+  registry.registerActionConfig(inspectionDeclarationActionConfig)
+  registry.registerActionConfig(customsDeclarationActionConfig)
 
   // 注册表单操作配置
   registry.registerFormActionConfig(salesContractFormActions)
@@ -1093,6 +1203,8 @@ export function setupSchemas(): void {
   registry.registerFormActionConfig(concessionAcceptanceFormActions)
   registry.registerFormActionConfig(shippingPlanFormActions)
   registry.registerFormActionConfig(shippingOrderFormActions)
+  registry.registerFormActionConfig(inspectionDeclarationFormActions)
+  registry.registerFormActionConfig(customsDeclarationFormActions)
 
   // 用户和角色数据已迁移到后端数据库，通过 seed 初始化
   // 审核规则已迁移到服务端数据库，无需前端注册
