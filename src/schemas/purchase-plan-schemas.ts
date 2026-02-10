@@ -172,36 +172,6 @@ export const purchasePlanSchema: DocumentSchema = {
       group: "采购信息",
     },
 
-    // === 辅料采购相关 ===
-    {
-      id: "isAccessoryPurchase",
-      label: "是否辅料采购",
-      type: "checkbox",
-      defaultValue: false,
-      group: "辅料信息",
-    },
-    {
-      id: "accessoryBuyer",
-      label: "辅料采购员",
-      type: "text",
-      placeholder: "辅料属于的采购员",
-      group: "辅料信息",
-    },
-    {
-      id: "accessorySalesPerson",
-      label: "辅料销售员",
-      type: "text",
-      placeholder: "辅料属于的销售员",
-      group: "辅料信息",
-    },
-    {
-      id: "accessoryMerchandiser",
-      label: "辅料跟单员",
-      type: "text",
-      placeholder: "辅料属于的跟单员",
-      group: "辅料信息",
-    },
-
     // === 其他信息 ===
     {
       id: "salesType",
@@ -434,9 +404,8 @@ export const purchasePlanSchema: DocumentSchema = {
           label: "采购类型",
           type: "select",
           options: [
-            { label: "正常采购", value: "NORMAL" },
-            { label: "紧急采购", value: "URGENT" },
-            { label: "补单", value: "REPLENISHMENT" },
+            { label: "商品采购", value: "PRODUCT" },
+            { label: "包材采购", value: "PACKAGING" },
           ],
         },
         {

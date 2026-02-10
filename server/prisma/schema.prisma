@@ -822,13 +822,6 @@ model Customer {
   formalTime            DateTime?       @map("formal_time") // 转正时间
   isEnabled             Boolean         @default(true) @map("is_enabled") // 是否启用
 
-  // 变更管理
-  isChanged             Boolean         @default(false) @map("is_changed") // 是否变更
-  changeStatus          ChangeStatus?   @map("change_status") // 变更状态
-  changeDeleted         Boolean         @default(false) @map("change_deleted") // 变更是否删除
-  version               Int             @default(1) // 版本号
-  impactScope           String?         @map("impact_scope") // 影响范围
-  processModelId        String?         @map("process_model_id") // 流程模型标识
 
   // 内部标识
   isInternalEnterprise  Boolean         @default(false) @map("is_internal_enterprise") // 内部企业标识 0-否 1-是
@@ -1202,9 +1195,8 @@ enum SalesType {
 }
 
 enum PurchaseType {
-  NORMAL           // 正常采购
-  URGENT           // 紧急采购
-  REPLENISHMENT    // 补单
+  PRODUCT          // 商品采购
+  PACKAGING        // 包材采购
 }
 
 enum PurchaseMode {
@@ -1244,11 +1236,7 @@ model PurchasePlan {
   salesRep              String?             @map("sales_rep") // 销售人员
   merchandiser          String?             // 跟单员
 
-  // 辅料采购相关
-  isAccessoryPurchase   Boolean             @default(false) @map("is_accessory_purchase") // 是否辅料采购
-  accessoryBuyer        String?             @map("accessory_buyer") // 辅料采购员
-  accessorySalesPerson  String?             @map("accessory_sales_person") // 辅料销售员
-  accessoryMerchandiser String?             @map("accessory_merchandiser") // 辅料跟单员
+
 
   // 其他信息
   salesType             SalesType?          @map("sales_type") // 销售类型
@@ -1263,13 +1251,6 @@ model PurchasePlan {
   remark                String?             // 备注
   attachments           Json?               // 附件（JSON数组）
 
-  // 变更管理
-  isChanged             Boolean             @default(false) @map("is_changed")
-  changeStatus          ChangeStatus?       @map("change_status")
-  changeDeleted         Boolean             @default(false) @map("change_deleted")
-  version               Int                 @default(1)
-  impactScope           String?             @map("impact_scope")
-  processModelId        String?             @map("process_model_id")
 
   // 时间戳
   createdBy             String?             @map("created_by")

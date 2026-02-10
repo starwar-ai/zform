@@ -1025,7 +1025,7 @@ async function main() {
     data: {
       title: '销售合同',
       icon: 'ClipboardList',
-      path: '/type-list/sales_contract',
+      path: '/sales-management',
       parentId: businessEntryMenu.id,
       orderNum: 1,
       menuType: 'menu',
@@ -1037,7 +1037,7 @@ async function main() {
     data: {
       title: '采购计划',
       icon: 'ShoppingCart',
-      path: '/type-list/purchase_plan',
+      path: '/purchase-plan-management',
       parentId: businessEntryMenu.id,
       orderNum: 2,
       menuType: 'menu',
