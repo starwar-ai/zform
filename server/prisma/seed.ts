@@ -1084,45 +1084,57 @@ async function main() {
     },
   });
 
-  // 产品管理菜单（无子菜单）
-  const productManagementMenu = await prisma.sysMenu.create({
+  // ---- 资料入口（一级菜单） ----
+  const dataEntryMenu = await prisma.sysMenu.create({
     data: {
-      title: '产品管理',
-      icon: 'Package',
-      path: '/product-management',
-      parentId: businessEntryMenu.id,
+      title: '资料入口',
+      icon: 'Database',
+      path: null,
+      parentId: null,
       orderNum: 6,
       menuType: 'menu',
       status: 'visible',
     },
   });
 
-  // 客户管理菜单
+  // 产品管理菜单（无子菜单）- 移到资料入口下
+  const productManagementMenu = await prisma.sysMenu.create({
+    data: {
+      title: '产品管理',
+      icon: 'Package',
+      path: '/product-management',
+      parentId: dataEntryMenu.id,
+      orderNum: 1,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  // 客户管理菜单 - 移到资料入口下
   const customerMenu = await prisma.sysMenu.create({
     data: {
       title: '客户管理',
       icon: 'Users',
       path: '/type-list/customer',
-      parentId: businessEntryMenu.id,
-      orderNum: 7,
+      parentId: dataEntryMenu.id,
+      orderNum: 2,
       menuType: 'menu',
       status: 'visible',
     },
   });
 
-  // 供应商管理菜单
+  // 供应商管理菜单 - 移到资料入口下
   const supplierMenu = await prisma.sysMenu.create({
     data: {
       title: '供应商管理',
       icon: 'Truck',
       path: '/supplier-management',
-      parentId: businessEntryMenu.id,
-      orderNum: 8,
+      parentId: dataEntryMenu.id,
+      orderNum: 3,
       menuType: 'menu',
       status: 'visible',
     },
   });
-
 
   // 质检管理菜单
   const qualityMenu = await prisma.sysMenu.create({
@@ -1434,6 +1446,7 @@ async function main() {
     purchaseContractMenu.id,
     shipmentPlanMenu.id,
     shipmentDetailMenu.id,
+    dataEntryMenu.id,
     productManagementMenu.id,
     customerMenu.id,
     supplierMenu.id,
@@ -1461,7 +1474,7 @@ async function main() {
     })),
   });
 
-  // 业务经理角色：业务入口菜单 + 仓库入口菜单 + 全部按钮权限（含审批）
+  // 业务经理角色：业务入口菜单 + 资料入口菜单 + 仓库入口菜单 + 全部按钮权限（含审批）
   const managerMenuIds = [
     businessEntryMenu.id,
     salesContractMenu.id,
@@ -1469,6 +1482,7 @@ async function main() {
     purchaseContractMenu.id,
     shipmentPlanMenu.id,
     shipmentDetailMenu.id,
+    dataEntryMenu.id,
     productManagementMenu.id,
     customerMenu.id,
     supplierMenu.id,
@@ -1512,6 +1526,7 @@ async function main() {
     purchaseContractMenu.id,
     shipmentPlanMenu.id,
     shipmentDetailMenu.id,
+    dataEntryMenu.id,
     productManagementMenu.id,
     customerMenu.id,
     supplierMenu.id,
