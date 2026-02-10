@@ -1058,27 +1058,40 @@ async function main() {
     },
   });
 
-  // 出运计划菜单
-  const shipmentPlanMenu = await prisma.sysMenu.create({
+  // ---- 单证入口（一级菜单） ----
+  const documentEntryMenu = await prisma.sysMenu.create({
     data: {
-      title: '出运计划',
-      icon: 'Ship',
-      path: '/type-list/shipment_plan',
-      parentId: businessEntryMenu.id,
-      orderNum: 4,
+      title: '单证入口',
+      icon: 'FileText',
+      path: null,
+      parentId: null,
+      orderNum: 5,
       menuType: 'menu',
       status: 'visible',
     },
   });
 
-  // 出运明细菜单
+  // 出运计划菜单 - 移到单证入口下
+  const shipmentPlanMenu = await prisma.sysMenu.create({
+    data: {
+      title: '出运计划',
+      icon: 'Ship',
+      path: '/type-list/shipment_plan',
+      parentId: documentEntryMenu.id,
+      orderNum: 1,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  // 出运明细菜单 - 移到单证入口下
   const shipmentDetailMenu = await prisma.sysMenu.create({
     data: {
       title: '出运明细',
       icon: 'Package',
       path: '/type-list/shipment_detail',
-      parentId: businessEntryMenu.id,
-      orderNum: 5,
+      parentId: documentEntryMenu.id,
+      orderNum: 2,
       menuType: 'menu',
       status: 'visible',
     },
@@ -1182,7 +1195,7 @@ async function main() {
       icon: 'Warehouse',
       path: null,
       parentId: null,
-      orderNum: 5,
+      orderNum: 8,
       menuType: 'menu',
       status: 'visible',
     },
