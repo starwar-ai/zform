@@ -2,6 +2,7 @@ import { AppLayout } from "@/components/app-layout"
 import { LoginPage } from "@/components/login-page"
 import { useAuthStore } from "@/stores/auth-store"
 import { setupSchemas } from "@/schemas/setup"
+import { registry } from "@/core/registry"
 
 // 初始化注册
 setupSchemas()

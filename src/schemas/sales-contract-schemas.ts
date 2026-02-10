@@ -41,12 +41,11 @@ export const salesContractSchema: DocumentSchema = {
       label: "合同类型",
       type: "select",
       options: [
-        { label: "标准合同", value: "STANDARD" },
-        { label: "样品合同", value: "SAMPLE" },
-        { label: "试单", value: "TRIAL" },
-        { label: "返单", value: "REPEAT" },
+        { label: "外销合同", value: "EXPORT" },
+        { label: "内销合同", value: "DOMESTIC" },
+        { label: "联营合同", value: "JOINT_VENTURE" },
       ],
-      defaultValue: "STANDARD",
+      defaultValue: "EXPORT",
       required: true,
       group: "基本信息",
     },
@@ -675,6 +674,13 @@ export const salesContractSchema: DocumentSchema = {
       group: "标识字段",
     },
     {
+      id: "isRepeatOrder",
+      label: "是否返单",
+      type: "checkbox",
+      defaultValue: false,
+      group: "标识字段",
+    },
+    {
       id: "autoCreated",
       label: "自动生成",
       type: "checkbox",
@@ -855,6 +861,840 @@ export const salesContractSchema: DocumentSchema = {
     },
   ],
 }
+
+// ============================================================
+// 外销合同 (Export Sales Contract)
+// ============================================================
+
+export const exportSalesContractSchema: DocumentSchema = {
+  typeId: "export_sales_contract",
+  typeName: "外销合同",
+  masterFields: [
+    // === 基本信息 ===
+    {
+      id: "code",
+      label: "合同编号",
+      type: "text",
+      readOnly: true,
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "internalCode",
+      label: "内部编号",
+      type: "text",
+      readOnly: true,
+      group: "基本信息",
+    },
+    {
+      id: "customerPoNo",
+      label: "客户PO号",
+      type: "text",
+      group: "基本信息",
+    },
+    {
+      id: "contractType",
+      label: "合同类型",
+      type: "select",
+      options: [
+        { label: "外销合同", value: "EXPORT" },
+      ],
+      defaultValue: "EXPORT",
+      readOnly: true,
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "status",
+      label: "合同状态",
+      type: "select",
+      options: [
+        { label: "草稿", value: "DRAFT" },
+        { label: "待审核", value: "PENDING" },
+        { label: "已审核", value: "APPROVED" },
+        { label: "执行中", value: "IN_PROGRESS" },
+        { label: "已完成", value: "COMPLETED" },
+        { label: "已取消", value: "CANCELLED" },
+      ],
+      defaultValue: "DRAFT",
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "approvalStatus",
+      label: "审核状态",
+      type: "select",
+      options: [
+        { label: "待审核", value: "PENDING" },
+        { label: "已审核", value: "APPROVED" },
+        { label: "已拒绝", value: "REJECTED" },
+      ],
+      defaultValue: "PENDING",
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "entryDate",
+      label: "录入日期",
+      type: "date",
+      group: "基本信息",
+    },
+
+    // === 客户信息 ===
+    {
+      id: "customerId",
+      label: "客户ID",
+      type: "text",
+      required: true,
+      group: "客户信息",
+    },
+    {
+      id: "customerCode",
+      label: "客户编号",
+      type: "text",
+      required: true,
+      group: "客户信息",
+    },
+    {
+      id: "customerName",
+      label: "客户名称",
+      type: "text",
+      group: "客户信息",
+    },
+    {
+      id: "customerCountryName",
+      label: "客户国别",
+      type: "text",
+      group: "客户信息",
+    },
+    {
+      id: "tradeCountryName",
+      label: "贸易国别",
+      type: "text",
+      group: "客户信息",
+    },
+
+    // === 人员信息 ===
+    {
+      id: "salesPerson",
+      label: "销售人员",
+      type: "text",
+      required: true,
+      group: "人员信息",
+    },
+    {
+      id: "merchandiser",
+      label: "跟单员",
+      type: "text",
+      group: "人员信息",
+    },
+    {
+      id: "buyer",
+      label: "采购员",
+      type: "text",
+      group: "人员信息",
+    },
+
+    // === 金额与汇率 ===
+    {
+      id: "currency",
+      label: "交易币别",
+      type: "select",
+      options: [
+        { label: "USD", value: "USD" },
+        { label: "EUR", value: "EUR" },
+        { label: "GBP", value: "GBP" },
+      ],
+      defaultValue: "USD",
+      required: true,
+      group: "金额信息",
+    },
+    {
+      id: "usdRate",
+      label: "美元汇率",
+      type: "number",
+      placeholder: "0.000000",
+      group: "金额信息",
+    },
+    {
+      id: "totalAmount",
+      label: "销售总金额",
+      type: "computed",
+      compute: (data) => {
+        return data.totalAmount ?? 0
+      },
+      group: "金额信息",
+    },
+    {
+      id: "totalAmountUsd",
+      label: "销售总金额(USD)",
+      type: "computed",
+      compute: (data) => {
+        return data.totalAmountUsd ?? 0
+      },
+      group: "金额信息",
+    },
+
+    // === 物流信息 (外销特有) ===
+    {
+      id: "priceTerms",
+      label: "价格条款",
+      type: "select",
+      options: [
+        { label: "FOB", value: "FOB" },
+        { label: "CIF", value: "CIF" },
+        { label: "CNF", value: "CNF" },
+      ],
+      group: "物流信息",
+    },
+    {
+      id: "departurePortName",
+      label: "出运口岸",
+      type: "text",
+      group: "物流信息",
+    },
+    {
+      id: "destinationPortName",
+      label: "目的口岸",
+      type: "text",
+      group: "物流信息",
+    },
+    {
+      id: "transportMethod",
+      label: "运输方式",
+      type: "select",
+      options: [
+        { label: "海运", value: "SEA" },
+        { label: "空运", value: "AIR" },
+      ],
+      group: "物流信息",
+    },
+    {
+      id: "customerDeliveryDate",
+      label: "客户交期",
+      type: "date",
+      required: true,
+      group: "物流信息",
+    },
+
+    // === 标识字段 ===
+    {
+      id: "isAgent",
+      label: "是否代理",
+      type: "checkbox",
+      defaultValue: false,
+      group: "标识字段",
+    },
+    {
+      id: "isBookingSpace",
+      label: "是否订舱",
+      type: "checkbox",
+      defaultValue: false,
+      group: "标识字段",
+    },
+    {
+      id: "isRepeatOrder",
+      label: "是否返单",
+      type: "checkbox",
+      defaultValue: false,
+      group: "标识字段",
+    },
+
+    // === 备注 ===
+    {
+      id: "remark",
+      label: "备注",
+      type: "textarea",
+      span: 4,
+      group: "备注信息",
+    },
+  ],
+  detailTables: [
+    {
+      id: "items",
+      label: "产品明细",
+      editable: true,
+      fields: [
+        {
+          id: "lineNumber",
+          label: "行号",
+          type: "number",
+          readOnly: true,
+        },
+        {
+          id: "productCode",
+          label: "产品编码",
+          type: "text",
+        },
+        {
+          id: "productName",
+          label: "产品名称",
+          type: "text",
+          required: true,
+        },
+        {
+          id: "quantity",
+          label: "数量",
+          type: "number",
+          required: true,
+        },
+        {
+          id: "unit",
+          label: "单位",
+          type: "select",
+          options: [
+            { label: "PCS", value: "PCS" },
+            { label: "SET", value: "SET" },
+          ],
+          defaultValue: "PCS",
+        },
+        {
+          id: "unitPrice",
+          label: "单价",
+          type: "number",
+          required: true,
+        },
+        {
+          id: "currency",
+          label: "币种",
+          type: "select",
+          options: [
+            { label: "USD", value: "USD" },
+            { label: "EUR", value: "EUR" },
+          ],
+          defaultValue: "USD",
+        },
+        {
+          id: "amount",
+          label: "金额",
+          type: "computed",
+          compute: (row) => {
+            const qty = (row.quantity as number) ?? 0
+            const price = (row.unitPrice as number) ?? 0
+            return qty * price
+          },
+        },
+        {
+          id: "deliveryDate",
+          label: "交期",
+          type: "date",
+        },
+      ],
+    },
+  ],
+}
+
+// ============================================================
+// 内销合同 (Domestic Sales Contract)
+// ============================================================
+
+export const domesticSalesContractSchema: DocumentSchema = {
+  typeId: "domestic_sales_contract",
+  typeName: "内销合同",
+  masterFields: [
+    // === 基本信息 ===
+    {
+      id: "code",
+      label: "合同编号",
+      type: "text",
+      readOnly: true,
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "internalCode",
+      label: "内部编号",
+      type: "text",
+      readOnly: true,
+      group: "基本信息",
+    },
+    {
+      id: "customerPoNo",
+      label: "客户PO号",
+      type: "text",
+      group: "基本信息",
+    },
+    {
+      id: "contractType",
+      label: "合同类型",
+      type: "select",
+      options: [
+        { label: "内销合同", value: "DOMESTIC" },
+      ],
+      defaultValue: "DOMESTIC",
+      readOnly: true,
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "status",
+      label: "合同状态",
+      type: "select",
+      options: [
+        { label: "草稿", value: "DRAFT" },
+        { label: "待审核", value: "PENDING" },
+        { label: "已审核", value: "APPROVED" },
+        { label: "执行中", value: "IN_PROGRESS" },
+        { label: "已完成", value: "COMPLETED" },
+        { label: "已取消", value: "CANCELLED" },
+      ],
+      defaultValue: "DRAFT",
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "approvalStatus",
+      label: "审核状态",
+      type: "select",
+      options: [
+        { label: "待审核", value: "PENDING" },
+        { label: "已审核", value: "APPROVED" },
+        { label: "已拒绝", value: "REJECTED" },
+      ],
+      defaultValue: "PENDING",
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "entryDate",
+      label: "录入日期",
+      type: "date",
+      group: "基本信息",
+    },
+
+    // === 客户信息 ===
+    {
+      id: "customerId",
+      label: "客户ID",
+      type: "text",
+      required: true,
+      group: "客户信息",
+    },
+    {
+      id: "customerCode",
+      label: "客户编号",
+      type: "text",
+      required: true,
+      group: "客户信息",
+    },
+    {
+      id: "customerName",
+      label: "客户名称",
+      type: "text",
+      group: "客户信息",
+    },
+    {
+      id: "deliveryAddress",
+      label: "送货地址",
+      type: "textarea",
+      span: 4,
+      group: "客户信息",
+    },
+
+    // === 人员信息 ===
+    {
+      id: "salesPerson",
+      label: "销售人员",
+      type: "text",
+      required: true,
+      group: "人员信息",
+    },
+    {
+      id: "merchandiser",
+      label: "跟单员",
+      type: "text",
+      group: "人员信息",
+    },
+
+    // === 金额信息 ===
+    {
+      id: "currency",
+      label: "交易币别",
+      type: "select",
+      options: [
+        { label: "CNY", value: "CNY" },
+        { label: "USD", value: "USD" },
+      ],
+      defaultValue: "CNY",
+      required: true,
+      group: "金额信息",
+    },
+    {
+      id: "totalAmount",
+      label: "销售总金额",
+      type: "computed",
+      compute: (data) => {
+        return data.totalAmount ?? 0
+      },
+      group: "金额信息",
+    },
+
+    // === 物流信息 (内销简化) ===
+    {
+      id: "transportMethod",
+      label: "运输方式",
+      type: "select",
+      options: [
+        { label: "陆运", value: "LAND" },
+        { label: "快递", value: "EXPRESS" },
+      ],
+      group: "物流信息",
+    },
+    {
+      id: "customerDeliveryDate",
+      label: "客户交期",
+      type: "date",
+      required: true,
+      group: "物流信息",
+    },
+
+    // === 标识字段 ===
+    {
+      id: "isRepeatOrder",
+      label: "是否返单",
+      type: "checkbox",
+      defaultValue: false,
+      group: "标识字段",
+    },
+
+    // === 备注 ===
+    {
+      id: "remark",
+      label: "备注",
+      type: "textarea",
+      span: 4,
+      group: "备注信息",
+    },
+  ],
+  detailTables: [
+    {
+      id: "items",
+      label: "产品明细",
+      editable: true,
+      fields: [
+        {
+          id: "lineNumber",
+          label: "行号",
+          type: "number",
+          readOnly: true,
+        },
+        {
+          id: "productCode",
+          label: "产品编码",
+          type: "text",
+        },
+        {
+          id: "productName",
+          label: "产品名称",
+          type: "text",
+          required: true,
+        },
+        {
+          id: "quantity",
+          label: "数量",
+          type: "number",
+          required: true,
+        },
+        {
+          id: "unit",
+          label: "单位",
+          type: "select",
+          options: [
+            { label: "PCS", value: "PCS" },
+            { label: "SET", value: "SET" },
+            { label: "KG", value: "KG" },
+          ],
+          defaultValue: "PCS",
+        },
+        {
+          id: "unitPrice",
+          label: "单价",
+          type: "number",
+          required: true,
+        },
+        {
+          id: "amount",
+          label: "金额",
+          type: "computed",
+          compute: (row) => {
+            const qty = (row.quantity as number) ?? 0
+            const price = (row.unitPrice as number) ?? 0
+            return qty * price
+          },
+        },
+        {
+          id: "deliveryDate",
+          label: "交期",
+          type: "date",
+        },
+      ],
+    },
+  ],
+}
+
+// ============================================================
+// 联营合同 (Joint Venture Sales Contract)
+// ============================================================
+
+export const jointVentureSalesContractSchema: DocumentSchema = {
+  typeId: "joint_venture_sales_contract",
+  typeName: "联营合同",
+  masterFields: [
+    // === 基本信息 ===
+    {
+      id: "code",
+      label: "合同编号",
+      type: "text",
+      readOnly: true,
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "internalCode",
+      label: "内部编号",
+      type: "text",
+      readOnly: true,
+      group: "基本信息",
+    },
+    {
+      id: "customerPoNo",
+      label: "客户PO号",
+      type: "text",
+      group: "基本信息",
+    },
+    {
+      id: "contractType",
+      label: "合同类型",
+      type: "select",
+      options: [
+        { label: "联营合同", value: "JOINT_VENTURE" },
+      ],
+      defaultValue: "JOINT_VENTURE",
+      readOnly: true,
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "status",
+      label: "合同状态",
+      type: "select",
+      options: [
+        { label: "草稿", value: "DRAFT" },
+        { label: "待审核", value: "PENDING" },
+        { label: "已审核", value: "APPROVED" },
+        { label: "执行中", value: "IN_PROGRESS" },
+        { label: "已完成", value: "COMPLETED" },
+        { label: "已取消", value: "CANCELLED" },
+      ],
+      defaultValue: "DRAFT",
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "approvalStatus",
+      label: "审核状态",
+      type: "select",
+      options: [
+        { label: "待审核", value: "PENDING" },
+        { label: "已审核", value: "APPROVED" },
+        { label: "已拒绝", value: "REJECTED" },
+      ],
+      defaultValue: "PENDING",
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "entryDate",
+      label: "录入日期",
+      type: "date",
+      group: "基本信息",
+    },
+
+    // === 合作方信息 ===
+    {
+      id: "customerId",
+      label: "合作方ID",
+      type: "text",
+      required: true,
+      group: "合作方信息",
+    },
+    {
+      id: "customerCode",
+      label: "合作方编号",
+      type: "text",
+      required: true,
+      group: "合作方信息",
+    },
+    {
+      id: "customerName",
+      label: "合作方名称",
+      type: "text",
+      group: "合作方信息",
+    },
+    {
+      id: "internalCustomerCode",
+      label: "内部合作方编号",
+      type: "text",
+      group: "合作方信息",
+    },
+    {
+      id: "internalCustomerName",
+      label: "内部合作方名称",
+      type: "text",
+      group: "合作方信息",
+    },
+
+    // === 人员信息 ===
+    {
+      id: "salesPerson",
+      label: "项目负责人",
+      type: "text",
+      required: true,
+      group: "人员信息",
+    },
+    {
+      id: "merchandiser",
+      label: "协调员",
+      type: "text",
+      group: "人员信息",
+    },
+
+    // === 金额分成信息 ===
+    {
+      id: "currency",
+      label: "结算币别",
+      type: "select",
+      options: [
+        { label: "CNY", value: "CNY" },
+        { label: "USD", value: "USD" },
+      ],
+      defaultValue: "CNY",
+      required: true,
+      group: "分成信息",
+    },
+    {
+      id: "totalAmount",
+      label: "合同总金额",
+      type: "computed",
+      compute: (data) => {
+        return data.totalAmount ?? 0
+      },
+      group: "分成信息",
+    },
+    {
+      id: "ourSharePercentage",
+      label: "我方分成比例(%)",
+      type: "number",
+      placeholder: "0-100",
+      group: "分成信息",
+    },
+    {
+      id: "partnerSharePercentage",
+      label: "合作方分成比例(%)",
+      type: "number",
+      placeholder: "0-100",
+      group: "分成信息",
+    },
+
+    // === 项目信息 ===
+    {
+      id: "projectName",
+      label: "项目名称",
+      type: "text",
+      group: "项目信息",
+    },
+    {
+      id: "projectStartDate",
+      label: "项目开始日期",
+      type: "date",
+      group: "项目信息",
+    },
+    {
+      id: "projectEndDate",
+      label: "项目结束日期",
+      type: "date",
+      group: "项目信息",
+    },
+
+    // === 标识字段 ===
+    {
+      id: "isRepeatOrder",
+      label: "是否续签",
+      type: "checkbox",
+      defaultValue: false,
+      group: "标识字段",
+    },
+
+    // === 备注 ===
+    {
+      id: "remark",
+      label: "合作条款",
+      type: "textarea",
+      span: 4,
+      group: "备注信息",
+    },
+  ],
+  detailTables: [
+    {
+      id: "items",
+      label: "合作项目明细",
+      editable: true,
+      fields: [
+        {
+          id: "lineNumber",
+          label: "行号",
+          type: "number",
+          readOnly: true,
+        },
+        {
+          id: "itemName",
+          label: "项目内容",
+          type: "text",
+          required: true,
+        },
+        {
+          id: "specification",
+          label: "规格要求",
+          type: "text",
+        },
+        {
+          id: "quantity",
+          label: "数量",
+          type: "number",
+          required: true,
+        },
+        {
+          id: "unit",
+          label: "单位",
+          type: "text",
+        },
+        {
+          id: "unitPrice",
+          label: "单价",
+          type: "number",
+          required: true,
+        },
+        {
+          id: "amount",
+          label: "金额",
+          type: "computed",
+          compute: (row) => {
+            const qty = (row.quantity as number) ?? 0
+            const price = (row.unitPrice as number) ?? 0
+            return qty * price
+          },
+        },
+        {
+          id: "deliveryDate",
+          label: "交付日期",
+          type: "date",
+        },
+      ],
+    },
+  ],
+}
+
+// 为三种新类型合同复用原有的变更规则
 
 // ============================================================
 // 变更规则

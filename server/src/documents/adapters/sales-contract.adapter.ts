@@ -14,6 +14,10 @@ export const salesContractAdapter: DocumentTypeAdapter = {
   parentForeignKey: 'salesContractId',
   itemRelationName: 'items',
 
+  // ---- 基础筛选条件 ----
+  // 根据 typeId 自动添加合同类型筛选
+  baseWhere: {},
+
   // ---- 搜索 ----
   searchFields: [
     'code',

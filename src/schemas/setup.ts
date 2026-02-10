@@ -9,6 +9,9 @@ import { registry } from "@/core/registry"
 import type { DocumentListActionConfig, DocumentFormActionConfig } from "@/core/types"
 import {
   salesContractSchema,
+  exportSalesContractSchema,
+  domesticSalesContractSchema,
+  jointVentureSalesContractSchema,
   salesContractChangeRule,
 } from "./sales-contract-schemas"
 import {
@@ -50,6 +53,66 @@ import {
 /** 销售合同 - 列表操作 */
 const salesContractActionConfig: DocumentListActionConfig = {
   typeId: "sales_contract",
+  rowActions: [
+    { id: "open", label: "打开" },
+    { id: "copy-id", label: "复制ID" },
+    {
+      id: "delete",
+      label: "删除",
+      danger: true,
+      modes: ["document"],
+      visible: (row) => row._status === "draft",
+      permission: "sales_contract:delete",
+    },
+  ],
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "sales_contract:create" },
+  ],
+}
+
+/** 外销合同 - 列表操作 */
+const exportSalesContractActionConfig: DocumentListActionConfig = {
+  typeId: "export_sales_contract",
+  rowActions: [
+    { id: "open", label: "打开" },
+    { id: "copy-id", label: "复制ID" },
+    {
+      id: "delete",
+      label: "删除",
+      danger: true,
+      modes: ["document"],
+      visible: (row) => row._status === "draft",
+      permission: "sales_contract:delete",
+    },
+  ],
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "sales_contract:create" },
+  ],
+}
+
+/** 内销合同 - 列表操作 */
+const domesticSalesContractActionConfig: DocumentListActionConfig = {
+  typeId: "domestic_sales_contract",
+  rowActions: [
+    { id: "open", label: "打开" },
+    { id: "copy-id", label: "复制ID" },
+    {
+      id: "delete",
+      label: "删除",
+      danger: true,
+      modes: ["document"],
+      visible: (row) => row._status === "draft",
+      permission: "sales_contract:delete",
+    },
+  ],
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "sales_contract:create" },
+  ],
+}
+
+/** 联营合同 - 列表操作 */
+const jointVentureSalesContractActionConfig: DocumentListActionConfig = {
+  typeId: "joint_venture_sales_contract",
   rowActions: [
     { id: "open", label: "打开" },
     { id: "copy-id", label: "复制ID" },
@@ -452,6 +515,9 @@ const logisticsFormActions = supplierFormActionsDef("logistics")
 export function setupSchemas(): void {
   // 注册单据 Schema
   registry.registerSchema(salesContractSchema)
+  registry.registerSchema(exportSalesContractSchema)
+  registry.registerSchema(domesticSalesContractSchema)
+  registry.registerSchema(jointVentureSalesContractSchema)
   registry.registerSchema(purchasePlanSchema)
   registry.registerSchema(purchaseContractSchema)
 
@@ -495,6 +561,9 @@ export function setupSchemas(): void {
 
   // 注册列表操作配置
   registry.registerActionConfig(salesContractActionConfig)
+  registry.registerActionConfig(exportSalesContractActionConfig)
+  registry.registerActionConfig(domesticSalesContractActionConfig)
+  registry.registerActionConfig(jointVentureSalesContractActionConfig)
   registry.registerActionConfig(purchasePlanActionConfig)
   registry.registerActionConfig(purchaseContractActionConfig)
   registry.registerActionConfig(standardProductActionConfig)

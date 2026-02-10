@@ -110,7 +110,7 @@ router.post('/', salesContractController.create);
  *         name: contractType
  *         schema:
  *           type: string
- *           enum: [STANDARD, SAMPLE, TRIAL, REPEAT]
+ *           enum: [EXPORT, DOMESTIC, JOINT_VENTURE]
  *         description: 合同类型
  *       - in: query
  *         name: startDate

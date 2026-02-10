@@ -936,10 +936,9 @@ enum SalesContractStatus {
 }
 
 enum SalesContractType {
-  STANDARD      // 标准合同
-  SAMPLE        // 样品合同
-  TRIAL         // 试单
-  REPEAT        // 返单
+  EXPORT        // 外销合同
+  DOMESTIC      // 内销合同
+  JOINT_VENTURE // 联营合同
 }
 
 enum PrintStatus {
@@ -1062,7 +1061,7 @@ model SalesContract {
 
   // 状态字段
   status                    SalesContractStatus @default(DRAFT) // 状态
-  contractType              SalesContractType   @default(STANDARD) @map("contract_type") // 销售合同类型
+  contractType              SalesContractType   @default(EXPORT) @map("contract_type") // 销售合同类型
   approvalStatus            ApprovalStatus      @default(PENDING) @map("approval_status") // 审核状态
   confirmStatus             ConfirmStatus       @default(NOT_CONFIRMED) @map("confirm_status") // 确认状态
   changeStatus              ChangeStatus?       @map("change_status") // 变更状态
@@ -1079,6 +1078,7 @@ model SalesContract {
   // 标识字段
   isAgent                   Boolean             @default(false) @map("is_agent") // 是否代理
   isBookingSpace            Boolean             @default(false) @map("is_booking_space") // 是否订舱
+  isRepeatOrder             Boolean             @default(false) @map("is_repeat_order") // 是否返单
   autoCreated               Boolean             @default(false) @map("auto_created") // 自动生成标识 0-否 1-是
   syncFlag                  String?             @map("sync_flag") // 同步标记
 
@@ -1095,12 +1095,6 @@ model SalesContract {
   // 流程
   processInstanceId         String?             @map("process_instance_id") // 流程实例的编号
 
-  // 变更管理
-  isChanged                 Boolean             @default(false) @map("is_changed")
-  changeDeleted             Boolean             @default(false) @map("change_deleted")
-  version                   Int                 @default(1)
-  impactScope               String?             @map("impact_scope")
-  processModelId            String?             @map("process_model_id")
 
   // 时间戳
   createdBy                 String?             @map("created_by")

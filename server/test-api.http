@@ -48,7 +48,7 @@ X-User-Id: {{userId}}
   "transportMethod": "SEA",
   "departurePortName": "上海港",
   "destinationPortName": "洛杉矶港",
-  "contractType": "STANDARD",
+  "contractType": "DOMESTIC",
   "items": [
     {
       "productName": "产品A",
@@ -228,7 +228,7 @@ X-User-Id: sales-rep-001
   "totalAmount": 100000.00,
   "salesPerson": "销售员A",
   "merchandiser": "跟单员B",
-  "contractType": "STANDARD",
+  "contractType": "JOINT_VENTURE",
   "status": "DRAFT",
   "items": [
     {
