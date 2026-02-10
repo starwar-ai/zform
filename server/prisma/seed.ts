@@ -1076,7 +1076,7 @@ async function main() {
     data: {
       title: '出运计划',
       icon: 'Ship',
-      path: '/type-list/shipment_plan',
+      path: '/type-list/shipping_plan',
       parentId: documentEntryMenu.id,
       orderNum: 1,
       menuType: 'menu',
@@ -1084,12 +1084,12 @@ async function main() {
     },
   });
 
-  // 出运明细菜单 - 移到单证入口下
-  const shipmentDetailMenu = await prisma.sysMenu.create({
+  // 出运单菜单 - 移到单证入口下
+  const shipmentOrderMenu = await prisma.sysMenu.create({
     data: {
-      title: '出运明细',
+      title: '出运单',
       icon: 'Package',
-      path: '/type-list/shipment_detail',
+      path: '/type-list/shipping_order',
       parentId: documentEntryMenu.id,
       orderNum: 2,
       menuType: 'menu',
@@ -1489,7 +1489,7 @@ async function main() {
     purchasePlanMenu.id,
     purchaseContractMenu.id,
     shipmentPlanMenu.id,
-    shipmentDetailMenu.id,
+    shipmentOrderMenu.id,
     dataEntryMenu.id,
     productManagementMenu.id,
     customerMenu.id,
@@ -1527,7 +1527,7 @@ async function main() {
     purchasePlanMenu.id,
     purchaseContractMenu.id,
     shipmentPlanMenu.id,
-    shipmentDetailMenu.id,
+    shipmentOrderMenu.id,
     dataEntryMenu.id,
     productManagementMenu.id,
     customerMenu.id,
@@ -1574,7 +1574,7 @@ async function main() {
     purchasePlanMenu.id,
     purchaseContractMenu.id,
     shipmentPlanMenu.id,
-    shipmentDetailMenu.id,
+    shipmentOrderMenu.id,
     dataEntryMenu.id,
     productManagementMenu.id,
     customerMenu.id,
