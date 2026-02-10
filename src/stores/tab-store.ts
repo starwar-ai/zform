@@ -19,6 +19,8 @@ export type TabType =
   | "supplier-management"
   | "sales-management"
   | "purchase-plan-management"
+  | "warehouse-management"
+  | "quality-management"
 
 // 标签数据结构
 export interface Tab {

@@ -17,6 +17,8 @@ import { ProductManagement } from "@/components/product-management"
 import { SupplierManagement } from "@/components/supplier-management"
 import { SalesContractManagement } from "@/components/sales-contract-management"
 import { PurchasePlanManagement } from "@/components/purchase-plan-management"
+import { WarehouseManagement } from "@/components/warehouse-management"
+import { QualityManagement } from "@/components/quality-management"
 import { DashboardHome } from "@/components/dashboard-home"
 
 export function TabContent() {
@@ -112,6 +114,12 @@ export function TabContent() {
 
       case "purchase-plan-management":
         return <PurchasePlanManagement />
+
+      case "warehouse-management":
+        return <WarehouseManagement />
+
+      case "quality-management":
+        return <QualityManagement />
 
       default:
         return (

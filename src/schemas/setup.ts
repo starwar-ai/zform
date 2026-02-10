@@ -29,6 +29,8 @@ import {
 } from "./product-schemas"
 import {
   purchasePlanSchema,
+  productPurchasePlanSchema,
+  packagingPurchasePlanSchema,
   salesContractToPurchasePlanRule,
   salesContractChangeToPurchasePlanRule,
   purchasePlanChangeRule,
@@ -133,6 +135,46 @@ const jointVentureSalesContractActionConfig: DocumentListActionConfig = {
 /** 采购计划 - 列表操作 */
 const purchasePlanActionConfig: DocumentListActionConfig = {
   typeId: "purchase_plan",
+  rowActions: [
+    { id: "open", label: "打开" },
+    { id: "copy-id", label: "复制ID" },
+    {
+      id: "delete",
+      label: "删除",
+      danger: true,
+      modes: ["document"],
+      visible: (row) => row._status === "draft",
+      permission: "purchase_plan:delete",
+    },
+  ],
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "purchase_plan:create" },
+  ],
+}
+
+/** 商品采购计划 - 列表操作 */
+const productPurchasePlanActionConfig: DocumentListActionConfig = {
+  typeId: "product_purchase_plan",
+  rowActions: [
+    { id: "open", label: "打开" },
+    { id: "copy-id", label: "复制ID" },
+    {
+      id: "delete",
+      label: "删除",
+      danger: true,
+      modes: ["document"],
+      visible: (row) => row._status === "draft",
+      permission: "purchase_plan:delete",
+    },
+  ],
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "purchase_plan:create" },
+  ],
+}
+
+/** 包材采购计划 - 列表操作 */
+const packagingPurchasePlanActionConfig: DocumentListActionConfig = {
+  typeId: "packaging_purchase_plan",
   rowActions: [
     { id: "open", label: "打开" },
     { id: "copy-id", label: "复制ID" },
@@ -352,6 +394,66 @@ const purchasePlanFormActions: DocumentFormActionConfig = {
   ],
 }
 
+/** 商品采购计划 - 表单操作 */
+const productPurchasePlanFormActions: DocumentFormActionConfig = {
+  typeId: "product_purchase_plan",
+  actions: [
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["draft"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["draft"], permission: "purchase_plan:submit", order: 2 },
+    {
+      id: "approve", label: "审批", icon: "Check", allowedStatuses: ["submitted"],
+      permission: "purchase_plan:approve", order: 3,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "reject", label: "拒绝", icon: "X", variant: "destructive", allowedStatuses: ["submitted"],
+      permission: "purchase_plan:approve", order: 4,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "withdraw", label: "撤回", icon: "Undo2", variant: "outline", allowedStatuses: ["submitted"], order: 5,
+      visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
+    },
+    { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["approved"], permission: "purchase_plan:close", order: 6 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["draft"], order: 7 },
+    { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["approved"], permission: "purchase_plan:void", order: 8 },
+    {
+      id: "push-down:0", label: "生成采购合同", icon: "ArrowDownToLine", variant: "outline",
+      allowedStatuses: ["approved"], permission: "purchase_plan:push_down", order: 10,
+    },
+  ],
+}
+
+/** 包材采购计划 - 表单操作 */
+const packagingPurchasePlanFormActions: DocumentFormActionConfig = {
+  typeId: "packaging_purchase_plan",
+  actions: [
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["draft"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["draft"], permission: "purchase_plan:submit", order: 2 },
+    {
+      id: "approve", label: "审批", icon: "Check", allowedStatuses: ["submitted"],
+      permission: "purchase_plan:approve", order: 3,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "reject", label: "拒绝", icon: "X", variant: "destructive", allowedStatuses: ["submitted"],
+      permission: "purchase_plan:approve", order: 4,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "withdraw", label: "撤回", icon: "Undo2", variant: "outline", allowedStatuses: ["submitted"], order: 5,
+      visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
+    },
+    { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["approved"], permission: "purchase_plan:close", order: 6 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["draft"], order: 7 },
+    { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["approved"], permission: "purchase_plan:void", order: 8 },
+    {
+      id: "push-down:0", label: "生成采购合同", icon: "ArrowDownToLine", variant: "outline",
+      allowedStatuses: ["approved"], permission: "purchase_plan:push_down", order: 10,
+    },
+  ],
+}
+
 /** 采购合同 - 表单操作 */
 const purchaseContractFormActions: DocumentFormActionConfig = {
   typeId: "purchase_contract",
@@ -519,6 +621,8 @@ export function setupSchemas(): void {
   registry.registerSchema(domesticSalesContractSchema)
   registry.registerSchema(jointVentureSalesContractSchema)
   registry.registerSchema(purchasePlanSchema)
+  registry.registerSchema(productPurchasePlanSchema)
+  registry.registerSchema(packagingPurchasePlanSchema)
   registry.registerSchema(purchaseContractSchema)
 
   // 注册产品 Schema
@@ -565,6 +669,8 @@ export function setupSchemas(): void {
   registry.registerActionConfig(domesticSalesContractActionConfig)
   registry.registerActionConfig(jointVentureSalesContractActionConfig)
   registry.registerActionConfig(purchasePlanActionConfig)
+  registry.registerActionConfig(productPurchasePlanActionConfig)
+  registry.registerActionConfig(packagingPurchasePlanActionConfig)
   registry.registerActionConfig(purchaseContractActionConfig)
   registry.registerActionConfig(standardProductActionConfig)
   registry.registerActionConfig(customerProductActionConfig)
@@ -577,6 +683,8 @@ export function setupSchemas(): void {
   // 注册表单操作配置
   registry.registerFormActionConfig(salesContractFormActions)
   registry.registerFormActionConfig(purchasePlanFormActions)
+  registry.registerFormActionConfig(productPurchasePlanFormActions)
+  registry.registerFormActionConfig(packagingPurchasePlanFormActions)
   registry.registerFormActionConfig(purchaseContractFormActions)
   registry.registerFormActionConfig(standardProductFormActions)
   registry.registerFormActionConfig(customerProductFormActions)

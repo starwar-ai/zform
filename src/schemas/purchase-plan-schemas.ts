@@ -499,6 +499,649 @@ export const purchasePlanSchema: DocumentSchema = {
 }
 
 // ============================================================
+// 商品采购计划 (Product Purchase Plan)
+// ============================================================
+
+export const productPurchasePlanSchema: DocumentSchema = {
+  typeId: "product_purchase_plan",
+  typeName: "商品采购计划",
+  masterFields: [
+    // === 基本信息 ===
+    {
+      id: "code",
+      label: "计划编号",
+      type: "text",
+      readOnly: true,
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "planDate",
+      label: "计划日期",
+      type: "date",
+      required: true,
+      defaultValue: new Date().toISOString().split("T")[0],
+      group: "基本信息",
+    },
+    {
+      id: "expectedDeliveryDate",
+      label: "预计交期",
+      type: "date",
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "planStatus",
+      label: "计划状态",
+      type: "select",
+      options: [
+        { label: "草稿", value: "DRAFT" },
+        { label: "待审核", value: "PENDING" },
+        { label: "已审核", value: "APPROVED" },
+        { label: "执行中", value: "IN_PROGRESS" },
+        { label: "已完成", value: "COMPLETED" },
+        { label: "已结案", value: "CLOSED" },
+        { label: "已取消", value: "CANCELLED" },
+      ],
+      defaultValue: "DRAFT",
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "approvalStatus",
+      label: "审核状态",
+      type: "select",
+      options: [
+        { label: "待审核", value: "PENDING" },
+        { label: "已审核", value: "APPROVED" },
+        { label: "已拒绝", value: "REJECTED" },
+      ],
+      defaultValue: "PENDING",
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "purchaseType",
+      label: "采购类型",
+      type: "select",
+      options: [
+        { label: "商品采购", value: "PRODUCT" },
+      ],
+      defaultValue: "PRODUCT",
+      readOnly: true,
+      required: true,
+      group: "基本信息",
+    },
+
+    // === 来源信息 ===
+    {
+      id: "sourceType",
+      label: "来源单类型",
+      type: "select",
+      options: [
+        { label: "销售合同", value: "SALES_CONTRACT" },
+        { label: "采购计划", value: "PURCHASE_PLAN" },
+        { label: "其他", value: "OTHER" },
+      ],
+      readOnly: true,
+      group: "来源信息",
+    },
+    {
+      id: "salesContractId",
+      label: "销售合同主键",
+      type: "text",
+      readOnly: true,
+      group: "来源信息",
+    },
+    {
+      id: "salesContractCode",
+      label: "销售合同编号",
+      type: "text",
+      readOnly: true,
+      group: "来源信息",
+    },
+    {
+      id: "orderLinkCode",
+      label: "订单链路编号",
+      type: "text",
+      readOnly: true,
+      group: "来源信息",
+    },
+
+    // === 客户信息 ===
+    {
+      id: "customerId",
+      label: "客户ID",
+      type: "text",
+      readOnly: true,
+      group: "客户信息",
+    },
+    {
+      id: "customerCode",
+      label: "客户编号",
+      type: "text",
+      readOnly: true,
+      group: "客户信息",
+    },
+
+    // === 采购主体与人员 ===
+    {
+      id: "purchasingEntity",
+      label: "采购主体",
+      type: "text",
+      placeholder: "选择采购主体",
+      group: "采购信息",
+    },
+    {
+      id: "buyer",
+      label: "采购员",
+      type: "text",
+      placeholder: "选择采购员",
+      group: "采购信息",
+    },
+    {
+      id: "salesPerson",
+      label: "业务员",
+      type: "text",
+      readOnly: true,
+      group: "采购信息",
+    },
+    {
+      id: "merchandiser",
+      label: "跟单员",
+      type: "text",
+      placeholder: "选择跟单员",
+      group: "采购信息",
+    },
+
+    // === 备注 ===
+    {
+      id: "remark",
+      label: "备注",
+      type: "textarea",
+      span: 4,
+      group: "备注信息",
+    },
+  ],
+  detailTables: [
+    {
+      id: "items",
+      label: "商品采购明细",
+      editable: true,
+      fields: [
+        {
+          id: "lineNumber",
+          label: "序号",
+          type: "number",
+          readOnly: true,
+        },
+        {
+          id: "productId",
+          label: "产品ID",
+          type: "text",
+          required: true,
+        },
+        {
+          id: "productCode",
+          label: "SKU编号",
+          type: "text",
+          required: true,
+        },
+        {
+          id: "productName",
+          label: "产品名称",
+          type: "text",
+          required: true,
+        },
+        {
+          id: "barcode",
+          label: "条形码",
+          type: "text",
+        },
+        {
+          id: "customerProductNo",
+          label: "客户货号",
+          type: "text",
+        },
+        {
+          id: "specification",
+          label: "规格",
+          type: "text",
+        },
+        {
+          id: "salesQuantity",
+          label: "销售数量",
+          type: "number",
+          readOnly: true,
+        },
+        {
+          id: "purchaseQuantity",
+          label: "采购数量",
+          type: "number",
+          required: true,
+        },
+        {
+          id: "pendingQuantity",
+          label: "待采购数量",
+          type: "number",
+          readOnly: true,
+        },
+        {
+          id: "convertedQuantity",
+          label: "已转合同数量",
+          type: "number",
+          readOnly: true,
+          defaultValue: 0,
+        },
+        {
+          id: "supplierId",
+          label: "供应商ID",
+          type: "text",
+        },
+        {
+          id: "supplierCode",
+          label: "供应商编号",
+          type: "text",
+        },
+        {
+          id: "supplierName",
+          label: "供应商名称",
+          type: "text",
+        },
+        {
+          id: "unitPrice",
+          label: "采购单价",
+          type: "number",
+          required: true,
+        },
+        {
+          id: "totalAmount",
+          label: "总价",
+          type: "computed",
+          compute: (row) => {
+            const qty = (row.purchaseQuantity as number) ?? 0
+            const price = (row.unitPrice as number) ?? 0
+            return qty * price
+          },
+        },
+        {
+          id: "taxRate",
+          label: "税率(%)",
+          type: "number",
+          defaultValue: 0,
+        },
+        {
+          id: "currency",
+          label: "币种",
+          type: "select",
+          options: [
+            { label: "CNY", value: "CNY" },
+            { label: "USD", value: "USD" },
+            { label: "EUR", value: "EUR" },
+          ],
+          defaultValue: "CNY",
+        },
+        {
+          id: "deliveryDate",
+          label: "交货日期",
+          type: "date",
+        },
+        {
+          id: "purchaseType",
+          label: "采购类型",
+          type: "select",
+          options: [
+            { label: "商品采购", value: "PRODUCT" },
+          ],
+          defaultValue: "PRODUCT",
+          readOnly: true,
+        },
+        {
+          id: "purchaseMode",
+          label: "采购模式",
+          type: "select",
+          options: [
+            { label: "订单采购", value: "ORDER" },
+            { label: "库存采购", value: "INVENTORY" },
+            { label: "寄售", value: "CONSIGNMENT" },
+          ],
+        },
+        {
+          id: "isSelfBrand",
+          label: "是否自主品牌",
+          type: "checkbox",
+          defaultValue: false,
+        },
+        {
+          id: "isGift",
+          label: "是否赠品",
+          type: "checkbox",
+          defaultValue: false,
+        },
+        {
+          id: "remark",
+          label: "备注",
+          type: "text",
+        },
+      ],
+    },
+  ],
+}
+
+// ============================================================
+// 包材采购计划 (Packaging Purchase Plan)
+// ============================================================
+
+export const packagingPurchasePlanSchema: DocumentSchema = {
+  typeId: "packaging_purchase_plan",
+  typeName: "包材采购计划",
+  masterFields: [
+    // === 基本信息 ===
+    {
+      id: "code",
+      label: "计划编号",
+      type: "text",
+      readOnly: true,
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "planDate",
+      label: "计划日期",
+      type: "date",
+      required: true,
+      defaultValue: new Date().toISOString().split("T")[0],
+      group: "基本信息",
+    },
+    {
+      id: "expectedDeliveryDate",
+      label: "预计交期",
+      type: "date",
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "planStatus",
+      label: "计划状态",
+      type: "select",
+      options: [
+        { label: "草稿", value: "DRAFT" },
+        { label: "待审核", value: "PENDING" },
+        { label: "已审核", value: "APPROVED" },
+        { label: "执行中", value: "IN_PROGRESS" },
+        { label: "已完成", value: "COMPLETED" },
+        { label: "已结案", value: "CLOSED" },
+        { label: "已取消", value: "CANCELLED" },
+      ],
+      defaultValue: "DRAFT",
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "approvalStatus",
+      label: "审核状态",
+      type: "select",
+      options: [
+        { label: "待审核", value: "PENDING" },
+        { label: "已审核", value: "APPROVED" },
+        { label: "已拒绝", value: "REJECTED" },
+      ],
+      defaultValue: "PENDING",
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "purchaseType",
+      label: "采购类型",
+      type: "select",
+      options: [
+        { label: "包材采购", value: "PACKAGING" },
+      ],
+      defaultValue: "PACKAGING",
+      readOnly: true,
+      required: true,
+      group: "基本信息",
+    },
+
+    // === 来源信息 ===
+    {
+      id: "sourceType",
+      label: "来源单类型",
+      type: "select",
+      options: [
+        { label: "销售合同", value: "SALES_CONTRACT" },
+        { label: "采购计划", value: "PURCHASE_PLAN" },
+        { label: "其他", value: "OTHER" },
+      ],
+      readOnly: true,
+      group: "来源信息",
+    },
+    {
+      id: "salesContractId",
+      label: "销售合同主键",
+      type: "text",
+      readOnly: true,
+      group: "来源信息",
+    },
+    {
+      id: "salesContractCode",
+      label: "销售合同编号",
+      type: "text",
+      readOnly: true,
+      group: "来源信息",
+    },
+    {
+      id: "orderLinkCode",
+      label: "订单链路编号",
+      type: "text",
+      readOnly: true,
+      group: "来源信息",
+    },
+
+    // === 客户信息 ===
+    {
+      id: "customerId",
+      label: "客户ID",
+      type: "text",
+      readOnly: true,
+      group: "客户信息",
+    },
+    {
+      id: "customerCode",
+      label: "客户编号",
+      type: "text",
+      readOnly: true,
+      group: "客户信息",
+    },
+
+    // === 采购主体与人员 ===
+    {
+      id: "purchasingEntity",
+      label: "采购主体",
+      type: "text",
+      placeholder: "选择采购主体",
+      group: "采购信息",
+    },
+    {
+      id: "buyer",
+      label: "采购员",
+      type: "text",
+      placeholder: "选择采购员",
+      group: "采购信息",
+    },
+    {
+      id: "salesPerson",
+      label: "业务员",
+      type: "text",
+      readOnly: true,
+      group: "采购信息",
+    },
+    {
+      id: "merchandiser",
+      label: "跟单员",
+      type: "text",
+      placeholder: "选择跟单员",
+      group: "采购信息",
+    },
+
+    // === 备注 ===
+    {
+      id: "remark",
+      label: "备注",
+      type: "textarea",
+      span: 4,
+      group: "备注信息",
+    },
+  ],
+  detailTables: [
+    {
+      id: "items",
+      label: "包材采购明细",
+      editable: true,
+      fields: [
+        {
+          id: "lineNumber",
+          label: "序号",
+          type: "number",
+          readOnly: true,
+        },
+        {
+          id: "productId",
+          label: "包材ID",
+          type: "text",
+          required: true,
+        },
+        {
+          id: "productCode",
+          label: "包材编号",
+          type: "text",
+          required: true,
+        },
+        {
+          id: "productName",
+          label: "包材名称",
+          type: "text",
+          required: true,
+        },
+        {
+          id: "barcode",
+          label: "条形码",
+          type: "text",
+        },
+        {
+          id: "specification",
+          label: "规格",
+          type: "text",
+        },
+        {
+          id: "purchaseQuantity",
+          label: "采购数量",
+          type: "number",
+          required: true,
+        },
+        {
+          id: "pendingQuantity",
+          label: "待采购数量",
+          type: "number",
+          readOnly: true,
+        },
+        {
+          id: "convertedQuantity",
+          label: "已转合同数量",
+          type: "number",
+          readOnly: true,
+          defaultValue: 0,
+        },
+        {
+          id: "supplierId",
+          label: "供应商ID",
+          type: "text",
+        },
+        {
+          id: "supplierCode",
+          label: "供应商编号",
+          type: "text",
+        },
+          {
+          id: "supplierName",
+          label: "供应商名称",
+          type: "text",
+        },
+        {
+          id: "unitPrice",
+          label: "采购单价",
+          type: "number",
+          required: true,
+        },
+        {
+          id: "totalAmount",
+          label: "总价",
+          type: "computed",
+          compute: (row) => {
+            const qty = (row.purchaseQuantity as number) ?? 0
+            const price = (row.unitPrice as number) ?? 0
+            return qty * price
+          },
+        },
+        {
+          id: "taxRate",
+          label: "税率(%)",
+          type: "number",
+          defaultValue: 0,
+        },
+        {
+          id: "currency",
+          label: "币种",
+          type: "select",
+          options: [
+            { label: "CNY", value: "CNY" },
+            { label: "USD", value: "USD" },
+            { label: "EUR", value: "EUR" },
+          ],
+          defaultValue: "CNY",
+        },
+        {
+          id: "deliveryDate",
+          label: "交货日期",
+          type: "date",
+        },
+        {
+          id: "purchaseType",
+          label: "采购类型",
+          type: "select",
+          options: [
+            { label: "包材采购", value: "PACKAGING" },
+          ],
+          defaultValue: "PACKAGING",
+          readOnly: true,
+        },
+        {
+          id: "packageMethod",
+          label: "包装方式",
+          type: "text",
+        },
+        {
+          id: "packagePrice",
+          label: "包装价",
+          type: "number",
+        },
+        {
+          id: "isCommonAccessory",
+          label: "是否通用辅料",
+          type: "checkbox",
+          defaultValue: false,
+        },
+        {
+          id: "remark",
+          label: "备注",
+          type: "text",
+        },
+      ],
+    },
+  ],
+}
+
+// ============================================================
 // 下推规则
 // ============================================================
 

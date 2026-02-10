@@ -20,15 +20,15 @@ export function PurchasePlanManagement() {
     openTab("document-form", { docId, typeId }, `单据 ${docId}`)
   }
 
-  // 根据当前tab设置默认筛选条件
-  const getDefaultFilters = () => {
+  // 根据当前tab获取对应的typeId
+  const getTypeId = (): string => {
     switch (activeTab) {
       case "product_purchase":
-        return [{ columnId: "purchaseType", operator: "eq" as const, value: "PRODUCT" }]
+        return "product_purchase_plan"
       case "packaging_purchase":
-        return [{ columnId: "purchaseType", operator: "eq" as const, value: "PACKAGING" }]
+        return "packaging_purchase_plan"
       default:
-        return []
+        return "purchase_plan"
     }
   }
 
@@ -44,9 +44,8 @@ export function PurchasePlanManagement() {
 
       {/* 当前采购计划列表 */}
       <DocumentListTable 
-        typeId="purchase_plan" 
+        typeId={getTypeId()} 
         onOpenDocument={handleOpenDocument} 
-        defaultFilters={getDefaultFilters()}
       />
     </div>
   )

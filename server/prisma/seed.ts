@@ -1123,6 +1123,32 @@ async function main() {
     },
   });
 
+  // 仓库管理菜单
+  const warehouseMenu = await prisma.sysMenu.create({
+    data: {
+      title: '仓库管理',
+      icon: 'Package',
+      path: '/warehouse-management',
+      parentId: businessEntryMenu.id,
+      orderNum: 9,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  // 质检管理菜单
+  const qualityMenu = await prisma.sysMenu.create({
+    data: {
+      title: '质检管理',
+      icon: 'ClipboardList',
+      path: '/quality-management',
+      parentId: businessEntryMenu.id,
+      orderNum: 10,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
   // ---- 按钮级权限菜单 (menuType = 'button') ----
   // 这些不会在侧边栏显示，仅用于权限标识
 
@@ -1191,6 +1217,18 @@ async function main() {
   const custProductBtnIds = await createDocPermButtons(productManagementMenu.id, 'customer_product', basicDocActions);
   const selfProductBtnIds = await createDocPermButtons(productManagementMenu.id, 'self_owned_product', basicDocActions);
 
+  // 仓库管理按钮权限
+  const warehouseBtnIds = await createDocPermButtons(warehouseMenu.id, 'warehouse', [
+    ...basicDocActions,
+    { perm: 'close', title: '关闭' },
+  ]);
+
+  // 质检管理按钮权限
+  const qualityBtnIds = await createDocPermButtons(qualityMenu.id, 'quality', [
+    ...basicDocActions,
+    { perm: 'close', title: '关闭' },
+  ]);
+
   // 所有按钮权限 ID 汇总
   const allBtnIds = [
     ...salesContractBtnIds,
@@ -1201,6 +1239,8 @@ async function main() {
     ...stdProductBtnIds,
     ...custProductBtnIds,
     ...selfProductBtnIds,
+    ...warehouseBtnIds,
+    ...qualityBtnIds,
   ];
 
   // 顶级菜单：系统管理
@@ -1349,6 +1389,8 @@ async function main() {
     productManagementMenu.id,
     customerMenu.id,
     supplierMenu.id,
+    warehouseMenu.id,
+    qualityMenu.id,
     sysMenu.id,
     userMgmtMenu.id,
     roleMgmtMenu.id,
@@ -1379,6 +1421,8 @@ async function main() {
     productManagementMenu.id,
     customerMenu.id,
     supplierMenu.id,
+    warehouseMenu.id,
+    qualityMenu.id,
     ...allBtnIds,
   ];
 
@@ -1400,6 +1444,8 @@ async function main() {
     ...stdProductBtnIds.slice(0, 3),
     ...custProductBtnIds.slice(0, 3),
     ...selfProductBtnIds.slice(0, 3),
+    ...warehouseBtnIds.slice(0, 3),
+    ...qualityBtnIds.slice(0, 3),
   ];
 
   const userMenuIds = [
@@ -1412,6 +1458,8 @@ async function main() {
     productManagementMenu.id,
     customerMenu.id,
     supplierMenu.id,
+    warehouseMenu.id,
+    qualityMenu.id,
     oaEntryMenu.id,
     ...userBtnIds,
   ];
@@ -1434,11 +1482,12 @@ async function main() {
   console.log(`Users: admin (password: admin123, dept: ${techDept.code}), demo (password: 123456, dept: ${salesDept.code})`);
   console.log(`Menus: ${allMenuIds.length} menus (incl. ${allBtnIds.length} button permissions)`);
   console.log(`System management menus: ${userMgmtMenu.title}, ${roleMgmtMenu.title}, ${menuMgmtMenu.title}, ${deptMgmtMenu.title}, ${categoryMgmtMenu.title}, ${businessConfigMenu.title}`);
+  console.log(`Warehouse & Quality menus: ${warehouseMenu.title}, ${qualityMenu.title}`);
   console.log(`Data permissions: admin=all, manager=department, user=personal`);
   console.log(`Customer categories: ${customerCategoryA.code} (${customerCategoryA1.code}, ${customerCategoryA2.code}), ${customerCategoryB.code} (${customerCategoryB1.code}), ${customerCategoryC.code}`);
   console.log(`Product categories (HsCode): ${hsCodeElectronics.code} -> ${hsCodePhoneAccessories.code} -> ${hsCodePhoneCase.code}, ${hsCodePlastic.code} -> ${hsCodePlasticPackaging.code}`);
   console.log(`Exhibition categories: ${exhibitionCategory1.name}, ${exhibitionCategory2.name}, ${exhibitionCategory3.name}, ${exhibitionCategory4.name}, ${exhibitionCategory5.name}`);
-  console.log(`Customer source tags: ${customerSourceTags.map((tag) => tag.name).join(', ')}`);
+  console.log(`Customer source tags: ${customerSourceTags.map((tag: {name: string}) => tag.name).join(', ')}`);
 
   // ==================== 业务实体管理 Seed ====================
 
