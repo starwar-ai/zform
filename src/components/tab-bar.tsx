@@ -19,6 +19,7 @@ import {
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { TabContextMenu } from "./tab-context-menu"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface SortableTabProps {
   tab: Tab
@@ -30,17 +31,26 @@ interface SortableTabProps {
 function PinnedTab({ tab, isActive, onSwitch }: Omit<SortableTabProps, "onClose">) {
   return (
     <TabContextMenu tabId={tab.id}>
-      <div
-        className={cn(
-          "relative flex items-center gap-2 rounded-t-md border border-b-0 px-4 py-2 text-sm transition-colors cursor-pointer shrink-0",
-          isActive
-            ? "bg-background border-primary text-foreground"
-            : "bg-muted border-transparent text-muted-foreground hover:bg-muted/80"
-        )}
-        onClick={onSwitch}
-      >
-        <span className="truncate">{tab.title}</span>
-      </div>
+      <TooltipProvider delayDuration={300}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div
+              className={cn(
+                "relative flex items-center gap-2 rounded-t-md border border-b-0 px-4 py-2 text-sm transition-colors cursor-pointer shrink-0",
+                isActive
+                  ? "bg-background border-primary text-foreground"
+                  : "bg-muted border-transparent text-muted-foreground hover:bg-muted/80"
+              )}
+              onClick={onSwitch}
+            >
+              <span className="truncate">{tab.title}</span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="top" sideOffset={8}>
+            <p>{tab.title}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </TabContextMenu>
   )
 }
@@ -62,37 +72,46 @@ function SortableTab({ tab, isActive, onSwitch, onClose }: SortableTabProps) {
 
   return (
     <TabContextMenu tabId={tab.id}>
-      <div
-        ref={setNodeRef}
-        style={style}
-        className={cn(
-          "relative flex items-center gap-2 rounded-t-md border border-b-0 px-4 py-2 text-sm transition-colors cursor-pointer min-w-0",
-          isActive
-            ? "bg-background border-primary text-foreground"
-            : "bg-muted border-transparent text-muted-foreground hover:bg-muted/80",
-          isDragging && "opacity-50"
-        )}
-        {...attributes}
-        {...listeners}
-        onClick={onSwitch}
-      >
-        <span className="truncate">
-          {tab.title}
-        </span>
-        {tab.closable && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-4 w-4 shrink-0 p-0 hover:bg-transparent"
-            onClick={(e) => {
-              e.stopPropagation()
-              onClose()
-            }}
-          >
-            <X className="h-3 w-3" />
-          </Button>
-        )}
-      </div>
+      <TooltipProvider delayDuration={300}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div
+              ref={setNodeRef}
+              style={style}
+              className={cn(
+                "relative flex items-center gap-2 rounded-t-md border border-b-0 px-4 py-2 text-sm transition-colors cursor-pointer min-w-0",
+                isActive
+                  ? "bg-background border-primary text-foreground"
+                  : "bg-muted border-transparent text-muted-foreground hover:bg-muted/80",
+                isDragging && "opacity-50"
+              )}
+              {...attributes}
+              {...listeners}
+              onClick={onSwitch}
+            >
+              <span className="truncate">
+                {tab.title}
+              </span>
+              {tab.closable && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-4 w-4 shrink-0 p-0 hover:bg-transparent"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onClose()
+                  }}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="top" sideOffset={8}>
+            <p>{tab.title}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </TabContextMenu>
   )
 }

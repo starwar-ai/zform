@@ -22,6 +22,8 @@ import { warehouseOutboundAdapter } from './warehouse-outbound.adapter';
 import { warehouseInboundNoticeAdapter } from './warehouse-inbound-notice.adapter';
 import { warehouseOutboundNoticeAdapter } from './warehouse-outbound-notice.adapter';
 import { exchangeSettlementAdapter } from './exchange-settlement.adapter';
+import { invoicingNoticeAdapter } from './invoicing-notice.adapter';
+import { paymentApplyAdapter } from './payment-apply.adapter';
 
 export function registerAllAdapters(): void {
   // 销售合同
@@ -48,6 +50,12 @@ export function registerAllAdapters(): void {
 
   // 结汇单
   documentTypeRegistry.register(exchangeSettlementAdapter);
+
+  // 开票通知
+  documentTypeRegistry.register(invoicingNoticeAdapter);
+
+  // 付款申请
+  documentTypeRegistry.register(paymentApplyAdapter);
 
   console.log(
     `[DocumentTypeRegistry] Registered ${documentTypeRegistry.getAllTypeIds().length} adapters:`,

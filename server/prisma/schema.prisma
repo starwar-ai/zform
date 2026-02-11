@@ -4063,7 +4063,7 @@ enum PaymentApplyType {
   OTHER
 }
 
-enum PaymentStatus {
+enum PaymentApplyPaymentStatus {
   UNPAID
   PARTIAL
   PAID
@@ -4132,7 +4132,7 @@ model PaymentApply {
   supplierBankContact String? @map("supplier_bank_contact") // 供应商开户行联系人
 
   // 状态信息
-  paymentStatus PaymentStatus @default(UNPAID) @map("payment_status") // 支付状态
+  paymentStatus PaymentApplyPaymentStatus @default(UNPAID) @map("payment_status") // 支付状态
   printStatus   String?       @map("print_status") // 打印状态
 
   // 备注与附件

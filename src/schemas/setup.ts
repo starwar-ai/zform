@@ -84,6 +84,14 @@ import {
   exchangeSettlementSchema,
   exchangeSettlementChangeRule,
 } from "./exchange-settlement-schemas"
+import {
+  invoicingNoticeSchema,
+  invoicingNoticeChangeRule,
+} from "./invoicing-notice-schemas"
+import {
+  paymentApplySchema,
+  paymentApplyChangeRule,
+} from "./payment-apply-schemas"
 
 // ============================================================
 // 单据列表操作配置
@@ -547,6 +555,46 @@ const exchangeSettlementActionConfig: DocumentListActionConfig = {
   ],
 }
 
+/** 开票通知 - 列表操作 */
+const invoicingNoticeActionConfig: DocumentListActionConfig = {
+  typeId: "invoicing_notice",
+  rowActions: [
+    { id: "open", label: "打开" },
+    { id: "copy-id", label: "复制ID" },
+    {
+      id: "delete",
+      label: "删除",
+      danger: true,
+      modes: ["document"],
+      visible: (row) => row._status === "draft",
+      permission: "invoicing_notice:delete",
+    },
+  ],
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "invoicing_notice:create" },
+  ],
+}
+
+/** 付款申请 - 列表操作 */
+const paymentApplyActionConfig: DocumentListActionConfig = {
+  typeId: "payment_apply",
+  rowActions: [
+    { id: "open", label: "打开" },
+    { id: "copy-id", label: "复制ID" },
+    {
+      id: "delete",
+      label: "删除",
+      danger: true,
+      modes: ["document"],
+      visible: (row) => row._status === "draft",
+      permission: "payment_apply:delete",
+    },
+  ],
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "payment_apply:create" },
+  ],
+}
+
 /** 仓库单据通用行操作 */
 const warehouseRowActions = (typeId: string) => [
   { id: "open", label: "打开" },
@@ -933,6 +981,58 @@ const exchangeSettlementFormActions: DocumentFormActionConfig = {
   ],
 }
 
+/** 开票通知 - 表单操作 */
+const invoicingNoticeFormActions: DocumentFormActionConfig = {
+  typeId: "invoicing_notice",
+  actions: [
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["draft"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["draft"], permission: "invoicing_notice:submit", order: 2 },
+    {
+      id: "approve", label: "审批", icon: "Check", allowedStatuses: ["submitted"],
+      permission: "invoicing_notice:approve", order: 3,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "reject", label: "拒绝", icon: "X", variant: "destructive", allowedStatuses: ["submitted"],
+      permission: "invoicing_notice:approve", order: 4,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "withdraw", label: "撤回", icon: "Undo2", variant: "outline", allowedStatuses: ["submitted"], order: 5,
+      visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
+    },
+    { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["approved"], permission: "invoicing_notice:close", order: 6 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["draft"], order: 7 },
+    { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["approved"], permission: "invoicing_notice:void", order: 8 },
+  ],
+}
+
+/** 付款申请 - 表单操作 */
+const paymentApplyFormActions: DocumentFormActionConfig = {
+  typeId: "payment_apply",
+  actions: [
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["draft"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["draft"], permission: "payment_apply:submit", order: 2 },
+    {
+      id: "approve", label: "审批", icon: "Check", allowedStatuses: ["submitted"],
+      permission: "payment_apply:approve", order: 3,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "reject", label: "拒绝", icon: "X", variant: "destructive", allowedStatuses: ["submitted"],
+      permission: "payment_apply:approve", order: 4,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "withdraw", label: "撤回", icon: "Undo2", variant: "outline", allowedStatuses: ["submitted"], order: 5,
+      visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
+    },
+    { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["approved"], permission: "payment_apply:close", order: 6 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["draft"], order: 7 },
+    { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["approved"], permission: "payment_apply:void", order: 8 },
+  ],
+}
+
 /** 验货单 - 表单操作 */
 const inspectionOrderFormActions: DocumentFormActionConfig = {
   typeId: "inspection_order",
@@ -1166,6 +1266,12 @@ export function setupSchemas(): void {
   // 注册结汇单 Schema
   registry.registerSchema(exchangeSettlementSchema)
 
+  // 注册开票通知 Schema
+  registry.registerSchema(invoicingNoticeSchema)
+
+  // 注册付款申请 Schema
+  registry.registerSchema(paymentApplySchema)
+
   // 注册采购流程下推规则
   registry.registerPushDownRule(salesContractToPurchasePlanRule)
   registry.registerPushDownRule(purchasePlanToPurchaseContractRule)
@@ -1211,6 +1317,12 @@ export function setupSchemas(): void {
   // 注册结汇单变更规则
   registry.registerChangeRule(exchangeSettlementChangeRule)
 
+  // 注册开票通知变更规则
+  registry.registerChangeRule(invoicingNoticeChangeRule)
+
+  // 注册付款申请变更规则
+  registry.registerChangeRule(paymentApplyChangeRule)
+
   // 注册列表操作配置
   registry.registerActionConfig(salesContractActionConfig)
   registry.registerActionConfig(exportSalesContractActionConfig)
@@ -1240,6 +1352,8 @@ export function setupSchemas(): void {
   registry.registerActionConfig(inspectionDeclarationActionConfig)
   registry.registerActionConfig(customsDeclarationActionConfig)
   registry.registerActionConfig(exchangeSettlementActionConfig)
+  registry.registerActionConfig(invoicingNoticeActionConfig)
+  registry.registerActionConfig(paymentApplyActionConfig)
 
   // 注册表单操作配置
   registry.registerFormActionConfig(salesContractFormActions)
@@ -1263,6 +1377,8 @@ export function setupSchemas(): void {
   registry.registerFormActionConfig(inspectionDeclarationFormActions)
   registry.registerFormActionConfig(customsDeclarationFormActions)
   registry.registerFormActionConfig(exchangeSettlementFormActions)
+  registry.registerFormActionConfig(invoicingNoticeFormActions)
+  registry.registerFormActionConfig(paymentApplyFormActions)
 
   // 用户和角色数据已迁移到后端数据库，通过 seed 初始化
   // 审核规则已迁移到服务端数据库，无需前端注册

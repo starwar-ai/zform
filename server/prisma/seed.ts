@@ -1058,6 +1058,45 @@ async function main() {
     },
   });
 
+  // 开票通知菜单 - 业务入口子菜单
+  const invoicingNoticeMenu = await prisma.sysMenu.create({
+    data: {
+      title: '开票通知',
+      icon: 'FileText',
+      path: '/type-list/invoicing_notice',
+      parentId: businessEntryMenu.id,
+      orderNum: 4,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  // ---- 财务入口（一级菜单） ----
+  const financeEntryMenu = await prisma.sysMenu.create({
+    data: {
+      title: '财务入口',
+      icon: 'Wallet',
+      path: null,
+      parentId: null,
+      orderNum: 2,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  // 付款申请菜单 - 财务入口子菜单
+  const paymentApplyMenu = await prisma.sysMenu.create({
+    data: {
+      title: '付款申请',
+      icon: 'CreditCard',
+      path: '/type-list/payment_apply',
+      parentId: financeEntryMenu.id,
+      orderNum: 1,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
   // ---- 单证入口（一级菜单） ----
   const documentEntryMenu = await prisma.sysMenu.create({
     data: {
@@ -1332,6 +1371,20 @@ async function main() {
   // 让步接收单按钮权限
   const concessionAcceptanceBtnIds = await createDocPermButtons(concessionAcceptanceMenu.id, 'concession_acceptance', basicDocActions);
 
+  // 开票通知按钮权限
+  const invoicingNoticeBtnIds = await createDocPermButtons(invoicingNoticeMenu.id, 'invoicing_notice', [
+    ...basicDocActions,
+    { perm: 'close', title: '关闭' },
+    { perm: 'void', title: '作废' },
+  ]);
+
+  // 付款申请按钮权限
+  const paymentApplyBtnIds = await createDocPermButtons(paymentApplyMenu.id, 'payment_apply', [
+    ...basicDocActions,
+    { perm: 'close', title: '关闭' },
+    { perm: 'void', title: '作废' },
+  ]);
+
   // 所有按钮权限 ID 汇总
   const allBtnIds = [
     ...salesContractBtnIds,
@@ -1345,6 +1398,8 @@ async function main() {
     ...warehouseBtnIds,
     ...inspectionOrderBtnIds,
     ...concessionAcceptanceBtnIds,
+    ...invoicingNoticeBtnIds,
+    ...paymentApplyBtnIds,
   ];
 
   // 顶级菜单：系统管理
@@ -1488,8 +1543,11 @@ async function main() {
     salesContractMenu.id,
     purchasePlanMenu.id,
     purchaseContractMenu.id,
+    invoicingNoticeMenu.id,
     shipmentPlanMenu.id,
     shippingDocumentMenu.id,
+    financeEntryMenu.id,
+    paymentApplyMenu.id,
     dataEntryMenu.id,
     productManagementMenu.id,
     customerMenu.id,
@@ -1526,8 +1584,11 @@ async function main() {
     salesContractMenu.id,
     purchasePlanMenu.id,
     purchaseContractMenu.id,
+    invoicingNoticeMenu.id,
     shipmentPlanMenu.id,
     shippingDocumentMenu.id,
+    financeEntryMenu.id,
+    paymentApplyMenu.id,
     dataEntryMenu.id,
     productManagementMenu.id,
     customerMenu.id,
@@ -1566,6 +1627,8 @@ async function main() {
     ...warehouseOutboundNoticeBtnIds.slice(0, 3),
     ...inspectionOrderBtnIds.slice(0, 3),
     ...concessionAcceptanceBtnIds.slice(0, 3),
+    ...invoicingNoticeBtnIds.slice(0, 3),
+    ...paymentApplyBtnIds.slice(0, 3),
   ];
 
   const userMenuIds = [
@@ -1573,8 +1636,11 @@ async function main() {
     salesContractMenu.id,
     purchasePlanMenu.id,
     purchaseContractMenu.id,
+    invoicingNoticeMenu.id,
     shipmentPlanMenu.id,
     shippingDocumentMenu.id,
+    financeEntryMenu.id,
+    paymentApplyMenu.id,
     dataEntryMenu.id,
     productManagementMenu.id,
     customerMenu.id,
