@@ -120,3 +120,17 @@ export async function loginApi(
 export async function fetchUserPermissionsApi(): Promise<string[]> {
   return request<string[]>("/users/me/permissions")
 }
+
+/** 修改密码 */
+export async function changePasswordApi(
+  userId: string,
+  data: {
+    oldPassword: string
+    newPassword: string
+  }
+): Promise<void> {
+  await request<null>(`/users/${userId}/password`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  })
+}

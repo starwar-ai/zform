@@ -206,6 +206,32 @@ export class UserService {
     return [...new Set(permissions)];
   }
 
+  /** 修改密码 */
+  async changePassword(userId: string, oldPassword: string, newPassword: string): Promise<void> {
+    const user = await prisma.sysUser.findFirst({
+      where: { id: userId, deletedAt: null },
+    });
+
+    if (!user) {
+      throw new Error('用户不存在');
+    }
+
+    // 验证旧密码
+    const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
+    if (!isPasswordValid) {
+      throw new Error('当前密码错误');
+    }
+
+    // 加密新密码
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // 更新密码
+    await prisma.sysUser.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+  }
+
   /** 获取用户角色 ID 列表 */
   private async getUserRoleIds(userId: string): Promise<string[]> {
     const userRoles = await prisma.sysUserRole.findMany({

@@ -4997,3 +4997,157 @@ model ProcessingOrderSubItem {
   @@index([lineNumber])
   @@map("processing_order_sub_items")
 }
+
+// ==================== 报价单相关枚举 ====================
+
+enum QuotationStatus {
+  DRAFT // 草稿
+  PENDING // 待审核
+  APPROVED // 已审核
+  REJECTED // 已拒绝
+  EXPIRED // 已过期
+  ACCEPTED // 已接受
+  CANCELLED // 已取消
+}
+
+// ==================== 报价单主表 ====================
+
+model Quotation {
+  id String @id @default(cuid())
+
+  // 基本信息
+  code String @unique // 报价单号
+  printStatus PrintStatus @default(NOT_PRINTED) @map("print_status") // 打印状态
+
+  // 客户信息
+  customerId String @map("customer_id") // 客户主键
+  customerCode String @map("customer_code") // 客户编号
+  customerName String? @map("customer_name") // 客户名称
+  isNewCustomer Boolean @default(false) @map("is_new_customer") // 是否新客户
+
+  // 客户联系人
+  customerContactId String? @map("customer_contact_id") // 客户联系人主键
+  customerContactName String? @map("customer_contact_name") // 客户联系人名称
+
+  // 国家信息
+  countryId String? @map("country_id") // 国家id
+  countryName String? @map("country_name") // 国家名称
+
+  // 内部法人单位
+  internalCompanyId String? @map("internal_company_id") // 内部法人单位主键
+  internalCompanyName String? @map("internal_company_name") // 内部法人单位名称
+
+  // 出运口岸
+  departurePortId String? @map("departure_port_id") // 出运口岸主键
+  departurePortName String? @map("departure_port_name") // 出运口岸名称
+
+  // 交易信息
+  currency String @default("USD") // 币种
+  priceTerms String? @map("price_terms") // 价格条款
+  validUntil DateTime? @map("valid_until") // 有效期止
+
+  // 人员信息
+  salesPerson String? @map("sales_person") // 业务员
+
+  // 状态字段
+  status QuotationStatus @default(DRAFT) // 状态
+  approvalStatus ApprovalStatus @default(PENDING) @map("approval_status") // 审核状态
+
+  // 流程实例
+  processInstanceId String? @map("process_instance_id") // 流程实例的编号
+
+  // 时间戳
+  createdBy String? @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedBy String? @map("updated_by")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // 关联关系
+  items QuotationItem[] @relation("QuotationItems")
+
+  @@index([code])
+  @@index([status])
+  @@index([approvalStatus])
+  @@index([customerId])
+  @@index([createdAt])
+  @@map("quotations")
+}
+
+// ==================== 报价单明细表 ====================
+
+model QuotationItem {
+  id String @id @default(cuid())
+
+  // 关联报价单
+  quotationId String @map("quotation_id")
+  quotation Quotation @relation("QuotationItems", fields: [quotationId], references: [id], onDelete: Cascade)
+
+  // 行号
+  lineNumber Int @map("line_number")
+
+  // 产品信息
+  productId String? @map("product_id") // 产品id
+  productCode String? @map("product_code") // 产品编号
+  productNameCn String? @map("product_name_cn") // 中文名称
+  productNameEn String? @map("product_name_en") // 英文名称
+  productSpec String? @map("product_spec") // 产品规格
+  spec String? // 规格
+  productImage String? @map("product_image") // 图片
+  baseProductCode String? @map("base_product_code") // 基础产品编号
+  customerProductNo String? @map("customer_product_no") // 客户货号
+  isSelfOwnedProduct Boolean @default(false) @map("is_self_owned_product") // 自营产品标记
+  isCustomerProduct Boolean @default(false) @map("is_customer_product") // 客户产品标记
+
+  // 供应商信息
+  supplierId String? @map("supplier_id") // 供应商id
+  supplierCode String? @map("supplier_code") // 供应商编号
+  supplierName String? @map("supplier_name") // 供应商名称
+
+  // 报价信息
+  unitPrice Decimal @default(0) @map("unit_price") @db.Decimal(15, 4) // 报价
+  taxUnitPrice Decimal? @default(0) @map("tax_unit_price") @db.Decimal(15, 4) // 产品含税单价
+  minOrderQuantity Decimal? @map("min_order_quantity") @db.Decimal(10, 2) // 起订量
+  commissionRate Decimal? @map("commission_rate") @db.Decimal(5, 2) // 佣金比例
+
+  // 柜型信息
+  isSeparateContainer Boolean @default(false) @map("is_separate_container") // 是否分箱
+  bulkCargo Decimal? @map("bulk_cargo") @db.Decimal(10, 2) // 散货
+  container20ft Decimal? @map("container_20ft") @db.Decimal(10, 2) // 20尺柜
+  container40ft Decimal? @map("container_40ft") @db.Decimal(10, 2) // 40尺柜
+  container40hq Decimal? @map("container_40hq") @db.Decimal(10, 2) // 40尺高柜
+
+  // 包装信息
+  packageMethod String? @map("package_method") // 包装方式
+  innerBoxQty Decimal? @map("inner_box_qty") @db.Decimal(10, 2) // 内箱装量
+  outerBoxQty Decimal? @map("outer_box_qty") @db.Decimal(10, 2) // 外箱装量
+  boxCount Int? @map("box_count") // 箱数
+  outerBoxUnit String? @map("outer_box_unit") // 外箱单位
+  outerBoxLength Decimal? @map("outer_box_length") @db.Decimal(10, 2) // 外箱长度
+  outerBoxWidth Decimal? @map("outer_box_width") @db.Decimal(10, 2) // 外箱宽度
+  outerBoxHeight Decimal? @map("outer_box_height") @db.Decimal(10, 2) // 外箱高度
+  outerBoxVolume Decimal? @map("outer_box_volume") @db.Decimal(10, 3) // 外箱体积
+  outerBoxNetWeight Decimal? @map("outer_box_net_weight") @db.Decimal(10, 3) // 外箱净重
+  outerBoxGrossWeight Decimal? @map("outer_box_gross_weight") @db.Decimal(10, 3) // 外箱毛重
+
+  // 产品描述
+  productDescription String? @map("product_description") // 产品描述
+  productDescriptionEn String? @map("product_description_en") // 产品英文描述
+  hsCode String? @map("hs_code") // HS编码
+
+  // 交期
+  deliveryDate DateTime? @map("delivery_date") // 交货日期
+
+  // 时间戳
+  createdBy String? @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedBy String? @map("updated_by")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([quotationId])
+  @@index([productId])
+  @@index([supplierId])
+  @@index([lineNumber])
+  @@map("quotation_items")
+}

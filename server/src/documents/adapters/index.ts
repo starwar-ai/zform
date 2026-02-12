@@ -25,6 +25,7 @@ import { exchangeSettlementAdapter } from './exchange-settlement.adapter';
 import { invoicingNoticeAdapter } from './invoicing-notice.adapter';
 import { paymentApplyAdapter } from './payment-apply.adapter';
 import { processingOrderAdapter } from './processing-order.adapter';
+import { quotationAdapter } from './quotation.adapter';
 
 export function registerAllAdapters(): void {
   // 销售合同
@@ -60,6 +61,9 @@ export function registerAllAdapters(): void {
 
   // 加工单
   documentTypeRegistry.register(processingOrderAdapter);
+
+  // 报价单
+  documentTypeRegistry.register(quotationAdapter);
 
   console.log(
     `[DocumentTypeRegistry] Registered ${documentTypeRegistry.getAllTypeIds().length} adapters:`,

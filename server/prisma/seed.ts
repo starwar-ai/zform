@@ -1029,13 +1029,26 @@ async function main() {
     },
   });
 
+  // 报价单菜单
+  const quotationMenu = await prisma.sysMenu.create({
+    data: {
+      title: '报价单',
+      icon: 'FileText',
+      path: '/type-list/quotation',
+      parentId: businessEntryMenu.id,
+      orderNum: 2,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
   const purchasePlanMenu = await prisma.sysMenu.create({
     data: {
       title: '采购计划',
       icon: 'ShoppingCart',
       path: '/purchase-plan-management',
       parentId: businessEntryMenu.id,
-      orderNum: 2,
+      orderNum: 3,
       menuType: 'menu',
       status: 'visible',
     },
@@ -1048,7 +1061,7 @@ async function main() {
       icon: 'ClipboardList',
       path: '/purchase-contract-management',
       parentId: businessEntryMenu.id,
-      orderNum: 3,
+      orderNum: 4,
       menuType: 'menu',
       status: 'visible',
     },
@@ -1061,7 +1074,7 @@ async function main() {
       icon: 'Cog',
       path: '/type-list/processing_order',
       parentId: businessEntryMenu.id,
-      orderNum: 4,
+      orderNum: 5,
       menuType: 'menu',
       status: 'visible',
     },
@@ -1480,6 +1493,11 @@ async function main() {
     { perm: 'void', title: '作废' },
   ]);
 
+  // 报价单按钮权限
+  const quotationBtnIds = await createDocPermButtons(quotationMenu.id, 'quotation', [
+    ...fullDocActions,
+  ]);
+
   // 所有按钮权限 ID 汇总
   const allBtnIds = [
     ...salesContractBtnIds,
@@ -1500,6 +1518,7 @@ async function main() {
     ...paymentClaimBtnIds,
     ...invoiceRegistrationBtnIds,
     ...processingOrderBtnIds,
+    ...quotationBtnIds,
   ];
 
   // 顶级菜单：系统管理
@@ -1653,6 +1672,7 @@ async function main() {
   const allMenuIds = [
     businessEntryMenu.id,
     salesContractMenu.id,
+    quotationMenu.id,
     purchasePlanMenu.id,
     purchaseContractMenu.id,
     invoicingNoticeMenu.id,
@@ -1699,6 +1719,7 @@ async function main() {
   const managerMenuIds = [
     businessEntryMenu.id,
     salesContractMenu.id,
+    quotationMenu.id,
     purchasePlanMenu.id,
     purchaseContractMenu.id,
     processingOrderMenu.id,
@@ -1756,11 +1777,13 @@ async function main() {
     ...paymentClaimBtnIds.slice(0, 3),
     ...invoiceRegistrationBtnIds.slice(0, 3),
     ...processingOrderBtnIds.slice(0, 3),
+    ...quotationBtnIds.slice(0, 3),
   ];
 
   const userMenuIds = [
     businessEntryMenu.id,
     salesContractMenu.id,
+    quotationMenu.id,
     purchasePlanMenu.id,
     purchaseContractMenu.id,
     processingOrderMenu.id,

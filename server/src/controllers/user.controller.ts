@@ -101,4 +101,22 @@ export const userController = {
       next(error);
     }
   },
+
+  /** PUT /users/:id/password - 修改密码 */
+  async changePassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { oldPassword, newPassword } = req.body;
+      await userService.changePassword(req.params.id, oldPassword, newPassword);
+      res.json(successResponse(null, '密码修改成功'));
+    } catch (error) {
+      if (error instanceof Error) {
+        return res.status(400).json({
+          success: false,
+          message: error.message,
+          timestamp: new Date().toISOString(),
+        });
+      }
+      next(error);
+    }
+  },
 };

@@ -10,6 +10,7 @@ router.get('/me/permissions', userController.getMyPermissions);
 router.get('/', userController.list);
 router.post('/', userController.create);
 router.put('/:id', userController.update);
+router.put('/:id/password', userController.changePassword);
 router.delete('/:id', userController.delete);
 router.put('/:id/roles', userController.assignRoles);
 
