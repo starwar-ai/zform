@@ -4,7 +4,7 @@
 
 // ==================== 通用类型 ====================
 
-export type ConfigTypeKey = 'company' | 'region' | 'country' | 'port' | 'brand' | 'warehouse' | 'orderRoute';
+export type ConfigTypeKey = 'company' | 'region' | 'country' | 'port' | 'brand' | 'warehouse';
 
 // ==================== 公司性质枚举 ====================
 

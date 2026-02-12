@@ -1,7 +1,7 @@
 /**
  * BusinessConfig
  *
- * 实体配置管理组件，包含子公司、国家、港口、订单路径等配置。
+ * 实体配置管理组件，包含子公司、国家、港口等配置。
  * 每种配置一个Tab。
  */
 
@@ -14,7 +14,6 @@ import { CountryConfigPanel } from "./business-config/country-panel"
 import { PortConfigPanel } from "./business-config/port-panel"
 import { BrandConfigPanel } from "./business-config/brand-panel"
 import { WarehouseConfigPanel } from "./business-config/warehouse-panel"
-import { OrderRouteConfigPanel } from "./business-config/order-route-panel"
 import type { ConfigTypeKey } from "@/types/business-config"
 
 export function BusinessConfig() {
@@ -37,7 +36,6 @@ export function BusinessConfig() {
           <TabsTrigger value="port">港口</TabsTrigger>
           <TabsTrigger value="brand">品牌</TabsTrigger>
           <TabsTrigger value="warehouse">仓库</TabsTrigger>
-          <TabsTrigger value="orderRoute">订单路径</TabsTrigger>
         </TabsList>
       </Tabs>
 

@@ -72,6 +72,7 @@ import {
   Users,
   Package,
   Globe,
+  Route,
 } from "lucide-react"
 
 // ==================== 分类配置注册 ====================
@@ -167,6 +168,25 @@ export const CATEGORY_CONFIGS: CategoryConfig[] = [
       { key: "isDomestic", label: "是否国内系列", type: "boolean", defaultValue: false },
     ],
   },
+  {
+    key: "order-route",
+    label: "订单路径",
+    icon: "Route",
+    apiPath: "/order-routes",
+    isTree: false,
+    nameField: "path",
+    columns: [
+      { key: "path", label: "路径", width: "200px" },
+      { key: "status", label: "状态", width: "120px" },
+      { key: "description", label: "描述" },
+      { key: "createdAt", label: "创建时间", render: "date" },
+    ],
+    formFields: [
+      { key: "path", label: "路径", type: "text", required: true, placeholder: "例如: /orders/domestic" },
+      { key: "status", label: "状态", type: "text", required: true, placeholder: "例如: active" },
+      { key: "description", label: "描述", type: "text", placeholder: "请输入描述" },
+    ],
+  },
 ]
 
 // ==================== 图标映射 ====================
@@ -176,6 +196,7 @@ const categoryIconMap: Record<string, React.ComponentType<{ className?: string }
   Package,
   Globe,
   Tags,
+  Route,
 }
 
 function getCategoryIcon(iconName: string) {

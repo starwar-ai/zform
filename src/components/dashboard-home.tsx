@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react"
+import { createContext, useContext, useMemo, useState } from "react"
 import { registry } from "@/core/registry"
 import { useAllDocuments } from "@/hooks/use-document"
 import { useDocumentStore } from "@/stores/document-store"
 import { useDashboardStore } from "@/stores/dashboard-store"
+import { usePendingApprovals } from "@/hooks/use-approval"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -26,15 +27,98 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { ExternalLink, Plus, Settings2 } from "lucide-react"
+import { ExternalLink, GripVertical, Loader2, Plus, RefreshCw, Settings2 } from "lucide-react"
 import type { DocumentTypeId } from "@/core/types"
+import type { ApprovalInstanceResponse } from "@/apis/approval-api"
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core"
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  rectSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 
 interface DashboardHomeProps {
   onOpenDocument: (docId: string, typeId?: string) => void
   onOpenTypeList: (typeId: string, title: string) => void
 }
 
+const PENDING_TASKS_WIDGET_ID = "pending-tasks"
 const MAX_FAVORITE_BUTTONS = 5
+
+// --------------- Sortable widget wrapper ---------------
+
+function SortableWidget({
+  id,
+  children,
+}: {
+  id: string
+  children: React.ReactNode
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={isDragging ? "opacity-50" : undefined}
+    >
+      {/* Pass drag handle props to children via wrapper */}
+      <WidgetHandleContext.Provider
+        value={{ ref: setActivatorNodeRef, attributes, listeners }}
+      >
+        {children}
+      </WidgetHandleContext.Provider>
+    </div>
+  )
+}
+
+// Context to pass drag handle ref/listeners into card headers
+const WidgetHandleContext = createContext<{
+  ref: (node: HTMLElement | null) => void
+  attributes: Record<string, unknown>
+  listeners: Record<string, unknown> | undefined
+} | null>(null)
+
+function DragHandle() {
+  const ctx = useContext(WidgetHandleContext)
+  if (!ctx) return null
+  return (
+    <button
+      ref={ctx.ref}
+      className="cursor-grab touch-none text-muted-foreground hover:text-foreground"
+      {...ctx.attributes}
+      {...(ctx.listeners as React.HTMLAttributes<HTMLButtonElement>)}
+    >
+      <GripVertical className="h-4 w-4" />
+    </button>
+  )
+}
+
+// --------------- Main component ---------------
 
 export function DashboardHome({
   onOpenDocument,
@@ -48,10 +132,14 @@ export function DashboardHome({
 
   const favoriteButtonTypeIds = useDashboardStore((s) => s.favoriteButtonTypeIds)
   const favoriteListTypeIds = useDashboardStore((s) => s.favoriteListTypeIds)
+  const widgetOrder = useDashboardStore((s) => s.widgetOrder)
   const setFavoriteButtonTypeIds = useDashboardStore(
     (s) => s.setFavoriteButtonTypeIds
   )
   const setFavoriteListTypeIds = useDashboardStore((s) => s.setFavoriteListTypeIds)
+  const setWidgetOrder = useDashboardStore((s) => s.setWidgetOrder)
+
+  const { pendingList, loading: pendingLoading, refresh: refreshPending } = usePendingApprovals()
 
   const effectiveFavoriteButtonTypeIds = useMemo(() => {
     const candidates =
@@ -99,6 +187,20 @@ export function DashboardHome({
     return grouped
   }, [documents])
 
+  // Build ordered widget IDs: pending-tasks + favorite list typeIds
+  const allWidgetIds = useMemo(() => {
+    const listIds = effectiveFavoriteListTypeIds
+    const defaultOrder = [PENDING_TASKS_WIDGET_ID, ...listIds]
+
+    if (widgetOrder.length === 0) return defaultOrder
+
+    // Use stored order, filtering out stale entries and appending new ones
+    const validSet = new Set(defaultOrder)
+    const ordered = widgetOrder.filter((id) => validSet.has(id))
+    const remaining = defaultOrder.filter((id) => !ordered.includes(id))
+    return [...ordered, ...remaining]
+  }, [widgetOrder, effectiveFavoriteListTypeIds])
+
   const handleCreate = (typeId: DocumentTypeId) => {
     const doc = createDocument(typeId)
     onOpenDocument(doc.id, typeId)
@@ -131,12 +233,143 @@ export function DashboardHome({
     setFavoriteListTypeIds(effectiveFavoriteListTypeIds.filter((id) => id !== typeId))
   }
 
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 6 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (over && active.id !== over.id) {
+      const oldIndex = allWidgetIds.indexOf(active.id as string)
+      const newIndex = allWidgetIds.indexOf(over.id as string)
+      const newOrder = arrayMove(allWidgetIds, oldIndex, newIndex)
+      setWidgetOrder(newOrder)
+    }
+  }
+
+  // Render a widget by its ID
+  function renderWidget(widgetId: string) {
+    if (widgetId === PENDING_TASKS_WIDGET_ID) {
+      return (
+        <PendingTasksCard
+          pendingList={pendingList}
+          loading={pendingLoading}
+          onRefresh={refreshPending}
+          onOpenDocument={onOpenDocument}
+        />
+      )
+    }
+
+    // Favorite list card
+    const schema = schemas.find((s) => s.typeId === widgetId)
+    if (!schema) return null
+
+    const sourceDocs = docsByType.get(schema.typeId) ?? []
+    const keyword = (filters[schema.typeId] ?? "").trim().toLowerCase()
+    const filteredDocs = sourceDocs.filter((doc) =>
+      doc.docNumber.toLowerCase().includes(keyword)
+    )
+
+    return (
+      <Card className="p-3 h-full">
+        <CardHeader className="space-y-2 pb-2 p-0">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1">
+              <DragHandle />
+              <CardTitle className="text-sm font-medium">{schema.typeName}</CardTitle>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() =>
+                  onOpenTypeList(schema.typeId, schema.typeName)
+                }
+                title={`打开 ${schema.typeName} 列表页`}
+              >
+                <ExternalLink className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Input
+              value={filters[schema.typeId] ?? ""}
+              onChange={(event) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  [schema.typeId]: event.target.value,
+                }))
+              }
+              placeholder="输入单据编号自动筛选"
+              className="flex-1 h-8 text-sm"
+            />
+            <Button
+              size="sm"
+              onClick={() => {
+                const newDoc = createDocument(schema.typeId)
+                onOpenDocument(newDoc.id, schema.typeId)
+              }}
+              variant="outline"
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              新增
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-2 p-0">
+          {filteredDocs.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>单据编号</TableHead>
+                  <TableHead>创建时间</TableHead>
+                  <TableHead className="w-[80px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredDocs.slice(0, 5).map((doc) => (
+                  <TableRow key={doc.id} className="h-10">
+                    <TableCell className="font-medium text-sm py-2">
+                      {doc.docNumber}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-xs py-2">
+                      {new Date(doc.createdAt).toLocaleString("zh-CN")}
+                    </TableCell>
+                    <TableCell className="py-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onOpenDocument(doc.id, doc.typeId)}
+                        className="h-7 text-xs"
+                      >
+                        打开
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <p className="text-xs text-muted-foreground text-center py-3">
+              暂无匹配单据
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-l">首页</h1>
-
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           {favoriteButtons.map((schema) => (
@@ -231,109 +464,117 @@ export function DashboardHome({
         </div>
       </div>
 
-      {favoriteLists.length > 0 ? (
-        <div className="grid gap-4 xl:grid-cols-2">
-          {favoriteLists.map((schema) => {
-            const sourceDocs = docsByType.get(schema.typeId) ?? []
-            const keyword = (filters[schema.typeId] ?? "").trim().toLowerCase()
-            const filteredDocs = sourceDocs.filter((doc) =>
-              doc.docNumber.toLowerCase().includes(keyword)
-            )
-
-            return (
-              <Card key={schema.typeId} className="p-3">
-                <CardHeader className="space-y-2 pb-2 p-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <CardTitle className="text-sm font-medium">{schema.typeName}</CardTitle>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() =>
-                          onOpenTypeList(schema.typeId, schema.typeName)
-                        }
-                        title={`打开 ${schema.typeName} 列表页`}
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Input
-                      value={filters[schema.typeId] ?? ""}
-                      onChange={(event) =>
-                        setFilters((prev) => ({
-                          ...prev,
-                          [schema.typeId]: event.target.value,
-                        }))
-                      }
-                      placeholder="输入单据编号自动筛选"
-                      className="flex-1 h-8 text-sm"
-                    />
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        const newDoc = createDocument(schema.typeId)
-                        onOpenDocument(newDoc.id, schema.typeId)
-                      }}
-                      variant="outline"
-                    >
-                      <Plus className="h-3 w-3 mr-1" />
-                      新增
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-2 p-0">
-                  {filteredDocs.length > 0 ? (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>单据编号</TableHead>
-                          <TableHead>创建时间</TableHead>
-                          <TableHead className="w-[80px]"></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredDocs.slice(0, 5).map((doc) => (
-                          <TableRow key={doc.id} className="h-10">
-                            <TableCell className="font-medium text-sm py-2">
-                              {doc.docNumber}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground text-xs py-2">
-                              {new Date(doc.createdAt).toLocaleString("zh-CN")}
-                            </TableCell>
-                            <TableCell className="py-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => onOpenDocument(doc.id, doc.typeId)}
-                                className="h-7 text-xs"
-                              >
-                                打开
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  ) : (
-                    <p className="text-xs text-muted-foreground text-center py-3">
-                      暂无匹配单据
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
-      ) : (
-        <Card>
-          <CardContent className="py-8 text-center text-sm text-muted-foreground">
-            暂无常用列表组件，请点击右上角“设置”进行添加。
-          </CardContent>
-        </Card>
-      )}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={allWidgetIds}
+          strategy={rectSortingStrategy}
+        >
+          <div className="grid gap-4 xl:grid-cols-2">
+            {allWidgetIds.map((widgetId) => (
+              <SortableWidget key={widgetId} id={widgetId}>
+                {renderWidget(widgetId)}
+              </SortableWidget>
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
     </div>
   )
 }
 
+// --------------- Pending Tasks Card ---------------
+
+function PendingTasksCard({
+  pendingList,
+  loading,
+  onRefresh,
+  onOpenDocument,
+}: {
+  pendingList: ApprovalInstanceResponse[]
+  loading: boolean
+  onRefresh: () => void
+  onOpenDocument: (docId: string, typeId?: string) => void
+}) {
+  return (
+    <Card className="p-3 h-full">
+      <CardHeader className="space-y-2 pb-2 p-0">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <DragHandle />
+            <CardTitle className="text-sm font-medium">待处理任务</CardTitle>
+            {pendingList.length > 0 && (
+              <Badge variant="destructive" className="text-xs px-1.5 py-0">
+                {pendingList.length}
+              </Badge>
+            )}
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onRefresh}
+            disabled={loading}
+            title="刷新"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-2 p-0">
+        {loading && pendingList.length === 0 ? (
+          <div className="flex items-center justify-center py-6 text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            <span className="text-xs">加载中...</span>
+          </div>
+        ) : pendingList.length > 0 ? (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>单据类型</TableHead>
+                <TableHead>单据编号</TableHead>
+                <TableHead>提交人</TableHead>
+                <TableHead>提交时间</TableHead>
+                <TableHead className="w-[80px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pendingList.slice(0, 8).map((item) => (
+                <TableRow key={item.id} className="h-10">
+                  <TableCell className="text-sm py-2">
+                    {item.docType}
+                  </TableCell>
+                  <TableCell className="font-medium text-sm py-2">
+                    {item.docNumber || "-"}
+                  </TableCell>
+                  <TableCell className="text-sm py-2">
+                    {item.submitterName || item.submitterId}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-xs py-2">
+                    {new Date(item.submittedAt).toLocaleString("zh-CN")}
+                  </TableCell>
+                  <TableCell className="py-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onOpenDocument(item.docId, item.docType)}
+                      className="h-7 text-xs"
+                    >
+                      打开
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <p className="text-xs text-muted-foreground text-center py-3">
+            暂无待处理任务
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  )
+}

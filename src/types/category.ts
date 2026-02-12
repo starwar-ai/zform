@@ -6,7 +6,7 @@
 // ==================== 通用基础类型 ====================
 
 /** 分类类型标识 */
-export type CategoryTypeKey = 'customer' | 'product' | 'exhibition' | 'customer-source'
+export type CategoryTypeKey = 'customer' | 'product' | 'exhibition' | 'customer-source' | 'order-route'
 
 /** 基础分类字段 */
 interface BaseCategoryFields {
