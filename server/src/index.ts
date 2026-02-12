@@ -7,6 +7,7 @@ import { errorHandler } from './middleware/error-handler';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './config/swagger';
 import { registerAllAdapters } from './documents';
+import { exchangeRateSchedulerService } from './services/exchange-rate-scheduler.service';
 
 dotenv.config();
 
@@ -42,4 +43,9 @@ app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
+  
+  // 启动汇率调度器
+  exchangeRateSchedulerService.start().catch(err => {
+    console.error('Failed to start exchange rate scheduler:', err);
+  });
 });

@@ -25,6 +25,7 @@ import otherConfigRoutes from './other-configs';
 import documentRoutes from '../documents/document.routes';
 import codeGeneratorRoutes from './code-generator.routes';
 import exchangeRateRoutes from './exchange-rate.routes';
+import rateSchedulerRoutes from './rate-scheduler.routes';
 
 const router = Router();
 
@@ -36,6 +37,9 @@ router.use('/code-generator', codeGeneratorRoutes);
 
 // ---- 汇率管理 API ----
 router.use('/rates', exchangeRateRoutes);
+
+// ---- 汇率调度器 API ----
+router.use('/rate-scheduler', rateSchedulerRoutes);
 
 // ---- 系统管理 API ----
 router.use('/menus', menuRoutes);

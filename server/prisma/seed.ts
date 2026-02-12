@@ -2357,6 +2357,66 @@ async function main() {
     },
   });
 
+  // 汇率抓取配置
+  const rateSchedulerConfig = await prisma.otherConfig.upsert({
+    where: { id: 'other-config-rate-scheduler' },
+    update: {
+      name: '汇率抓取配置',
+      description: '定时抓取汇率的相关配置',
+      orderNum: 3,
+    },
+    create: {
+      id: 'other-config-rate-scheduler',
+      name: '汇率抓取配置',
+      description: '定时抓取汇率的相关配置',
+      orderNum: 3,
+    },
+  });
+
+  await prisma.configParameter.upsert({
+    where: { id: 'config-param-rate-scheduler-1' },
+    update: {
+      configId: rateSchedulerConfig.id,
+      name: '每日抓取次数',
+      type: 'number',
+      value: '3',
+      validation: JSON.stringify({ required: true, min: 1, max: 24 }),
+      orderNum: 1,
+    },
+    create: {
+      id: 'config-param-rate-scheduler-1',
+      configId: rateSchedulerConfig.id,
+      name: '每日抓取次数',
+      type: 'number',
+      value: '3',
+      validation: JSON.stringify({ required: true, min: 1, max: 24 }),
+      orderNum: 1,
+    },
+  });
+
+  await prisma.configParameter.upsert({
+    where: { id: 'config-param-rate-scheduler-2' },
+    update: {
+      configId: rateSchedulerConfig.id,
+      name: '抓取时间列表',
+      type: 'array',
+      elementType: 'text',
+      value: JSON.stringify(['08:00', '12:00', '18:00']),
+      validation: JSON.stringify({ minItems: 1, maxItems: 24 }),
+      orderNum: 2,
+    },
+    create: {
+      id: 'config-param-rate-scheduler-2',
+      configId: rateSchedulerConfig.id,
+      name: '抓取时间列表',
+      type: 'array',
+      elementType: 'text',
+      value: JSON.stringify(['08:00', '12:00', '18:00']),
+      validation: JSON.stringify({ minItems: 1, maxItems: 24 }),
+      orderNum: 2,
+    },
+  });
+
   console.log(`Regions: ${regionAsia.code}, ${regionNorthAmerica.code}, ${regionEurope.code}`);
   console.log(`Countries: ${countryChina.code}, ${countryUSA.code}, ${countryGermany.code}, ${countryJapan.code}, ${countryUK.code}`);
   console.log(`Ports: ${portShanghai.code}, ${portShenzhen.code}, ${portNingbo.code}, ${portLosAngeles.code}, ${portHamburg.code}`);
