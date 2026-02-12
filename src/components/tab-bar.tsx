@@ -1,7 +1,10 @@
 import { useTabStore, type Tab } from "@/stores/tab-store"
+import { useNotificationStore } from "@/stores/notification-store"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { X } from "lucide-react"
+import { Bell, X } from "lucide-react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { NotificationPanel } from "./notification-panel"
 import {
   DndContext,
   closestCenter,
@@ -118,6 +121,7 @@ function SortableTab({ tab, isActive, onSwitch, onClose }: SortableTabProps) {
 
 export function TabBar() {
   const { tabs, activeTabId, switchTab, closeTab, moveTab } = useTabStore()
+  const unreadCount = useNotificationStore((s) => s.unreadCount())
 
   // 首页标签始终排在最左面，不参与拖拽排序
   const homeTab = tabs.find((tab) => tab.type === "dashboard")
@@ -152,35 +156,54 @@ export function TabBar() {
 
   return (
     <div className="flex h-12 items-end gap-1 border-b bg-muted/50 px-2 overflow-hidden">
-      {homeTab && (
-        <PinnedTab
-          tab={homeTab}
-          isActive={homeTab.id === activeTabId}
-          onSwitch={() => switchTab(homeTab.id)}
-        />
-      )}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext
-          items={sortableTabs.map((tab) => tab.id)}
-          strategy={horizontalListSortingStrategy}
+      <div className="flex items-end gap-1 min-w-0 flex-1 overflow-hidden">
+        {homeTab && (
+          <PinnedTab
+            tab={homeTab}
+            isActive={homeTab.id === activeTabId}
+            onSwitch={() => switchTab(homeTab.id)}
+          />
+        )}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
         >
-          <div className="flex gap-1 min-w-0 overflow-hidden">
-            {sortableTabs.map((tab) => (
-              <SortableTab
-                key={tab.id}
-                tab={tab}
-                isActive={tab.id === activeTabId}
-                onSwitch={() => switchTab(tab.id)}
-                onClose={() => void closeTab(tab.id)}
-              />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
+          <SortableContext
+            items={sortableTabs.map((tab) => tab.id)}
+            strategy={horizontalListSortingStrategy}
+          >
+            <div className="flex gap-1 min-w-0 overflow-hidden">
+              {sortableTabs.map((tab) => (
+                <SortableTab
+                  key={tab.id}
+                  tab={tab}
+                  isActive={tab.id === activeTabId}
+                  onSwitch={() => switchTab(tab.id)}
+                  onClose={() => void closeTab(tab.id)}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      </div>
+
+      {/* 通知图标 */}
+      <Popover>
+        <PopoverTrigger asChild>
+          <button className="relative flex items-center justify-center h-8 w-8 rounded-md hover:bg-accent transition-colors shrink-0 mb-1">
+            <Bell className="h-4 w-4" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="end" className="w-80 p-3">
+          <NotificationPanel />
+        </PopoverContent>
+      </Popover>
     </div>
   )
 }
