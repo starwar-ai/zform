@@ -2,7 +2,7 @@
  * 实体配置 API
  */
 
-import type { Company, CompanyBankAccount, Region, Country, Port, Brand, Warehouse, OrderRoute } from '@/types/business-config';
+import type { Company, CompanyBankAccount, Region, Country, Port, Brand, Warehouse, OrderRoute, CurrencyRate } from '@/types/business-config';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 
@@ -411,4 +411,160 @@ export async function deleteOrderRouteApi(id: string): Promise<void> {
     const error = await res.json();
     throw new Error(error.error || '删除订单路径失败');
   }
+}
+
+// ==================== 汇率 API ====================
+
+export interface ExchangeRateListResponse {
+  records: CurrencyRate[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface TodayRatesResponse {
+  date: string;
+  rates: Record<string, number>;
+}
+
+export async function fetchExchangeRatesApi(params?: {
+  page?: number;
+  pageSize?: number;
+  rateDate?: string;
+  currencyName?: string;
+  startDate?: string;
+  endDate?: string;
+}): Promise<ExchangeRateListResponse> {
+  const searchParams = new URLSearchParams();
+  if (params?.page) searchParams.set('page', String(params.page));
+  if (params?.pageSize) searchParams.set('pageSize', String(params.pageSize));
+  if (params?.rateDate) searchParams.set('rateDate', params.rateDate);
+  if (params?.currencyName) searchParams.set('currencyName', params.currencyName);
+  if (params?.startDate) searchParams.set('startDate', params.startDate);
+  if (params?.endDate) searchParams.set('endDate', params.endDate);
+  
+  const res = await fetch(`${API_BASE}/rates?${searchParams.toString()}`, {
+    credentials: 'include',
+  });
+  if (!res.ok) throw new Error('获取汇率列表失败');
+  return res.json();
+}
+
+export async function fetchTodayRatesApi(): Promise<TodayRatesResponse> {
+  const res = await fetch(`${API_BASE}/rates/today`, {
+    credentials: 'include',
+  });
+  if (!res.ok) throw new Error('获取今日汇率失败');
+  return res.json();
+}
+
+export async function fetchRatesByDateApi(date: string): Promise<{ date: string; rates: CurrencyRate[] }> {
+  const res = await fetch(`${API_BASE}/rates/date/${date}`, {
+    credentials: 'include',
+  });
+  if (!res.ok) throw new Error('获取指定日期汇率失败');
+  return res.json();
+}
+
+export async function createExchangeRateApi(data: Partial<CurrencyRate>): Promise<CurrencyRate> {
+  const res = await fetch(`${API_BASE}/rates`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || '创建汇率失败');
+  }
+  return res.json();
+}
+
+export async function batchCreateExchangeRatesApi(date: string, rates: Array<{
+  currencyName: string;
+  rate: number;
+  midRate?: number;
+}>): Promise<{ success: boolean; createdCount: number }> {
+  const res = await fetch(`${API_BASE}/rates/batch`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ date, rates }),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || '批量创建汇率失败');
+  }
+  return res.json();
+}
+
+export async function updateExchangeRateApi(
+  rateDate: string,
+  currencyName: string,
+  data: Partial<CurrencyRate>
+): Promise<CurrencyRate> {
+  const res = await fetch(`${API_BASE}/rates/${rateDate}/${currencyName}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || '更新汇率失败');
+  }
+  return res.json();
+}
+
+export async function deleteExchangeRateApi(rateDate: string, currencyName: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/rates/${rateDate}/${currencyName}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || '删除汇率失败');
+  }
+}
+
+export async function fetchRatesFromExternalApi(): Promise<{
+  success: boolean;
+  date: string;
+  results: Array<{ currency: string; rate: number | null }>;
+}> {
+  const res = await fetch(`${API_BASE}/rates/fetch`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || '从外部API获取汇率失败');
+  }
+  return res.json();
+}
+
+export async function convertCurrencyApi(params: {
+  amount: number;
+  fromCurrency: string;
+  toCurrency?: string;
+  date?: string;
+}): Promise<{
+  originalAmount: number;
+  fromCurrency: string;
+  toCurrency: string;
+  convertedAmount: number;
+  rate: number;
+}> {
+  const res = await fetch(`${API_BASE}/rates/convert`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || '货币转换失败');
+  }
+  return res.json();
 }

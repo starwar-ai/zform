@@ -4,7 +4,7 @@
 
 // ==================== 通用类型 ====================
 
-export type ConfigTypeKey = 'company' | 'region' | 'country' | 'port' | 'brand' | 'warehouse';
+export type ConfigTypeKey = 'company' | 'region' | 'country' | 'port' | 'brand' | 'warehouse' | 'exchangeRate';
 
 // ==================== 公司性质枚举 ====================
 
@@ -212,4 +212,20 @@ export interface OrderRoute {
   updatedBy?: string | null;
   updatedAt: string;
   deletedAt?: string | null;
+}
+
+// ==================== 汇率相关 ====================
+
+export interface CurrencyRate {
+  id: string;
+  rateDate: string;
+  currencyName: string;
+  rate: number | string;
+  midRate?: number | string | null;
+  source: number;
+  remark?: string | null;
+  createdBy?: string | null;
+  createdAt: string;
+  updatedBy?: string | null;
+  updatedAt: string;
 }

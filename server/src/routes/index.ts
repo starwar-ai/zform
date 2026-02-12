@@ -22,11 +22,19 @@ import warehouseRoutes from './warehouses';
 import inventoryRoutes from './inventory';
 import orderRouteRoutes from './order-routes';
 import documentRoutes from '../documents/document.routes';
+import codeGeneratorRoutes from './code-generator.routes';
+import exchangeRateRoutes from './exchange-rate.routes';
 
 const router = Router();
 
 // ---- 统一单据 API (新) ----
 router.use('/documents', documentRoutes);
+
+// ---- 编码生成 API ----
+router.use('/code-generator', codeGeneratorRoutes);
+
+// ---- 汇率管理 API ----
+router.use('/rates', exchangeRateRoutes);
 
 // ---- 系统管理 API ----
 router.use('/menus', menuRoutes);
