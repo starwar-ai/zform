@@ -47,3 +47,38 @@
     font-family: system-ui, -apple-system, sans-serif;
   }
 }
+
+@layer utilities {
+  /* Hide scrollbar by default */
+  .scrollbar-hide::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 4px;
+  }
+  
+  /* Show scrollbar on hover */
+  .scrollbar-hide:hover::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.3);
+  }
+  
+  .scrollbar-hide:hover::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.5);
+  }
+  
+  /* Firefox scrollbar support */
+  .scrollbar-hide {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+  
+  .scrollbar-hide:hover {
+    scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
+  }
+}

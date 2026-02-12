@@ -25,6 +25,8 @@ export type TabType =
   | "warehouse-inbound" // 入库管理
   | "warehouse-outbound" // 出库管理
   | "shipping-document-management" // 出运单证管理
+  | "approval-flow-management" // 审批流程配置
+  | "approval-flow-editor" // 审批规则编辑
 
 // 标签数据结构
 export interface Tab {

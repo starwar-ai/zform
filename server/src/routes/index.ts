@@ -20,6 +20,7 @@ import portRoutes from './ports';
 import brandRoutes from './brands';
 import warehouseRoutes from './warehouses';
 import inventoryRoutes from './inventory';
+import orderRouteRoutes from './order-routes';
 import documentRoutes from '../documents/document.routes';
 
 const router = Router();
@@ -44,6 +45,7 @@ router.use('/ports', portRoutes);
 router.use('/brands', brandRoutes);
 router.use('/warehouses', warehouseRoutes);
 router.use('/inventory', inventoryRoutes);
+router.use('/order-routes', orderRouteRoutes);
 
 // ---- 旧路由 (保留兼容) ----
 router.use('/products', productRoutes);

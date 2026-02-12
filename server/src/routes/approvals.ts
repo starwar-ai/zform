@@ -7,7 +7,7 @@ const router = Router();
  * @swagger
  * tags:
  *   name: Approvals
- *   description: 审核流程管理
+ *   description: 流程管理
  */
 
 /**
@@ -58,6 +58,9 @@ router.post('/submit', approvalController.submit);
  *         description: 成功获取审核规则列表
  */
 router.get('/rules', approvalController.getRules);
+router.post('/rules', approvalController.createRule);
+router.put('/rules/:id', approvalController.updateRule);
+router.delete('/rules/:id', approvalController.deleteRule);
 
 /**
  * @swagger

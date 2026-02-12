@@ -165,3 +165,44 @@ export async function checkApprovalRequiredApi(
 ): Promise<{ required: boolean }> {
   return request(`/approvals/check/${docType}/${docId}`)
 }
+
+/** 创建审核规则 */
+export async function createApprovalRuleApi(data: {
+  code: string
+  name: string
+  docType: string
+  levels: ApprovalLevelConfig[]
+  condition?: unknown
+  enabled?: boolean
+}): Promise<ApprovalRuleResponse> {
+  return request("/approvals/rules", {
+    method: "POST",
+    body: JSON.stringify(data),
+  })
+}
+
+/** 更新审核规则 */
+export async function updateApprovalRuleApi(
+  id: string,
+  data: {
+    name?: string
+    docType?: string
+    levels?: ApprovalLevelConfig[]
+    condition?: unknown
+    enabled?: boolean
+  }
+): Promise<{ rule: ApprovalRuleResponse; warning?: string }> {
+  return request(`/approvals/rules/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  })
+}
+
+/** 删除审核规则 */
+export async function deleteApprovalRuleApi(
+  id: string
+): Promise<{ message: string }> {
+  return request(`/approvals/rules/${id}`, {
+    method: "DELETE",
+  })
+}

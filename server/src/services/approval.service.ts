@@ -485,6 +485,104 @@ export class ApprovalService {
   }
 
   /**
+   * 创建审核规则
+   */
+  async createRule(data: {
+    code: string;
+    name: string;
+    docType: string;
+    levels: ApprovalLevel[];
+    condition?: ApprovalCondition | ApprovalCondition[] | null;
+    enabled?: boolean;
+  }) {
+    // 校验 code 唯一性
+    const existing = await prisma.approvalRuleConfig.findFirst({
+      where: { code: data.code },
+    });
+    if (existing) {
+      throw new Error(`规则编码 "${data.code}" 已存在`);
+    }
+
+    return prisma.approvalRuleConfig.create({
+      data: {
+        code: data.code,
+        name: data.name,
+        docType: data.docType,
+        levels: data.levels as any,
+        condition: (data.condition ?? null) as any,
+        enabled: data.enabled ?? true,
+      },
+    });
+  }
+
+  /**
+   * 更新审核规则
+   */
+  async updateRule(
+    id: string,
+    data: {
+      name?: string;
+      docType?: string;
+      levels?: ApprovalLevel[];
+      condition?: ApprovalCondition | ApprovalCondition[] | null;
+      enabled?: boolean;
+    }
+  ) {
+    const rule = await prisma.approvalRuleConfig.findUnique({ where: { id } });
+    if (!rule) {
+      throw new Error('审核规则不存在');
+    }
+
+    // 检查是否有进行中的实例
+    const inProgressCount = await prisma.approvalInstance.count({
+      where: { ruleId: id, status: 'in_progress' },
+    });
+
+    const updateData: Record<string, unknown> = {};
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.docType !== undefined) updateData.docType = data.docType;
+    if (data.levels !== undefined) updateData.levels = data.levels;
+    if (data.condition !== undefined) updateData.condition = data.condition;
+    if (data.enabled !== undefined) updateData.enabled = data.enabled;
+
+    const updated = await prisma.approvalRuleConfig.update({
+      where: { id },
+      data: updateData,
+    });
+
+    return {
+      rule: updated,
+      warning: inProgressCount > 0
+        ? `注意：当前有 ${inProgressCount} 个进行中的审核实例使用此规则`
+        : undefined,
+    };
+  }
+
+  /**
+   * 删除审核规则
+   */
+  async deleteRule(id: string) {
+    const rule = await prisma.approvalRuleConfig.findUnique({ where: { id } });
+    if (!rule) {
+      throw new Error('审核规则不存在');
+    }
+
+    // 检查是否有关联实例
+    const instanceCount = await prisma.approvalInstance.count({
+      where: { ruleId: id },
+    });
+
+    if (instanceCount > 0) {
+      throw new Error(
+        `该规则已有 ${instanceCount} 个审核实例，无法删除。建议禁用该规则。`
+      );
+    }
+
+    await prisma.approvalRuleConfig.delete({ where: { id } });
+    return { message: '规则已删除' };
+  }
+
+  /**
    * 检查单据是否需要审核
    */
   async requiresApproval(docType: string, docId: string): Promise<boolean> {

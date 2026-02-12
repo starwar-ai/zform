@@ -23,6 +23,8 @@ import { WarehouseInventory } from "@/components/warehouse-inventory"
 import { WarehouseInbound } from "@/components/warehouse-inbound"
 import { WarehouseOutbound } from "@/components/warehouse-outbound"
 import { ShippingDocumentManagement } from "@/components/shipping-document-management"
+import { ApprovalFlowManagement } from "@/components/approval-flow-management"
+import { ApprovalFlowEditor } from "@/components/approval-flow-editor"
 
 import { DashboardHome } from "@/components/dashboard-home"
 
@@ -137,6 +139,16 @@ export function TabContent() {
 
       case "shipping-document-management":
         return <ShippingDocumentManagement />
+
+      case "approval-flow-management":
+        return <ApprovalFlowManagement />
+
+      case "approval-flow-editor":
+        return (
+          <ApprovalFlowEditor
+            ruleId={activeTab.params?.ruleId as string | undefined}
+          />
+        )
 
       default:
         return (

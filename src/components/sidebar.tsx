@@ -35,6 +35,7 @@ import {
   Globe,
   Lock,
   KeyRound,
+  GitBranch,
   type LucideIcon,
 } from "lucide-react"
 
@@ -60,6 +61,7 @@ const iconMap: Record<string, LucideIcon> = {
   Globe,
   Lock,
   KeyRound,
+  GitBranch,
   ChevronLeft,
   ChevronRight,
 }
@@ -112,6 +114,7 @@ function parseMenuPath(path?: string | null): {
     "/warehouse-inbound": "warehouse-inbound",
     "/warehouse-outbound": "warehouse-outbound",
     "/shipping-document-management": "shipping-document-management",
+    "/approval-flow-management": "approval-flow-management",
   }
 
   const tabType = pathToTabType[path]
@@ -336,7 +339,7 @@ export function Sidebar() {
       </div>
 
       {/* 导航菜单 */}
-      <nav className="flex-1 space-y-1 p-2 overflow-y-auto">
+      <nav className="flex-1 space-y-1 p-2 overflow-y-auto scrollbar-hide">
         {/* 首页（始终显示） */}
         <Button
           variant="ghost"
@@ -353,7 +356,6 @@ export function Sidebar() {
         {/* 动态菜单 */}
         {userMenuTree.length > 0 && (
           <>
-            <div className="my-2 border-t border-sidebar-border" />
             {filterButtonMenus(userMenuTree).map((node) => (
               <MenuItemRenderer
                 key={node.id}

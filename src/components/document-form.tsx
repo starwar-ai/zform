@@ -23,6 +23,7 @@ import { TracePanel } from "./trace-panel"
 import { ImpactDialog } from "./impact-dialog"
 import { UnsavedChangesDialog } from "./unsaved-changes-dialog"
 import { ApprovalHistory } from "./approval-history"
+import { ApprovalFlowVisualizer } from "./approval-flow-visualizer"
 import { DocumentPermissionPanel } from "./document-permission-panel"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -671,7 +672,17 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
                 </TabsContent>
 
                 <TabsContent value="approval" className="mt-2">
-                  <div className="p-3 pt-1">
+                  <div className="p-3 pt-1 space-y-3">
+                    {approval.latestInstance && (
+                      <div className="h-[200px] border rounded-md">
+                        <ApprovalFlowVisualizer
+                          levels={approval.latestInstance.rule.levels}
+                          instance={approval.latestInstance}
+                          records={approval.latestInstance.records}
+                          compact
+                        />
+                      </div>
+                    )}
                     <ApprovalHistory
                       docType={doc.typeId}
                       docId={docId}

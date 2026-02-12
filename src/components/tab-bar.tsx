@@ -30,9 +30,9 @@ interface SortableTabProps {
 
 function PinnedTab({ tab, isActive, onSwitch }: Omit<SortableTabProps, "onClose">) {
   return (
-    <TabContextMenu tabId={tab.id}>
-      <TooltipProvider delayDuration={300}>
-        <Tooltip>
+    <TooltipProvider delayDuration={300}>
+      <Tooltip>
+        <TabContextMenu tabId={tab.id}>
           <TooltipTrigger asChild>
             <div
               className={cn(
@@ -46,12 +46,12 @@ function PinnedTab({ tab, isActive, onSwitch }: Omit<SortableTabProps, "onClose"
               <span className="truncate">{tab.title}</span>
             </div>
           </TooltipTrigger>
-          <TooltipContent side="top" sideOffset={8}>
-            <p>{tab.title}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    </TabContextMenu>
+        </TabContextMenu>
+        <TooltipContent side="top" sideOffset={8}>
+          <p>{tab.title}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }
 
@@ -71,9 +71,9 @@ function SortableTab({ tab, isActive, onSwitch, onClose }: SortableTabProps) {
   }
 
   return (
-    <TabContextMenu tabId={tab.id}>
-      <TooltipProvider delayDuration={300}>
-        <Tooltip>
+    <TooltipProvider delayDuration={300}>
+      <Tooltip>
+        <TabContextMenu tabId={tab.id}>
           <TooltipTrigger asChild>
             <div
               ref={setNodeRef}
@@ -107,12 +107,12 @@ function SortableTab({ tab, isActive, onSwitch, onClose }: SortableTabProps) {
               )}
             </div>
           </TooltipTrigger>
-          <TooltipContent side="top" sideOffset={8}>
-            <p>{tab.title}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    </TabContextMenu>
+        </TabContextMenu>
+        <TooltipContent side="top" sideOffset={8}>
+          <p>{tab.title}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }
 

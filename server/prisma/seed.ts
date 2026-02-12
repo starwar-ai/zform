@@ -856,7 +856,6 @@ async function main() {
       levels: [
         { name: '业务经理审批', mode: 'any', roleIds: ['MANAGER'] },
       ],
-      condition: null,
       enabled: true,
     },
     create: {
@@ -866,7 +865,6 @@ async function main() {
       levels: [
         { name: '业务经理审批', mode: 'any', roleIds: ['MANAGER'] },
       ],
-      condition: null,
       enabled: true,
     },
   });
@@ -880,7 +878,6 @@ async function main() {
         { name: '业务经理审批', mode: 'any', roleIds: ['MANAGER'] },
         { name: '管理层会签', mode: 'all', roleIds: ['ADMIN', 'MANAGER'] },
       ],
-      condition: null,
       enabled: true,
     },
     create: {
@@ -891,7 +888,6 @@ async function main() {
         { name: '业务经理审批', mode: 'any', roleIds: ['MANAGER'] },
         { name: '管理层会签', mode: 'all', roleIds: ['ADMIN', 'MANAGER'] },
       ],
-      condition: null,
       enabled: true,
     },
   });
@@ -1058,19 +1054,6 @@ async function main() {
     },
   });
 
-  // 开票通知菜单 - 业务入口子菜单
-  const invoicingNoticeMenu = await prisma.sysMenu.create({
-    data: {
-      title: '开票通知',
-      icon: 'FileText',
-      path: '/type-list/invoicing_notice',
-      parentId: businessEntryMenu.id,
-      orderNum: 4,
-      menuType: 'menu',
-      status: 'visible',
-    },
-  });
-
   // ---- 财务入口（一级菜单） ----
   const financeEntryMenu = await prisma.sysMenu.create({
     data: {
@@ -1092,6 +1075,71 @@ async function main() {
       path: '/type-list/payment_apply',
       parentId: financeEntryMenu.id,
       orderNum: 1,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  // 付款单菜单 - 财务入口子菜单
+  const paymentMenu = await prisma.sysMenu.create({
+    data: {
+      title: '付款单',
+      icon: 'Banknote',
+      path: '/type-list/payment',
+      parentId: financeEntryMenu.id,
+      orderNum: 2,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  // 收款登记菜单 - 财务入口子菜单
+  const receiptRegistrationMenu = await prisma.sysMenu.create({
+    data: {
+      title: '收款登记',
+      icon: 'Receipt',
+      path: '/type-list/receipt_registration',
+      parentId: financeEntryMenu.id,
+      orderNum: 3,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  // 回款认领菜单 - 财务入口子菜单
+  const paymentClaimMenu = await prisma.sysMenu.create({
+    data: {
+      title: '回款认领',
+      icon: 'HandCoins',
+      path: '/type-list/payment_claim',
+      parentId: financeEntryMenu.id,
+      orderNum: 5,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  // 开票通知菜单 - 财务入口子菜单
+  const invoicingNoticeMenu = await prisma.sysMenu.create({
+    data: {
+      title: '开票通知',
+      icon: 'FileText',
+      path: '/type-list/invoicing_notice',
+      parentId: financeEntryMenu.id,
+      orderNum: 6,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  // 发票登记菜单 - 财务入口子菜单
+  const invoiceRegistrationMenu = await prisma.sysMenu.create({
+    data: {
+      title: '发票登记',
+      icon: 'FileText',
+      path: '/type-list/invoice_registration',
+      parentId: financeEntryMenu.id,
+      orderNum: 7,
       menuType: 'menu',
       status: 'visible',
     },
@@ -1385,6 +1433,33 @@ async function main() {
     { perm: 'void', title: '作废' },
   ]);
 
+  // 付款单按钮权限
+  const paymentBtnIds = await createDocPermButtons(paymentMenu.id, 'payment', [
+    ...basicDocActions,
+    { perm: 'close', title: '关闭' },
+    { perm: 'void', title: '作废' },
+    { perm: 'push_down', title: '下推' },
+  ]);
+
+  // 收款登记按钮权限
+  const receiptRegistrationBtnIds = await createDocPermButtons(receiptRegistrationMenu.id, 'receipt_registration', [
+    ...basicDocActions,
+    { perm: 'close', title: '关闭' },
+  ]);
+
+  // 回款认领按钮权限
+  const paymentClaimBtnIds = await createDocPermButtons(paymentClaimMenu.id, 'payment_claim', [
+    ...basicDocActions,
+    { perm: 'close', title: '关闭' },
+  ]);
+
+  // 发票登记按钮权限
+  const invoiceRegistrationBtnIds = await createDocPermButtons(invoiceRegistrationMenu.id, 'invoice_registration', [
+    ...basicDocActions,
+    { perm: 'close', title: '关闭' },
+    { perm: 'void', title: '作废' },
+  ]);
+
   // 所有按钮权限 ID 汇总
   const allBtnIds = [
     ...salesContractBtnIds,
@@ -1400,6 +1475,10 @@ async function main() {
     ...concessionAcceptanceBtnIds,
     ...invoicingNoticeBtnIds,
     ...paymentApplyBtnIds,
+    ...paymentBtnIds,
+    ...receiptRegistrationBtnIds,
+    ...paymentClaimBtnIds,
+    ...invoiceRegistrationBtnIds,
   ];
 
   // 顶级菜单：系统管理
@@ -1471,6 +1550,18 @@ async function main() {
       path: '/department-management',
       parentId: sysMenu.id,
       orderNum: 4,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  const approvalFlowMenu = await prisma.sysMenu.create({
+    data: {
+      title: '流程配置',
+      icon: 'GitBranch',
+      path: '/approval-flow-management',
+      parentId: sysMenu.id,
+      orderNum: 5,
       menuType: 'menu',
       status: 'visible',
     },
@@ -1548,6 +1639,10 @@ async function main() {
     shippingDocumentMenu.id,
     financeEntryMenu.id,
     paymentApplyMenu.id,
+    paymentMenu.id,
+    receiptRegistrationMenu.id,
+    paymentClaimMenu.id,
+    invoiceRegistrationMenu.id,
     dataEntryMenu.id,
     productManagementMenu.id,
     customerMenu.id,
@@ -1567,6 +1662,7 @@ async function main() {
     businessParentMenu.id,
     categoryMgmtMenu.id,
     businessConfigMenu.id,
+    approvalFlowMenu.id,
     oaEntryMenu.id,
     ...allBtnIds,
   ];
@@ -1589,6 +1685,10 @@ async function main() {
     shippingDocumentMenu.id,
     financeEntryMenu.id,
     paymentApplyMenu.id,
+    paymentMenu.id,
+    receiptRegistrationMenu.id,
+    paymentClaimMenu.id,
+    invoiceRegistrationMenu.id,
     dataEntryMenu.id,
     productManagementMenu.id,
     customerMenu.id,
@@ -1629,6 +1729,10 @@ async function main() {
     ...concessionAcceptanceBtnIds.slice(0, 3),
     ...invoicingNoticeBtnIds.slice(0, 3),
     ...paymentApplyBtnIds.slice(0, 3),
+    ...paymentBtnIds.slice(0, 3),
+    ...receiptRegistrationBtnIds.slice(0, 3),
+    ...paymentClaimBtnIds.slice(0, 3),
+    ...invoiceRegistrationBtnIds.slice(0, 3),
   ];
 
   const userMenuIds = [
@@ -1641,6 +1745,10 @@ async function main() {
     shippingDocumentMenu.id,
     financeEntryMenu.id,
     paymentApplyMenu.id,
+    paymentMenu.id,
+    receiptRegistrationMenu.id,
+    paymentClaimMenu.id,
+    invoiceRegistrationMenu.id,
     dataEntryMenu.id,
     productManagementMenu.id,
     customerMenu.id,
@@ -2012,6 +2120,52 @@ async function main() {
       accountNumber: '5555666677778888999',
       swiftCode: 'PCBCCNBJSUZ',
       isDefault: true,
+    },
+  });
+
+  // ---- 订单路径 ----
+  await prisma.orderRoute.upsert({
+    where: { id: 'order-route-001' },
+    update: {
+      path: '/orders/domestic',
+      status: 'active',
+      description: '国内订单处理路径',
+    },
+    create: {
+      id: 'order-route-001',
+      path: '/orders/domestic',
+      status: 'active',
+      description: '国内订单处理路径',
+    },
+  });
+
+  await prisma.orderRoute.upsert({
+    where: { id: 'order-route-002' },
+    update: {
+      path: '/orders/international',
+      status: 'active',
+      description: '国际订单处理路径',
+    },
+    create: {
+      id: 'order-route-002',
+      path: '/orders/international',
+      status: 'active',
+      description: '国际订单处理路径',
+    },
+  });
+
+  await prisma.orderRoute.upsert({
+    where: { id: 'order-route-003' },
+    update: {
+      path: '/orders/emergency',
+      status: 'inactive',
+      description: '紧急订单处理路径',
+    },
+    create: {
+      id: 'order-route-003',
+      path: '/orders/emergency',
+      status: 'inactive',
+      description: '紧急订单处理路径',
     },
   });
 

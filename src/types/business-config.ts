@@ -4,7 +4,7 @@
 
 // ==================== 通用类型 ====================
 
-export type ConfigTypeKey = 'company' | 'region' | 'country' | 'port' | 'brand' | 'warehouse';
+export type ConfigTypeKey = 'company' | 'region' | 'country' | 'port' | 'brand' | 'warehouse' | 'orderRoute';
 
 // ==================== 公司性质枚举 ====================
 
@@ -16,7 +16,7 @@ export enum CompanyNature {
 }
 
 export const CompanyNatureLabels: Record<CompanyNature, string> = {
-  [CompanyNature.FACTORY]: '工厂',
+  [CompanyNature.FACTORY]: '内部工厂',
   [CompanyNature.EXPORT_COMPANY]: '外销公司',
   [CompanyNature.DOMESTIC_COMPANY]: '内销公司',
   [CompanyNature.INTERNAL_CUSTOMER]: '内部客户',
@@ -193,6 +193,20 @@ export interface Brand {
   descriptionEn?: string | null;
   isCommon: boolean;
   isSelfOwned: boolean;
+  createdBy?: string | null;
+  createdAt: string;
+  updatedBy?: string | null;
+  updatedAt: string;
+  deletedAt?: string | null;
+}
+
+// ==================== 订单路径相关 ====================
+
+export interface OrderRoute {
+  id: string;
+  path: string;
+  status: string;
+  description?: string | null;
   createdBy?: string | null;
   createdAt: string;
   updatedBy?: string | null;

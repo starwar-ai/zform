@@ -199,6 +199,22 @@ model Department {
   @@map("departments")
 }
 
+// ==================== 订单路径表 ====================
+
+model OrderRoute {
+  id          String     @id @default(cuid())
+  path        String     // 路径
+  status      String     // 状态
+  description String?    // 描述
+  createdBy   String?    @map("created_by")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedBy   String?    @map("updated_by")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  deletedAt   DateTime?  @map("deleted_at")
+
+  @@map("order_routes")
+}
+
 // ==================== 品牌表 ====================
 
 model Brand {
@@ -4201,4 +4217,544 @@ model PaymentApplyItem {
   @@index([paymentApplyId])
   @@index([purchaseContractId])
   @@map("payment_apply_items")
+}
+
+// ==================== 付款单状态枚举 ====================
+
+enum PaymentDocStatus {
+  DRAFT // 草稿
+  SUBMITTED // 已提交
+  APPROVED // 已审核
+  PAID // 已付款
+  CANCELLED // 已取消
+}
+
+enum PaymentPrintStatus {
+  NOT_PRINTED // 未打印
+  PRINTED // 已打印
+}
+
+// ==================== 付款单主表 ====================
+
+model Payment {
+  id String @id @default(cuid())
+
+  // 基本信息
+  code        String          @unique // 编号
+  status      PaymentDocStatus @default(DRAFT) // 状态
+  businessType String?        @map("business_type") // 业务类型
+  businessCode String?        @map("business_code") // 业务编号
+
+  // 关联信息
+  orderLinkCode String? @map("order_link_code") // 订单链路编号
+  applyCode     String? @map("apply_code") // 申请单编号
+  paymentCode   String? @map("payment_code") // 支付编码
+
+  // 付款银行信息
+  paymentBankAccount String? @map("payment_bank_account") // 付款银行账户
+  paymentBank        String? @map("payment_bank") // 付款银行
+  bankName           String? @map("bank_name") // 开户行
+  bankAccount        String? @map("bank_account") // 银行账号
+  bankAddress        String? @map("bank_address") // 开户行地址
+  bankContact        String? @map("bank_contact") // 开户行联系人
+  bankCode           String? @map("bank_code") // 银行行号
+
+  // 对方账户信息
+  counterpartyAccount     String? @map("counterparty_account") // 对方账号
+  counterpartyBank        String? @map("counterparty_bank") // 对方银行
+  counterpartyAccountName String? @map("counterparty_account_name") // 对方账户
+
+  // 支付对象信息
+  payeeType String? @map("payee_type") // 支付对象类型
+  payeeCode String? @map("payee_code") // 支付对象编号
+
+  // 内部法人单位
+  internalLegalEntity String? @map("internal_legal_entity") // 内部法人单位
+
+  // 付款信息
+  paymentMethod      String?   @map("payment_method") // 支付方式
+  acceptanceDays     Int?      @map("acceptance_days") // 承兑天数
+  applyPaymentDate   DateTime? @map("apply_payment_date") // 申请付款日
+  applyPaymentAmount Decimal?  @map("apply_payment_amount") @db.Decimal(15, 2) // 申请支付金额
+
+  // 支付金额信息
+  paymentAmount Decimal?         @map("payment_amount") @db.Decimal(15, 2) // 支付金额
+  paidAmount    Decimal?         @map("paid_amount") @db.Decimal(15, 2) // 已付金额
+  paymentStatus PaymentStatus    @default(NOT_PAID) @map("payment_status") // 支付状态
+  paymentDate   DateTime?        @map("payment_date") // 支付日期
+  cashier       String?          @map("cashier") // 出纳员
+
+  // 审核信息
+  approvalStatus String?   @map("approval_status") // 审核状态
+  finalApprover  String?   @map("final_approver") // 最终审批人
+  approvalTime   DateTime? @map("approval_time") // 审批时间
+
+  // 打印信息
+  printStatus PaymentPrintStatus @default(NOT_PRINTED) @map("print_status") // 打印状态
+  printCount  Int               @default(0) @map("print_count") // 打印次数
+
+  // 申请信息
+  applicantName String? @map("applicant_name") // 申请人
+
+  // 付款申请信息 (JSON)
+  paymentApplyInfo Json? @map("payment_apply_info") // 付款申请信息
+
+  // 备注与附件
+  remark      String? @map("remark") // 备注
+  attachments String? @map("attachments") // 附件
+
+  // 作废信息
+  voidReason String?   @map("void_reason") // 作废原因
+  voidTime   DateTime? @map("void_time") // 作废时间
+  voidBy     String?   @map("void_by") // 作废人
+
+  // 时间戳
+  createdBy String?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedBy String?   @map("updated_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // 关联关系
+  items PaymentItem[] @relation("PaymentItems")
+
+  @@index([code])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([createdAt])
+  @@map("payments")
+}
+
+// ==================== 付款单子表 ====================
+
+model PaymentItem {
+  id String @id @default(cuid())
+
+  // 关联付款单
+  paymentId String  @map("payment_id")
+  payment   Payment @relation("PaymentItems", fields: [paymentId], references: [id], onDelete: Cascade)
+
+  // 关联付款申请
+  paymentApplyId     String? @map("payment_apply_id") // 付款申请ID
+  paymentApplyCode   String? @map("payment_apply_code") // 付款申请编号
+  paymentApplyItemId String? @map("payment_apply_item_id") // 付款申请明细ID
+
+  // 金额信息
+  applyAmount Decimal? @map("apply_amount") @db.Decimal(15, 2) // 申请金额
+  paidAmount  Decimal? @map("paid_amount") @db.Decimal(15, 2) // 已付金额
+  thisAmount  Decimal? @map("this_amount") @db.Decimal(15, 2) // 本次付款金额
+
+  // 备注
+  remark String? @map("remark") // 备注
+
+  // 时间戳
+  createdBy String?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedBy String?   @map("updated_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([paymentId])
+  @@index([paymentApplyId])
+  @@map("payment_items")
+}
+
+// ==================== 收款登记状态枚举 ====================
+
+enum ReceiptRegistrationStatus {
+  DRAFT // 草稿
+  SUBMITTED // 已提交
+  APPROVED // 已审核
+  CANCELLED // 已取消
+}
+
+enum ClaimStatus {
+  UNCLAIMED // 未认领
+  PARTIAL // 部分认领
+  CLAIMED // 已认领
+}
+
+// ==================== 收款登记主表 ====================
+
+model ReceiptRegistration {
+  id String @id @default(cuid())
+
+  // 基本信息
+  code         String                    @unique // 编号
+  status       ReceiptRegistrationStatus @default(DRAFT) // 状态
+  registerDate DateTime?                 @map("register_date") // 登记日期
+  registerBy   String?                   @map("register_by") // 登记人
+
+  // 入账单位信息
+  accountId       String? @map("account_id") // 入账单位id
+  accountName     String? @map("account_name") // 入账单位名称
+  companyTitle    String? @map("company_title") // 公司抬头
+
+  // 银行信息
+  bankEntryDate   DateTime? @map("bank_entry_date") // 银行入账日期
+  bankName        String?   @map("bank_name") // 银行
+  bankAccount     String?   @map("bank_account") // 银行账号
+  bankAddress     String?   @map("bank_address") // 开户行地址
+  bankContact     String?   @map("bank_contact") // 开户行联系人
+  bankCode        String?   @map("bank_code") // 银行行号
+
+  // 入账金额信息
+  currency        String?  @map("currency") // 入账币别
+  entryAmount     Decimal? @map("entry_amount") @db.Decimal(15, 2) // 入账金额
+  claimedAmount   Decimal? @map("claimed_amount") @db.Decimal(15, 2) // 已认领金额
+
+  // 客户信息
+  customerId   String? @map("customer_id") // 客户id
+  customerCode String? @map("customer_code") // 客户编号
+  customerName String? @map("customer_name") // 客户名称
+
+  // 业务员信息
+  salesPerson     String? @map("sales_person") // 业务员
+  claimSalesPerson String? @map("claim_sales_person") // 认领业务员
+
+  // 认领信息
+  claimStatus ClaimStatus @default(UNCLAIMED) @map("claim_status") // 认领状态
+  claimDate   DateTime?  @map("claim_date") // 认领日期
+
+  // 关联信息
+  salesContractCode String? @map("sales_contract_code") // 关联外销合同号
+
+  // 客户列表 (JSON)
+  customerList Json? @map("customer_list") // 客户列表
+
+  // 备注
+  remark String? @map("remark") // 备注
+
+  // 时间戳
+  createdBy String?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedBy String?   @map("updated_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // 关联关系
+  items ReceiptRegistrationItem[] @relation("ReceiptRegistrationItems")
+
+  @@index([code])
+  @@index([status])
+  @@index([claimStatus])
+  @@index([customerId])
+  @@index([createdAt])
+  @@map("receipt_registrations")
+}
+
+// ==================== 收款登记子表 ====================
+
+model ReceiptRegistrationItem {
+  id String @id @default(cuid())
+
+  // 关联收款登记
+  receiptRegistrationId String              @map("receipt_registration_id")
+  receiptRegistration   ReceiptRegistration @relation("ReceiptRegistrationItems", fields: [receiptRegistrationId], references: [id], onDelete: Cascade)
+
+  // 客户信息
+  customerId   String? @map("customer_id") // 客户id
+  customerCode String? @map("customer_code") // 客户编号
+  customerName String? @map("customer_name") // 客户名称
+
+  // 认领信息
+  claimAmount      Decimal?  @map("claim_amount") @db.Decimal(15, 2) // 认领金额
+  claimSalesPerson String?   @map("claim_sales_person") // 认领业务员
+  claimDate        DateTime? @map("claim_date") // 认领日期
+  salesContractCode String?  @map("sales_contract_code") // 关联合同号
+
+  // 备注
+  remark String? @map("remark") // 备注
+
+  // 时间戳
+  createdBy String?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedBy String?   @map("updated_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([receiptRegistrationId])
+  @@index([customerId])
+  @@map("receipt_registration_items")
+}
+
+// ==================== 回款认领状态枚举 ====================
+
+enum PaymentClaimStatus {
+  DRAFT // 草稿
+  SUBMITTED // 已提交
+  APPROVED // 已审核
+  CANCELLED // 已取消
+}
+
+enum PaymentClaimType {
+  PAYMENT_CLAIM // 回款认领
+  OTHER_FEE // 其他收费
+}
+
+enum OtherFeeType {
+  CERTIFICATE_FEE // 证书费
+  MOLD_FEE // 模具费
+  SAMPLE_FEE // 样品费
+  EXPRESS_FEE // 快递费
+  INSPECTION_FEE // 验货费
+}
+
+// ==================== 回款认领主表 ====================
+
+model PaymentClaim {
+  id String @id @default(cuid())
+
+  // 基本信息
+  code               String             @unique // 编号
+  status             PaymentClaimStatus @default(DRAFT) // 状态
+  claimType          PaymentClaimType   @default(PAYMENT_CLAIM) @map("claim_type") // 认领类型
+  otherFeeType       OtherFeeType?      @map("other_fee_type") // 其他收费类型
+  source             String?            @map("source") // 来源
+
+  // 合同信息
+  purchaseContractCode String? @map("purchase_contract_code") // 库存采购合同号
+  salesContractCode    String? @map("sales_contract_code") // 订单合同号
+  salesType            String? @map("sales_type") // 销售类型
+
+  // 发票信息
+  shippingInvoiceNo String? @map("shipping_invoice_no") // 出运发票号
+  invoiceNo         String? @map("invoice_no") // 发票号
+
+  // 收款信息
+  receiptRegistrationCode String?  @map("receipt_registration_code") // 收款单编号
+  financialFee            Decimal? @map("financial_fee") @db.Decimal(15, 2) // 财务费用
+
+  // 客户信息
+  customerId   String? @map("customer_id") // 客户id
+  customerCode String? @map("customer_code") // 客户编号
+  customerName String? @map("customer_name") // 客户名称
+
+  // 币种与收款方式
+  orderCurrency     String?  @map("order_currency") // 订单币别
+  paymentMethodId   String?  @map("payment_method_id") // 收款方式主键
+  paymentMethodName String?  @map("payment_method_name") // 收款方式名称
+
+  // 金额信息
+  receivableAmount        Decimal? @map("receivable_amount") @db.Decimal(15, 2) // 应收金额
+  receivedAmount          Decimal? @map("received_amount") @db.Decimal(15, 2) // 已收金额
+  currentClaimAmountEntry Decimal? @map("current_claim_amount_entry") @db.Decimal(15, 2) // 本次入账币种认领金额
+  currentClaimAmountOrder Decimal? @map("current_claim_amount_order") @db.Decimal(15, 2) // 订单币种认领金额
+  differenceAmount        Decimal? @map("difference_amount") @db.Decimal(15, 2) // 差异总金额
+  claimDifference         Decimal? @map("claim_difference") @db.Decimal(15, 2) // 认领差异
+
+  // 完成标识
+  paymentCompleteFlag Boolean @default(false) @map("payment_complete_flag") // 收款完成标识
+
+  // 认领信息
+  claimEmployee String?   @map("claim_employee") // 认领员工
+  claimDate     DateTime? @map("claim_date") // 认领日期
+
+  // 时间戳
+  createdBy String?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedBy String?   @map("updated_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // 关联关系
+  items PaymentClaimItem[] @relation("PaymentClaimItems")
+
+  @@index([code])
+  @@index([status])
+  @@index([claimType])
+  @@index([customerId])
+  @@index([receiptRegistrationCode])
+  @@index([createdAt])
+  @@map("payment_claims")
+}
+
+// ==================== 回款认领子表 ====================
+
+model PaymentClaimItem {
+  id String @id @default(cuid())
+
+  // 关联回款认领
+  paymentClaimId String      @map("payment_claim_id")
+  paymentClaim   PaymentClaim @relation("PaymentClaimItems", fields: [paymentClaimId], references: [id], onDelete: Cascade)
+
+  // 关联收款登记
+  receiptRegistrationId String? @map("receipt_registration_id") // 收款登记ID
+
+  // 金额信息
+  claimAmount Decimal? @map("claim_amount") @db.Decimal(15, 2) // 认领金额
+
+  // 备注
+  remark String? @map("remark") // 备注
+
+  // 时间戳
+  createdBy String?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedBy String?   @map("updated_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([paymentClaimId])
+  @@index([receiptRegistrationId])
+  @@map("payment_claim_items")
+}
+
+// ==================== 发票登记状态枚举 ====================
+
+enum InvoiceRegistrationStatus {
+  DRAFT // 草稿
+  SUBMITTED // 已提交
+  APPROVED // 已审核
+  CANCELLED // 已取消
+}
+
+// ==================== 发票登记主表 ====================
+
+model InvoiceRegistration {
+  id String @id @default(cuid())
+
+  // 基本信息
+  code   String                   @unique // 编号
+  status InvoiceRegistrationStatus @default(DRAFT) // 状态
+
+  // 复核信息
+  reviewer   String?   @map("reviewer") // 复核人
+  reviewDate DateTime? @map("review_date") // 复核日期
+
+  // 付款主体信息
+  paymentEntityId   String? @map("payment_entity_id") // 付款主体主键
+  paymentEntityName String? @map("payment_entity_name") // 付款主体名称
+
+  // 供应商信息
+  supplierCode String? @map("supplier_code") // 供应商编号
+  supplierName String? @map("supplier_name") // 供应商名称
+  supplierId   String? @map("supplier_id") // 供应商ID
+
+  // 发票信息
+  invoiceType   InvoiceType @default(VAT_SPECIAL) @map("invoice_type") // 发票类型
+  taxInvoiceNo  String?     @map("tax_invoice_no") // 税票编号
+  receivedDate  DateTime?   @map("received_date") // 收票日期
+  invoiceAmount Decimal?    @map("invoice_amount") @db.Decimal(15, 2) // 发票总金额
+  currency      String?     @map("currency") // 币别
+  taxRate       Decimal?    @map("tax_rate") @db.Decimal(5, 2) // 税率
+
+  // 附件
+  attachments String? @map("attachments") // 附件
+
+  // 审核信息
+  approvalStatus String? @map("approval_status") // 审核状态
+
+  // 录入信息
+  enteredBy   String?   @map("entered_by") // 录入人
+  enteredDate DateTime? @map("entered_date") // 录入日期
+
+  // 流程实例
+  workflowInstanceId String? @map("workflow_instance_id") // 流程实例的编号
+
+  // 备注
+  remark String? @map("remark") // 业务简要
+
+  // 时间戳
+  createdBy String?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedBy String?   @map("updated_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // 关联关系
+  items InvoiceRegistrationItem[] @relation("InvoiceRegistrationItems")
+
+  @@index([code])
+  @@index([status])
+  @@index([supplierId])
+  @@index([receivedDate])
+  @@index([createdAt])
+  @@map("invoice_registrations")
+}
+
+// ==================== 发票登记明细表 ====================
+
+model InvoiceRegistrationItem {
+  id String @id @default(cuid())
+
+  // 关联发票登记
+  invoiceRegistrationId String             @map("invoice_registration_id")
+  invoiceRegistration   InvoiceRegistration @relation("InvoiceRegistrationItems", fields: [invoiceRegistrationId], references: [id], onDelete: Cascade)
+
+  // 产品信息
+  baseProductCode String? @map("base_product_code") // 基础产品编号
+  productId       String? @map("product_id") // 产品ID
+  productCode     String? @map("product_code") // 产品编号
+  productName     String? @map("product_name") // 产品名称
+
+  // 采购合同信息
+  purchaseContractId     String? @map("purchase_contract_id") // 采购合同主键
+  purchaseContractCode   String? @map("purchase_contract_code") // 采购合同编号
+  purchaseContractItemId String? @map("purchase_contract_item_id") // 采购合同明细主键
+
+  // 发票信息
+  invoiceQuantity  Decimal?  @map("invoice_quantity") @db.Decimal(15, 4) // 发票登记数量
+  invoiceItemName  String?   @map("invoice_item_name") // 开票品名
+  invoiceNo        String?   @map("invoice_no") // 发票号
+  invoiceUnitPrice Decimal?  @map("invoice_unit_price") @db.Decimal(15, 4) // 开票单价
+  taxInvoiceNo     String?   @map("tax_invoice_no") // 税票编号
+  taxRate          Decimal?  @map("tax_rate") @db.Decimal(5, 2) // 税率
+
+  // 跟单信息
+  documentaryRegistrationId String? @map("documentary_registration_id") // 跟单登记主键
+
+  // 开票通知信息
+  invoicingNoticeId   String?  @map("invoicing_notice_id") // 开票通知主键
+  invoicingNoticeCode String?  @map("invoicing_notice_code") // 开票通知编号
+  noticeInvoiceQty    Decimal? @map("notice_invoice_qty") @db.Decimal(15, 4) // 通知开票数量
+
+  // 销售明细信息
+  salesDetailId String? @map("sales_detail_id") // 销售明细主键
+
+  // 出运信息
+  shippingQuantity    Decimal? @map("shipping_quantity") @db.Decimal(15, 4) // 出运数量
+  shippingInvoiceNo   String?  @map("shipping_invoice_no") // 出运发票号
+
+  // 报关信息
+  customsUnit       String?  @map("customs_unit") // 海关计量单位
+  customsQuantity   Decimal? @map("customs_quantity") @db.Decimal(15, 4) // 报关数量
+  customsName       String?  @map("customs_name") // 报关品名
+  hsCode            String?  @map("hs_code") // 海关编码
+
+  // 采购信息
+  totalPurchaseQty      Decimal?  @map("total_purchase_qty") @db.Decimal(15, 4) // 总采购数量
+  purchaseTaxPrice      Decimal?  @map("purchase_tax_price") @db.Decimal(15, 4) // 采购含税单价
+  purchaseCurrency      String?   @map("purchase_currency") // 采购币种
+  purchaseTaxRate       Decimal?  @map("purchase_tax_rate") @db.Decimal(5, 2) // 采购税率
+
+  // 供应商信息
+  supplierId   String? @map("supplier_id") // 供应商ID
+  supplierCode String? @map("supplier_code") // 供应商编号
+  supplierName String? @map("supplier_name") // 供应商名称
+
+  // 销售合同信息
+  salesContractId   String? @map("sales_contract_id") // 销售合同ID
+  salesContractCode String? @map("sales_contract_code") // 销售合同号
+
+  // 跟单员
+  merchandiser String? @map("merchandiser") // 跟单员
+
+  // 中文品名
+  chineseName String? @map("chinese_name") // 中文品名
+
+  // 客户货号
+  customerProductNo String? @map("customer_product_no") // 客户货号
+
+  // 时间戳
+  createdBy String?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedBy String?   @map("updated_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([invoiceRegistrationId])
+  @@index([productId])
+  @@index([purchaseContractId])
+  @@index([supplierId])
+  @@map("invoice_registration_items")
 }

@@ -119,6 +119,53 @@ export const approvalController = {
     }
   },
 
+  // 创建审核规则
+  async createRule(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { code, name, docType, levels, condition, enabled } = req.body;
+      const rule = await approvalService.createRule({
+        code,
+        name,
+        docType,
+        levels,
+        condition,
+        enabled,
+      });
+      res.status(201).json(successResponse(rule, '规则创建成功'));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // 更新审核规则
+  async updateRule(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const { name, docType, levels, condition, enabled } = req.body;
+      const result = await approvalService.updateRule(id, {
+        name,
+        docType,
+        levels,
+        condition,
+        enabled,
+      });
+      res.json(successResponse(result, result.warning || '规则更新成功'));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // 删除审核规则
+  async deleteRule(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const result = await approvalService.deleteRule(id);
+      res.json(successResponse(result, result.message));
+    } catch (error) {
+      next(error);
+    }
+  },
+
   // 检查单据是否需要审核
   async checkRequired(req: Request, res: Response, next: NextFunction) {
     try {

@@ -92,6 +92,22 @@ import {
   paymentApplySchema,
   paymentApplyChangeRule,
 } from "./payment-apply-schemas"
+import {
+  paymentSchema,
+  paymentChangeRule,
+} from "./payment-schemas"
+import {
+  receiptRegistrationSchema,
+  receiptRegistrationChangeRule,
+} from "./receipt-registration-schemas"
+import {
+  paymentClaimSchema,
+  paymentClaimChangeRule,
+} from "./payment-claim-schemas"
+import {
+  invoiceRegistrationSchema,
+  invoiceRegistrationChangeRule,
+} from "./invoice-registration-schemas"
 
 // ============================================================
 // 单据列表操作配置
@@ -1033,6 +1049,190 @@ const paymentApplyFormActions: DocumentFormActionConfig = {
   ],
 }
 
+/** 付款单 - 列表操作 */
+const paymentActionConfig: DocumentListActionConfig = {
+  typeId: "payment",
+  rowActions: [
+    { id: "open", label: "打开" },
+    { id: "copy-id", label: "复制ID" },
+    {
+      id: "delete",
+      label: "删除",
+      danger: true,
+      modes: ["document"],
+      visible: (row) => row._status === "draft",
+      permission: "payment:delete",
+    },
+  ],
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "payment:create" },
+  ],
+}
+
+/** 付款单 - 表单操作 */
+const paymentFormActions: DocumentFormActionConfig = {
+  typeId: "payment",
+  actions: [
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["draft"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["draft"], permission: "payment:submit", order: 2 },
+    {
+      id: "approve", label: "审批", icon: "Check", allowedStatuses: ["submitted"],
+      permission: "payment:approve", order: 3,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "reject", label: "拒绝", icon: "X", variant: "destructive", allowedStatuses: ["submitted"],
+      permission: "payment:approve", order: 4,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "withdraw", label: "撤回", icon: "Undo2", variant: "outline", allowedStatuses: ["submitted"], order: 5,
+      visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
+    },
+    { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["approved"], permission: "payment:close", order: 6 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["draft"], order: 7 },
+    { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["approved"], permission: "payment:void", order: 8 },
+    {
+      id: "push-down:0", label: "确认付款", icon: "CheckCircle", variant: "outline",
+      allowedStatuses: ["approved"], permission: "payment:push_down", order: 10,
+    },
+  ],
+}
+
+/** 收款登记 - 列表操作 */
+const receiptRegistrationActionConfig: DocumentListActionConfig = {
+  typeId: "receipt_registration",
+  rowActions: [
+    { id: "open", label: "打开" },
+    { id: "copy-id", label: "复制ID" },
+    {
+      id: "delete",
+      label: "删除",
+      danger: true,
+      modes: ["document"],
+      visible: (row) => row._status === "draft",
+      permission: "receipt_registration:delete",
+    },
+  ],
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "receipt_registration:create" },
+  ],
+}
+
+/** 收款登记 - 表单操作 */
+const receiptRegistrationFormActions: DocumentFormActionConfig = {
+  typeId: "receipt_registration",
+  actions: [
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["draft"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["draft"], permission: "receipt_registration:submit", order: 2 },
+    {
+      id: "approve", label: "审批", icon: "Check", allowedStatuses: ["submitted"],
+      permission: "receipt_registration:approve", order: 3,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "reject", label: "拒绝", icon: "X", variant: "destructive", allowedStatuses: ["submitted"],
+      permission: "receipt_registration:approve", order: 4,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "withdraw", label: "撤回", icon: "Undo2", variant: "outline", allowedStatuses: ["submitted"], order: 5,
+      visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
+    },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["draft"], order: 7 },
+  ],
+}
+
+/** 回款认领 - 列表操作 */
+const paymentClaimActionConfig: DocumentListActionConfig = {
+  typeId: "payment_claim",
+  rowActions: [
+    { id: "open", label: "打开" },
+    { id: "copy-id", label: "复制ID" },
+    {
+      id: "delete",
+      label: "删除",
+      danger: true,
+      modes: ["document"],
+      visible: (row) => row._status === "draft",
+      permission: "payment_claim:delete",
+    },
+  ],
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "payment_claim:create" },
+  ],
+}
+
+/** 回款认领 - 表单操作 */
+const paymentClaimFormActions: DocumentFormActionConfig = {
+  typeId: "payment_claim",
+  actions: [
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["draft"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["draft"], permission: "payment_claim:submit", order: 2 },
+    {
+      id: "approve", label: "审批", icon: "Check", allowedStatuses: ["submitted"],
+      permission: "payment_claim:approve", order: 3,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "reject", label: "拒绝", icon: "X", variant: "destructive", allowedStatuses: ["submitted"],
+      permission: "payment_claim:approve", order: 4,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "withdraw", label: "撤回", icon: "Undo2", variant: "outline", allowedStatuses: ["submitted"], order: 5,
+      visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
+    },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["draft"], order: 7 },
+  ],
+}
+
+/** 发票登记 - 列表操作 */
+const invoiceRegistrationActionConfig: DocumentListActionConfig = {
+  typeId: "invoice_registration",
+  rowActions: [
+    { id: "open", label: "打开" },
+    { id: "copy-id", label: "复制ID" },
+    {
+      id: "delete",
+      label: "删除",
+      danger: true,
+      modes: ["document"],
+      visible: (row) => row._status === "draft",
+      permission: "invoice_registration:delete",
+    },
+  ],
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "invoice_registration:create" },
+  ],
+}
+
+/** 发票登记 - 表单操作 */
+const invoiceRegistrationFormActions: DocumentFormActionConfig = {
+  typeId: "invoice_registration",
+  actions: [
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["draft"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["draft"], permission: "invoice_registration:submit", order: 2 },
+    {
+      id: "approve", label: "审批", icon: "Check", allowedStatuses: ["submitted"],
+      permission: "invoice_registration:approve", order: 3,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "reject", label: "拒绝", icon: "X", variant: "destructive", allowedStatuses: ["submitted"],
+      permission: "invoice_registration:approve", order: 4,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "withdraw", label: "撤回", icon: "Undo2", variant: "outline", allowedStatuses: ["submitted"], order: 5,
+      visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
+    },
+    { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["approved"], permission: "invoice_registration:close", order: 6 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["draft"], order: 7 },
+    { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["approved"], permission: "invoice_registration:void", order: 8 },
+  ],
+}
+
 /** 验货单 - 表单操作 */
 const inspectionOrderFormActions: DocumentFormActionConfig = {
   typeId: "inspection_order",
@@ -1272,6 +1472,18 @@ export function setupSchemas(): void {
   // 注册付款申请 Schema
   registry.registerSchema(paymentApplySchema)
 
+  // 注册付款单 Schema
+  registry.registerSchema(paymentSchema)
+
+  // 注册收款登记 Schema
+  registry.registerSchema(receiptRegistrationSchema)
+
+  // 注册回款认领 Schema
+  registry.registerSchema(paymentClaimSchema)
+
+  // 注册发票登记 Schema
+  registry.registerSchema(invoiceRegistrationSchema)
+
   // 注册采购流程下推规则
   registry.registerPushDownRule(salesContractToPurchasePlanRule)
   registry.registerPushDownRule(purchasePlanToPurchaseContractRule)
@@ -1323,6 +1535,18 @@ export function setupSchemas(): void {
   // 注册付款申请变更规则
   registry.registerChangeRule(paymentApplyChangeRule)
 
+  // 注册付款单变更规则
+  registry.registerChangeRule(paymentChangeRule)
+
+  // 注册收款登记变更规则
+  registry.registerChangeRule(receiptRegistrationChangeRule)
+
+  // 注册回款认领变更规则
+  registry.registerChangeRule(paymentClaimChangeRule)
+
+  // 注册发票登记变更规则
+  registry.registerChangeRule(invoiceRegistrationChangeRule)
+
   // 注册列表操作配置
   registry.registerActionConfig(salesContractActionConfig)
   registry.registerActionConfig(exportSalesContractActionConfig)
@@ -1354,6 +1578,10 @@ export function setupSchemas(): void {
   registry.registerActionConfig(exchangeSettlementActionConfig)
   registry.registerActionConfig(invoicingNoticeActionConfig)
   registry.registerActionConfig(paymentApplyActionConfig)
+  registry.registerActionConfig(paymentActionConfig)
+  registry.registerActionConfig(receiptRegistrationActionConfig)
+  registry.registerActionConfig(paymentClaimActionConfig)
+  registry.registerActionConfig(invoiceRegistrationActionConfig)
 
   // 注册表单操作配置
   registry.registerFormActionConfig(salesContractFormActions)
@@ -1379,6 +1607,10 @@ export function setupSchemas(): void {
   registry.registerFormActionConfig(exchangeSettlementFormActions)
   registry.registerFormActionConfig(invoicingNoticeFormActions)
   registry.registerFormActionConfig(paymentApplyFormActions)
+  registry.registerFormActionConfig(paymentFormActions)
+  registry.registerFormActionConfig(receiptRegistrationFormActions)
+  registry.registerFormActionConfig(paymentClaimFormActions)
+  registry.registerFormActionConfig(invoiceRegistrationFormActions)
 
   // 用户和角色数据已迁移到后端数据库，通过 seed 初始化
   // 审核规则已迁移到服务端数据库，无需前端注册

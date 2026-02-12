@@ -2,7 +2,7 @@
  * 实体配置 API
  */
 
-import type { Company, CompanyBankAccount, Region, Country, Port, Brand, Warehouse } from '@/types/business-config';
+import type { Company, CompanyBankAccount, Region, Country, Port, Brand, Warehouse, OrderRoute } from '@/types/business-config';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 
@@ -361,5 +361,54 @@ export async function deleteWarehouseApi(id: string): Promise<void> {
   if (!res.ok) {
     const error = await res.json();
     throw new Error(error.error || '删除仓库失败');
+  }
+}
+
+// ==================== 订单路径 API ====================
+
+export async function fetchOrderRoutesApi(): Promise<OrderRoute[]> {
+  const res = await fetch(`${API_BASE}/order-routes`, {
+    credentials: 'include',
+  });
+  if (!res.ok) throw new Error('获取订单路径列表失败');
+  return res.json();
+}
+
+export async function createOrderRouteApi(data: Partial<OrderRoute>): Promise<OrderRoute> {
+  const res = await fetch(`${API_BASE}/order-routes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || '创建订单路径失败');
+  }
+  return res.json();
+}
+
+export async function updateOrderRouteApi(id: string, data: Partial<OrderRoute>): Promise<OrderRoute> {
+  const res = await fetch(`${API_BASE}/order-routes/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || '更新订单路径失败');
+  }
+  return res.json();
+}
+
+export async function deleteOrderRouteApi(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/order-routes/${id}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || '删除订单路径失败');
   }
 }
