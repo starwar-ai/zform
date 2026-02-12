@@ -215,6 +215,41 @@ model OrderRoute {
   @@map("order_routes")
 }
 
+// ==================== 其他配置表 ====================
+
+model OtherConfig {
+  id          String   @id @default(cuid())
+  name        String   // 配置名称
+  description String?  // 配置说明
+  orderNum    Int      @default(0) @map("order_num")
+  createdBy   String?  @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedBy   String?  @map("updated_by")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  parameters ConfigParameter[]
+
+  @@map("other_configs")
+}
+
+// ==================== 配置参数表 ====================
+
+model ConfigParameter {
+  id          String  @id @default(cuid())
+  configId    String  @map("config_id")
+  config      OtherConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+  name        String  // 参数名称
+  type        String  // 参数类型: text, number, date, array
+  elementType String? // 数组元素类型（仅type=array时有效）
+  value       String? // 参数值（数组时存储JSON字符串）
+  validation  String? // 验证规则（JSON格式）
+  orderNum    Int     @default(0) @map("order_num")
+
+  @@index([configId])
+  @@map("config_parameters")
+}
+
 // ==================== 品牌表 ====================
 
 model Brand {
@@ -1262,6 +1297,16 @@ enum InvoiceStatus {
   NOT_INVOICED // 未开票
   PARTIAL // 部分开票
   INVOICED // 已开票
+}
+
+enum ProcessingOrderStatus {
+  DRAFT // 草稿
+  PENDING // 待审核
+  APPROVED // 已审核
+  IN_PROGRESS // 加工中
+  COMPLETED // 已完成
+  CLOSED // 已结案
+  CANCELLED // 已取消
 }
 
 enum SignBackStatusContract {
@@ -4798,4 +4843,157 @@ model CurrencyRate {
   @@unique([rateDate, currencyName])
   @@index([rateDate])
   @@map("currency_rates")
+}
+
+// ==================== 加工单主表 ====================
+
+model ProcessingOrder {
+  id String @id @default(cuid())
+
+  // 基本信息
+  code String @unique // 编号
+
+  // 销售合同关联
+  salesContractId   String? @map("sales_contract_id") // 销售合同ID
+  salesContractCode String? @map("sales_contract_code") // 销售合同编号
+
+  // 录入信息
+  entryUserId   String?  @map("entry_user_id") // 录入人ID
+  entryUserName String?  @map("entry_user_name") // 录入人姓名
+  entryDate     DateTime? @map("entry_date") // 录入时间
+
+  // 仓库信息
+  warehouseId   String? @map("warehouse_id") // 仓库ID
+  warehouseName String? @map("warehouse_name") // 仓库名称
+
+  // 主体信息
+  entityId   String? @map("entity_id") // 主体ID
+  entityName String? @map("entity_name") // 主体名称
+
+  // 客户信息
+  customerId     String? @map("customer_id") // 客户ID
+  customerCode   String? @map("customer_code") // 客户编号
+  customerName   String? @map("customer_name") // 客户名称
+
+  // 状态
+  status         ProcessingOrderStatus @default(DRAFT) // 加工单状态
+  approvalStatus ApprovalStatus        @default(PENDING) @map("approval_status") // 审核状态
+
+  // 标识
+  autoCreated Boolean @default(false) @map("auto_created") // 是否自动生成
+
+  // 时间信息
+  completedTime DateTime? @map("completed_time") // 完成加工时间
+  closedTime    DateTime? @map("closed_time") // 结案时间
+  closedReason  String?   @map("closed_reason") // 结案原因
+
+  // 备注与附件
+  remark      String? // 备注
+  attachments Json? // 附件（JSON数组）
+
+  // 流程
+  processInstanceId String? @map("process_instance_id") // 流程实例的编号
+
+  // 时间戳
+  createdBy String?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedBy String?   @map("updated_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // 关联关系
+  items    ProcessingOrderItem[]    @relation("ProcessingOrderItems")
+  subItems ProcessingOrderSubItem[] @relation("ProcessingOrderSubItems")
+
+  @@index([code])
+  @@index([status])
+  @@index([approvalStatus])
+  @@index([salesContractId])
+  @@index([customerId])
+  @@index([warehouseId])
+  @@index([createdAt])
+  @@map("processing_orders")
+}
+
+// ==================== 加工单产品表（成品） ====================
+
+model ProcessingOrderItem {
+  id String @id @default(cuid())
+
+  // 关联加工单
+  processingOrderId String        @map("processing_order_id")
+  processingOrder   ProcessingOrder @relation("ProcessingOrderItems", fields: [processingOrderId], references: [id], onDelete: Cascade)
+
+  // 行号
+  lineNumber Int @map("line_number") // 行号
+
+  // 产品信息
+  productId         String? @map("product_id") // 产品ID
+  productCode       String? @map("product_code") // 产品编号
+  customerProductNo String? @map("customer_product_no") // 客户产品编号
+  productName       String? @map("product_name") // 产品名称
+  quantity          Decimal @default(0) @db.Decimal(10, 2) // 产品数量
+  productImage      String? @map("product_image") // 产品图片
+
+  // 销售合同关联
+  salesContractId   String? @map("sales_contract_id") // 销售合同ID
+  salesContractCode String? @map("sales_contract_code") // 销售合同编号
+
+  // 时间戳
+  createdBy String?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedBy String?   @map("updated_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // 关联关系
+  subItems ProcessingOrderSubItem[] @relation("ItemSubItems")
+
+  @@index([processingOrderId])
+  @@index([productId])
+  @@index([salesContractId])
+  @@index([lineNumber])
+  @@map("processing_order_items")
+}
+
+// ==================== 加工单子产品表（原料/投入物料） ====================
+
+model ProcessingOrderSubItem {
+  id String @id @default(cuid())
+
+  // 关联加工单
+  processingOrderId String        @map("processing_order_id")
+  processingOrder   ProcessingOrder @relation("ProcessingOrderSubItems", fields: [processingOrderId], references: [id], onDelete: Cascade)
+
+  // 关联加工单产品（成品）
+  processingOrderItemId String?              @map("processing_order_item_id")
+  processingOrderItem   ProcessingOrderItem? @relation("ItemSubItems", fields: [processingOrderItemId], references: [id], onDelete: Cascade)
+
+  // 行号
+  lineNumber Int @map("line_number") // 行号
+
+  // 库存信息
+  inventoryInfo String? @map("inventory_info") // 库存信息（JSON或文本描述）
+
+  // 产品信息
+  productId         String?  @map("product_id") // 产品ID
+  productCode       String?  @map("product_code") // 产品编号
+  customerProductNo String?  @map("customer_product_no") // 客户产品编号
+  productName       String?  @map("product_name") // 产品名称
+  quantity          Decimal  @default(0) @db.Decimal(10, 2) // 产品数量
+  ratio             Decimal? @db.Decimal(5, 2) // 配比
+  productImage      String?  @map("product_image") // 产品图片
+
+  // 时间戳
+  createdBy String?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedBy String?   @map("updated_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([processingOrderId])
+  @@index([processingOrderItemId])
+  @@index([productId])
+  @@index([lineNumber])
+  @@map("processing_order_sub_items")
 }

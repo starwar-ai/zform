@@ -1054,6 +1054,19 @@ async function main() {
     },
   });
 
+  // 产品加工菜单 - 业务入口子菜单
+  const processingOrderMenu = await prisma.sysMenu.create({
+    data: {
+      title: '产品加工',
+      icon: 'Cog',
+      path: '/type-list/processing_order',
+      parentId: businessEntryMenu.id,
+      orderNum: 4,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
   // ---- 财务入口（一级菜单） ----
   const financeEntryMenu = await prisma.sysMenu.create({
     data: {
@@ -1460,6 +1473,13 @@ async function main() {
     { perm: 'void', title: '作废' },
   ]);
 
+  // 加工单按钮权限
+  const processingOrderBtnIds = await createDocPermButtons(processingOrderMenu.id, 'processing_order', [
+    ...basicDocActions,
+    { perm: 'close', title: '关闭' },
+    { perm: 'void', title: '作废' },
+  ]);
+
   // 所有按钮权限 ID 汇总
   const allBtnIds = [
     ...salesContractBtnIds,
@@ -1479,6 +1499,7 @@ async function main() {
     ...receiptRegistrationBtnIds,
     ...paymentClaimBtnIds,
     ...invoiceRegistrationBtnIds,
+    ...processingOrderBtnIds,
   ];
 
   // 顶级菜单：系统管理
@@ -1680,6 +1701,7 @@ async function main() {
     salesContractMenu.id,
     purchasePlanMenu.id,
     purchaseContractMenu.id,
+    processingOrderMenu.id,
     invoicingNoticeMenu.id,
     shipmentPlanMenu.id,
     shippingDocumentMenu.id,
@@ -1733,6 +1755,7 @@ async function main() {
     ...receiptRegistrationBtnIds.slice(0, 3),
     ...paymentClaimBtnIds.slice(0, 3),
     ...invoiceRegistrationBtnIds.slice(0, 3),
+    ...processingOrderBtnIds.slice(0, 3),
   ];
 
   const userMenuIds = [
@@ -1740,6 +1763,7 @@ async function main() {
     salesContractMenu.id,
     purchasePlanMenu.id,
     purchaseContractMenu.id,
+    processingOrderMenu.id,
     invoicingNoticeMenu.id,
     shipmentPlanMenu.id,
     shippingDocumentMenu.id,
@@ -2166,6 +2190,147 @@ async function main() {
       path: '/orders/emergency',
       status: 'inactive',
       description: '紧急订单处理路径',
+    },
+  });
+
+  // ---- 其他配置 ----
+  const exchangeRateConfig = await prisma.otherConfig.upsert({
+    where: { id: 'other-config-001' },
+    update: {
+      name: '汇率获取配置',
+      description: '每日定时获取汇率的相关配置',
+      orderNum: 1,
+    },
+    create: {
+      id: 'other-config-001',
+      name: '汇率获取配置',
+      description: '每日定时获取汇率的相关配置',
+      orderNum: 1,
+    },
+  });
+
+  await prisma.configParameter.upsert({
+    where: { id: 'config-param-001' },
+    update: {
+      configId: exchangeRateConfig.id,
+      name: '获取次数',
+      type: 'number',
+      value: '3',
+      validation: JSON.stringify({ required: true, min: 1, max: 10 }),
+      orderNum: 1,
+    },
+    create: {
+      id: 'config-param-001',
+      configId: exchangeRateConfig.id,
+      name: '获取次数',
+      type: 'number',
+      value: '3',
+      validation: JSON.stringify({ required: true, min: 1, max: 10 }),
+      orderNum: 1,
+    },
+  });
+
+  await prisma.configParameter.upsert({
+    where: { id: 'config-param-002' },
+    update: {
+      configId: exchangeRateConfig.id,
+      name: '获取时间点',
+      type: 'array',
+      elementType: 'text',
+      value: JSON.stringify(['09:00', '12:00', '17:00']),
+      validation: JSON.stringify({ required: true, minItems: 1, maxItems: 5, elementValidation: { pattern: '^\\d{2}:\\d{2}$' } }),
+      orderNum: 2,
+    },
+    create: {
+      id: 'config-param-002',
+      configId: exchangeRateConfig.id,
+      name: '获取时间点',
+      type: 'array',
+      elementType: 'text',
+      value: JSON.stringify(['09:00', '12:00', '17:00']),
+      validation: JSON.stringify({ required: true, minItems: 1, maxItems: 5, elementValidation: { pattern: '^\\d{2}:\\d{2}$' } }),
+      orderNum: 2,
+    },
+  });
+
+  await prisma.configParameter.upsert({
+    where: { id: 'config-param-003' },
+    update: {
+      configId: exchangeRateConfig.id,
+      name: '生效日期',
+      type: 'date',
+      value: '2026-01-01',
+      validation: JSON.stringify({ required: true }),
+      orderNum: 3,
+    },
+    create: {
+      id: 'config-param-003',
+      configId: exchangeRateConfig.id,
+      name: '生效日期',
+      type: 'date',
+      value: '2026-01-01',
+      validation: JSON.stringify({ required: true }),
+      orderNum: 3,
+    },
+  });
+
+  // 系统通知配置
+  const notificationConfig = await prisma.otherConfig.upsert({
+    where: { id: 'other-config-002' },
+    update: {
+      name: '系统通知配置',
+      description: '系统通知相关设置',
+      orderNum: 2,
+    },
+    create: {
+      id: 'other-config-002',
+      name: '系统通知配置',
+      description: '系统通知相关设置',
+      orderNum: 2,
+    },
+  });
+
+  await prisma.configParameter.upsert({
+    where: { id: 'config-param-004' },
+    update: {
+      configId: notificationConfig.id,
+      name: '通知邮箱',
+      type: 'array',
+      elementType: 'text',
+      value: JSON.stringify(['admin@example.com']),
+      validation: JSON.stringify({ minItems: 0, maxItems: 10 }),
+      orderNum: 1,
+    },
+    create: {
+      id: 'config-param-004',
+      configId: notificationConfig.id,
+      name: '通知邮箱',
+      type: 'array',
+      elementType: 'text',
+      value: JSON.stringify(['admin@example.com']),
+      validation: JSON.stringify({ minItems: 0, maxItems: 10 }),
+      orderNum: 1,
+    },
+  });
+
+  await prisma.configParameter.upsert({
+    where: { id: 'config-param-005' },
+    update: {
+      configId: notificationConfig.id,
+      name: '通知间隔(分钟)',
+      type: 'number',
+      value: '30',
+      validation: JSON.stringify({ required: true, min: 1, max: 1440 }),
+      orderNum: 2,
+    },
+    create: {
+      id: 'config-param-005',
+      configId: notificationConfig.id,
+      name: '通知间隔(分钟)',
+      type: 'number',
+      value: '30',
+      validation: JSON.stringify({ required: true, min: 1, max: 1440 }),
+      orderNum: 2,
     },
   });
 

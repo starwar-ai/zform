@@ -21,6 +21,7 @@ import brandRoutes from './brands';
 import warehouseRoutes from './warehouses';
 import inventoryRoutes from './inventory';
 import orderRouteRoutes from './order-routes';
+import otherConfigRoutes from './other-configs';
 import documentRoutes from '../documents/document.routes';
 import codeGeneratorRoutes from './code-generator.routes';
 import exchangeRateRoutes from './exchange-rate.routes';
@@ -54,6 +55,7 @@ router.use('/brands', brandRoutes);
 router.use('/warehouses', warehouseRoutes);
 router.use('/inventory', inventoryRoutes);
 router.use('/order-routes', orderRouteRoutes);
+router.use('/other-configs', otherConfigRoutes);
 
 // ---- 旧路由 (保留兼容) ----
 router.use('/products', productRoutes);

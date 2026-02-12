@@ -59,6 +59,7 @@ import {
 } from "@/components/ui/select"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from "@/components/ui/checkbox"
+import { OtherConfigPanel } from "./business-config/other-config-panel"
 import {
   Plus,
   Edit,
@@ -73,6 +74,7 @@ import {
   Package,
   Globe,
   Route,
+  Settings,
 } from "lucide-react"
 
 // ==================== 分类配置注册 ====================
@@ -187,6 +189,17 @@ export const CATEGORY_CONFIGS: CategoryConfig[] = [
       { key: "description", label: "描述", type: "text", placeholder: "请输入描述" },
     ],
   },
+  // 其他配置使用自定义面板
+  {
+    key: "other-config",
+    label: "其他配置",
+    icon: "Settings",
+    apiPath: "", // 自定义面板不使用标准API
+    isTree: false,
+    nameField: "name",
+    columns: [],
+    formFields: [],
+  },
 ]
 
 // ==================== 图标映射 ====================
@@ -197,6 +210,7 @@ const categoryIconMap: Record<string, React.ComponentType<{ className?: string }
   Globe,
   Tags,
   Route,
+  Settings,
 }
 
 function getCategoryIcon(iconName: string) {
@@ -789,7 +803,11 @@ export function CategoryManagement() {
       </Tabs>
 
       {/* 当前分类面板 */}
-      <CategoryPanel key={activeKey} config={activeConfig} />
+      {activeKey === 'other-config' ? (
+        <OtherConfigPanel />
+      ) : (
+        <CategoryPanel key={activeKey} config={activeConfig} />
+      )}
     </div>
   )
 }

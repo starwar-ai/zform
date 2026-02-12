@@ -108,6 +108,10 @@ import {
   invoiceRegistrationSchema,
   invoiceRegistrationChangeRule,
 } from "./invoice-registration-schemas"
+import {
+  processingOrderSchema,
+  processingOrderChangeRule,
+} from "./processing-order-schemas"
 
 // ============================================================
 // 单据列表操作配置
@@ -658,6 +662,26 @@ const warehouseOutboundNoticeActionConfig: DocumentListActionConfig = {
   rowActions: warehouseRowActions("warehouse_outbound_notice"),
   toolbarActions: [
     { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "warehouse_outbound_notice:create" },
+  ],
+}
+
+/** 加工单 - 列表操作 */
+const processingOrderActionConfig: DocumentListActionConfig = {
+  typeId: "processing_order",
+  rowActions: [
+    { id: "open", label: "打开" },
+    { id: "copy-id", label: "复制ID" },
+    {
+      id: "delete",
+      label: "删除",
+      danger: true,
+      modes: ["document"],
+      visible: (row) => row._status === "draft",
+      permission: "processing_order:delete",
+    },
+  ],
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "processing_order:create" },
   ],
 }
 
@@ -1233,6 +1257,32 @@ const invoiceRegistrationFormActions: DocumentFormActionConfig = {
   ],
 }
 
+/** 加工单 - 表单操作 */
+const processingOrderFormActions: DocumentFormActionConfig = {
+  typeId: "processing_order",
+  actions: [
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["draft"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["draft"], permission: "processing_order:submit", order: 2 },
+    {
+      id: "approve", label: "审批", icon: "Check", allowedStatuses: ["submitted"],
+      permission: "processing_order:approve", order: 3,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "reject", label: "拒绝", icon: "X", variant: "destructive", allowedStatuses: ["submitted"],
+      permission: "processing_order:approve", order: 4,
+      visible: (ctx) => ctx.approvalState?.canApprove ?? false,
+    },
+    {
+      id: "withdraw", label: "撤回", icon: "Undo2", variant: "outline", allowedStatuses: ["submitted"], order: 5,
+      visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
+    },
+    { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["approved"], permission: "processing_order:close", order: 6 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["draft"], order: 7 },
+    { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["approved"], permission: "processing_order:void", order: 8 },
+  ],
+}
+
 /** 验货单 - 表单操作 */
 const inspectionOrderFormActions: DocumentFormActionConfig = {
   typeId: "inspection_order",
@@ -1484,6 +1534,9 @@ export function setupSchemas(): void {
   // 注册发票登记 Schema
   registry.registerSchema(invoiceRegistrationSchema)
 
+  // 注册加工单 Schema
+  registry.registerSchema(processingOrderSchema)
+
   // 注册采购流程下推规则
   registry.registerPushDownRule(salesContractToPurchasePlanRule)
   registry.registerPushDownRule(purchasePlanToPurchaseContractRule)
@@ -1547,6 +1600,9 @@ export function setupSchemas(): void {
   // 注册发票登记变更规则
   registry.registerChangeRule(invoiceRegistrationChangeRule)
 
+  // 注册加工单变更规则
+  registry.registerChangeRule(processingOrderChangeRule)
+
   // 注册列表操作配置
   registry.registerActionConfig(salesContractActionConfig)
   registry.registerActionConfig(exportSalesContractActionConfig)
@@ -1582,6 +1638,7 @@ export function setupSchemas(): void {
   registry.registerActionConfig(receiptRegistrationActionConfig)
   registry.registerActionConfig(paymentClaimActionConfig)
   registry.registerActionConfig(invoiceRegistrationActionConfig)
+  registry.registerActionConfig(processingOrderActionConfig)
 
   // 注册表单操作配置
   registry.registerFormActionConfig(salesContractFormActions)
@@ -1611,6 +1668,7 @@ export function setupSchemas(): void {
   registry.registerFormActionConfig(receiptRegistrationFormActions)
   registry.registerFormActionConfig(paymentClaimFormActions)
   registry.registerFormActionConfig(invoiceRegistrationFormActions)
+  registry.registerFormActionConfig(processingOrderFormActions)
 
   // 用户和角色数据已迁移到后端数据库，通过 seed 初始化
   // 审核规则已迁移到服务端数据库，无需前端注册
