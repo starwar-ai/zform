@@ -131,6 +131,12 @@ async function updateDocApprovalStatus(
         data: { approvalStatus: approvalStatus as any, updatedBy: userId },
       });
       break;
+    case 'quotation':
+      await prisma.quotation.update({
+        where: { id: docId },
+        data: { approvalStatus: approvalStatus as any, updatedBy: userId },
+      });
+      break;
     default:
       break;
   }
@@ -148,6 +154,10 @@ async function getDocData(
     }
     case 'purchase_plan': {
       const doc = await prisma.purchasePlan.findUnique({ where: { id: docId } });
+      return doc as unknown as Record<string, unknown>;
+    }
+    case 'quotation': {
+      const doc = await prisma.quotation.findUnique({ where: { id: docId } });
       return doc as unknown as Record<string, unknown>;
     }
     default:

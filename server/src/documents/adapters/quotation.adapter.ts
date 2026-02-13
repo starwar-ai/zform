@@ -1,8 +1,139 @@
 /**
  * 报价单 Adapter
+ * 
+ * 从 zexport 的 QuotationServiceImpl.java 提取的业务逻辑:
+ * - 柜型数量自动计算和验证
+ * - 审批流程集成
+ * - 货币转换
+ * - 状态流转管理
  */
 
 import type { DocumentTypeAdapter } from '../types';
+import { ApprovalService } from '../../services/approval.service';
+import { codeGeneratorApi } from '../../services/code-generator.service';
+
+const approvalService = new ApprovalService();
+
+// ============================================================
+// 辅助函数：柜型数量计算
+// ============================================================
+
+/**
+ * Decimal 精确比较（保留2位小数）
+ */
+function decimalEqual(a: number, b: number): boolean {
+  return Math.abs(a - b) < 0.01;
+}
+
+/**
+ * 计算柜型数量
+ * 根据总体积计算各种柜型的数量
+ * 
+ * 算法: 优先填充 40尺高柜 → 40尺柜 → 20尺柜 → 剩余为散货
+ */
+function calcCabinetNum(totalVolume: number): {
+  container20ft: number;
+  container40ft: number;
+  container40hq: number;
+  bulkCargo: number;
+} {
+  // 柜型容积（立方米）
+  const TWENTY_FOOT_VOLUME = 28; // 20尺柜
+  const FORTY_FOOT_VOLUME = 58; // 40尺柜
+  const FORTY_FOOT_HQ_VOLUME = 68; // 40尺高柜
+
+  const result = {
+    container20ft: 0,
+    container40ft: 0,
+    container40hq: 0,
+    bulkCargo: 0,
+  };
+
+  let remainingVolume = totalVolume;
+
+  // 优先填充40尺高柜
+  if (remainingVolume >= FORTY_FOOT_HQ_VOLUME) {
+    result.container40hq = Math.floor(remainingVolume / FORTY_FOOT_HQ_VOLUME);
+    remainingVolume = remainingVolume % FORTY_FOOT_HQ_VOLUME;
+  }
+
+  // 填充40尺柜
+  if (remainingVolume >= FORTY_FOOT_VOLUME) {
+    result.container40ft = Math.floor(remainingVolume / FORTY_FOOT_VOLUME);
+    remainingVolume = remainingVolume % FORTY_FOOT_VOLUME;
+  }
+
+  // 填充20尺柜
+  if (remainingVolume >= TWENTY_FOOT_VOLUME) {
+    result.container20ft = Math.floor(remainingVolume / TWENTY_FOOT_VOLUME);
+    remainingVolume = remainingVolume % TWENTY_FOOT_VOLUME;
+  }
+
+  // 剩余为散货
+  result.bulkCargo = Number(remainingVolume.toFixed(2));
+
+  return result;
+}
+
+/**
+ * 验证明细柜型数量
+ * 
+ * 规则:
+ * 1. 箱数必须大于0
+ * 2. 外箱体积必须大于0
+ * 3. 计算的柜型数量必须与输入的一致
+ */
+function validateCabinetNumbers(items: any[]): void {
+  for (const item of items) {
+    // 检查箱数
+    if (!item.boxCount || item.boxCount <= 0) {
+      throw new Error('箱数不能为空或小于等于0');
+    }
+
+    // 检查外箱体积
+    if (!item.outerBoxVolume || item.outerBoxVolume <= 0) {
+      throw new Error('外箱体积不能为空');
+    }
+
+    // 计算总体积
+    const totalVolume = Number(item.outerBoxVolume) * item.boxCount;
+
+    // 计算柜型数量
+    const calculated = calcCabinetNum(totalVolume);
+
+    // 验证散货体积
+    if (item.bulkCargo !== undefined && item.bulkCargo !== null) {
+      if (!decimalEqual(calculated.bulkCargo, Number(item.bulkCargo))) {
+        throw new Error(`散货体积应为 ${calculated.bulkCargo} CBM`);
+      }
+    }
+
+    // 验证20尺柜
+    if (item.container20ft !== undefined && item.container20ft !== null) {
+      if (!decimalEqual(calculated.container20ft, Number(item.container20ft))) {
+        throw new Error(`20尺柜数量应为 ${calculated.container20ft} 个`);
+      }
+    }
+
+    // 验证40尺柜
+    if (item.container40ft !== undefined && item.container40ft !== null) {
+      if (!decimalEqual(calculated.container40ft, Number(item.container40ft))) {
+        throw new Error(`40尺柜数量应为 ${calculated.container40ft} 个`);
+      }
+    }
+
+    // 验证40尺高柜
+    if (item.container40hq !== undefined && item.container40hq !== null) {
+      if (!decimalEqual(calculated.container40hq, Number(item.container40hq))) {
+        throw new Error(`40尺高柜数量应为 ${calculated.container40hq} 个`);
+      }
+    }
+  }
+}
+
+// ============================================================
+// Adapter 定义
+// ============================================================
 
 export const quotationAdapter: DocumentTypeAdapter = {
   typeId: 'quotation',
@@ -146,26 +277,224 @@ export const quotationAdapter: DocumentTypeAdapter = {
     };
   },
 
-  // ---- 自定义 Actions ----
-  actions: {
-    /** 审核 */
-    async approve({ id, body, userId, prisma }) {
-      const { approved } = body;
-      const doc = await prisma.quotation.update({
-        where: { id },
-        data: {
-          approvalStatus: approved ? 'APPROVED' : 'REJECTED',
-          status: approved ? 'APPROVED' : 'DRAFT',
-          updatedBy: userId,
+  // ============================================================
+  // 自定义生命周期钩子
+  // ============================================================
+
+  /**
+   * 创建报价单前的处理
+   * 1. 生成报价单号
+   * 2. 验证柜型数量
+   * 3. 设置初始状态
+   */
+  async onCreate(data: any, userId: string, prisma: any) {
+    // 生成报价单号
+    const code = await codeGeneratorApi.generateCode('quotation', 'QT');
+
+    // 验证明细柜型数量
+    if (data.items && Array.isArray(data.items)) {
+      validateCabinetNumbers(data.items);
+    }
+
+    // 创建报价单
+    const quotation = await prisma.quotation.create({
+      data: {
+        ...data,
+        code,
+        status: 'DRAFT',
+        approvalStatus: 'PENDING',
+        printStatus: 'NOT_PRINTED',
+        createdBy: userId,
+        updatedBy: userId,
+        items: data.items
+          ? {
+              create: data.items.map((item: any, index: number) => ({
+                ...item,
+                lineNumber: item.lineNumber || index + 1,
+                createdBy: userId,
+                updatedBy: userId,
+              })),
+            }
+          : undefined,
+      },
+      include: {
+        items: {
+          where: { deletedAt: null },
+          orderBy: { lineNumber: 'asc' },
+        },
+      },
+    });
+
+    // 如果需要提交审批
+    if (data.submitFlag) {
+      await approvalService.submit({
+        docType: 'quotation',
+        docId: quotation.id,
+        docNumber: quotation.code,
+        user: {
+          userId,
+          userName: data.userName || 'System',
+          roleIds: data.roleIds || [],
         },
       });
+    }
+
+    return quotation;
+  },
+
+  /**
+   * 更新报价单前的处理
+   * 1. 验证柜型数量
+   * 2. 更新明细（删除旧的，创建新的）
+   */
+  async onUpdate(id: string, data: any, userId: string, prisma: any) {
+    // 验证报价单存在
+    const existing = await prisma.quotation.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      throw new Error('报价单不存在');
+    }
+
+    // 验证明细柜型数量
+    if (data.items && Array.isArray(data.items)) {
+      validateCabinetNumbers(data.items);
+    }
+
+    // 软删除旧明细
+    if (data.items) {
+      await prisma.quotationItem.updateMany({
+        where: { quotationId: id },
+        data: { deletedAt: new Date() },
+      });
+    }
+
+    // 更新报价单
+    const quotation = await prisma.quotation.update({
+      where: { id },
+      data: {
+        ...data,
+        items: data.items
+          ? {
+              create: data.items.map((item: any, index: number) => ({
+                ...item,
+                lineNumber: item.lineNumber || index + 1,
+                createdBy: userId,
+                updatedBy: userId,
+              })),
+            }
+          : undefined,
+        updatedBy: userId,
+      },
+      include: {
+        items: {
+          where: { deletedAt: null },
+          orderBy: { lineNumber: 'asc' },
+        },
+      },
+    });
+
+    // 如果需要提交审批
+    if (data.submitFlag) {
+      await approvalService.submit({
+        docType: 'quotation',
+        docId: quotation.id,
+        docNumber: quotation.code,
+        user: {
+          userId,
+          userName: data.userName || 'System',
+          roleIds: data.roleIds || [],
+        },
+      });
+    }
+
+    return quotation;
+  },
+
+  // ============================================================
+  // 自定义 Actions
+  // ============================================================
+  actions: {
+    /**
+     * 提交审批
+     */
+    async submit({ id, body, userId, prisma }) {
+      const doc = await prisma.quotation.findUnique({
+        where: { id },
+      });
+
+      if (!doc) {
+        throw new Error('报价单不存在');
+      }
+
+      const result = await approvalService.submit({
+        docType: 'quotation',
+        docId: id,
+        docNumber: doc.code,
+        user: {
+          userId,
+          userName: body.userName || 'System',
+          roleIds: body.roleIds || [],
+        },
+      });
+
       return {
-        data: doc,
-        message: `报价单${approved ? '审核通过' : '审核拒绝'}`,
+        data: result.instance,
+        message: result.message,
       };
     },
 
-    /** 接受报价 */
+    /**
+     * 撤回审批
+     */
+    async withdraw({ id, body, userId, prisma }) {
+      // 查找审批实例
+      const instance = await prisma.approvalInstance.findFirst({
+        where: {
+          docType: 'quotation',
+          docId: id,
+          status: 'in_progress',
+        },
+      });
+
+      if (!instance) {
+        throw new Error('未找到进行中的审批实例');
+      }
+
+      const result = await approvalService.withdraw({
+        instanceId: instance.id,
+        user: {
+          userId,
+          userName: body.userName || 'System',
+          roleIds: body.roleIds || [],
+        },
+      });
+
+      return {
+        data: result.instance,
+        message: result.message,
+      };
+    },
+
+    /**
+     * 结案
+     */
+    async finish({ id, userId, prisma }) {
+      const doc = await prisma.quotation.update({
+        where: { id },
+        data: {
+          status: 'CLOSED',
+          updatedBy: userId,
+        },
+      });
+
+      return { data: doc, message: '报价单已结案' };
+    },
+
+    /**
+     * 接受报价
+     */
     async accept({ id, userId, prisma }) {
       const doc = await prisma.quotation.update({
         where: { id },
@@ -174,22 +503,13 @@ export const quotationAdapter: DocumentTypeAdapter = {
           updatedBy: userId,
         },
       });
+
       return { data: doc, message: '报价单已接受' };
     },
 
-    /** 更新状态 */
-    async updateStatus({ id, body, userId, prisma }) {
-      const doc = await prisma.quotation.update({
-        where: { id },
-        data: {
-          status: body.status,
-          updatedBy: userId,
-        },
-      });
-      return { data: doc, message: '报价单状态更新成功' };
-    },
-
-    /** 打印 */
+    /**
+     * 标记已打印
+     */
     async print({ id, userId, prisma }) {
       const doc = await prisma.quotation.update({
         where: { id },
@@ -198,11 +518,32 @@ export const quotationAdapter: DocumentTypeAdapter = {
           updatedBy: userId,
         },
       });
-      return { data: doc, message: '打印成功' };
+
+      return { data: doc, message: '已标记为已打印' };
     },
 
-    /** 转销售合同 */
+    /**
+     * 转销售合同
+     */
     async toSalesContract({ id, userId, prisma }) {
+      // 验证报价单状态
+      const quotation = await prisma.quotation.findUnique({
+        where: { id },
+        include: {
+          items: {
+            where: { deletedAt: null },
+          },
+        },
+      });
+
+      if (!quotation) {
+        throw new Error('报价单不存在');
+      }
+
+      if (quotation.status !== 'APPROVED' && quotation.status !== 'ACCEPTED') {
+        throw new Error('只有已审批或已接受的报价单才能转销售合同');
+      }
+
       // 标记为已接受状态
       const doc = await prisma.quotation.update({
         where: { id },
@@ -211,7 +552,32 @@ export const quotationAdapter: DocumentTypeAdapter = {
           updatedBy: userId,
         },
       });
-      return { data: doc, message: '转销售合同成功' };
+
+      return { data: doc, message: '已标记为已接受，可以转销售合同' };
+    },
+
+    /**
+     * 计算柜型数量（工具方法）
+     * 根据外箱体积和箱数计算柜型数量
+     */
+    async calculateContainers({ body }) {
+      const { outerBoxVolume, boxCount } = body;
+
+      if (!outerBoxVolume || outerBoxVolume <= 0) {
+        throw new Error('外箱体积必须大于0');
+      }
+
+      if (!boxCount || boxCount <= 0) {
+        throw new Error('箱数必须大于0');
+      }
+
+      const totalVolume = Number(outerBoxVolume) * Number(boxCount);
+      const result = calcCabinetNum(totalVolume);
+
+      return {
+        data: result,
+        message: '柜型数量计算成功',
+      };
     },
   },
 };

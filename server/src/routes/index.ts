@@ -64,7 +64,7 @@ router.use('/other-configs', otherConfigRoutes);
 // ---- 旧路由 (保留兼容) ----
 router.use('/products', productRoutes);
 router.use('/suppliers', supplierRoutes);
-router.use('/quotations', supplierQuotationRoutes);
+router.use('/supplier-quotations', supplierQuotationRoutes);
 router.use('/customers', customerRoutes);
 router.use('/sales-contracts', salesContractRoutes);
 router.use('/purchase-plans', purchasePlanRoutes);
