@@ -7,6 +7,49 @@
 
 import type { DocumentTypeAdapter } from '../types';
 
+/**
+ * 检测 BOM 循环依赖
+ * 
+ * @param prisma - Prisma 客户端
+ * @param childId - 要添加的子产品 ID
+ * @param parentId - 父产品 ID
+ * @returns true 表示存在循环依赖
+ */
+async function checkCircularDependency(
+  prisma: any,
+  childId: string,
+  parentId: string
+): Promise<boolean> {
+  // 如果子产品的 BOM 中包含父产品（直接或间接），则存在循环依赖
+  const visited = new Set<string>();
+  const queue = [childId];
+
+  while (queue.length > 0) {
+    const currentId = queue.shift()!;
+    
+    if (currentId === parentId) {
+      return true; // 找到循环
+    }
+    
+    if (visited.has(currentId)) {
+      continue;
+    }
+    visited.add(currentId);
+
+    // 查询当前产品的所有子产品
+    const boms = await prisma.productBom.findMany({
+      where: { parentProductId: currentId },
+      select: { childProductId: true },
+    });
+
+    for (const bom of boms) {
+      queue.push(bom.childProductId);
+    }
+  }
+
+  return false;
+}
+
 /** 标准产品 */
 export const standardProductAdapter: DocumentTypeAdapter = {
   typeId: 'standard_product',
@@ -45,6 +88,10 @@ export const standardProductAdapter: DocumentTypeAdapter = {
       include: {
         accessory: { select: { id: true, code: true, name: true, unit: true } },
       },
+    },
+    productImages: {
+      where: { deletedAt: null },
+      orderBy: [{ isPrimary: 'desc' as const }, { sortOrder: 'asc' as const }],
     },
   },
 
@@ -159,6 +206,32 @@ export const standardProductAdapter: DocumentTypeAdapter = {
       });
       if (!childProduct) {
         throw new Error('子产品不存在');
+      }
+      
+      // 防止自我引用
+      if (id === childProductId) {
+        throw new Error('产品不能包含自己作为子产品');
+      }
+      
+      // 检测循环依赖
+      const hasCircularDependency = await checkCircularDependency(
+        prisma,
+        childProductId,
+        id
+      );
+      if (hasCircularDependency) {
+        throw new Error(`添加失败：检测到循环依赖。产品 ${childProduct.code} 直接或间接包含当前产品`);
+      }
+      
+      // 检查是否已存在
+      const existing = await prisma.productBom.findFirst({
+        where: {
+          parentProductId: id,
+          childProductId,
+        },
+      });
+      if (existing) {
+        throw new Error(`子产品 ${childProduct.code} 已存在于 BOM 清单中`);
       }
       
       const bom = await prisma.productBom.create({

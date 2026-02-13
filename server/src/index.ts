@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import path from 'path';
 import routes from './routes';
 import { errorHandler } from './middleware/error-handler';
 import swaggerUi from 'swagger-ui-express';
@@ -29,6 +30,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// 静态文件服务: 上传的图片
+app.use('/uploads', express.static(path.resolve(__dirname, '../uploads')));
 
 // 路由
 app.use('/api', routes);

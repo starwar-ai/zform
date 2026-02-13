@@ -23,6 +23,7 @@ import inventoryRoutes from './inventory';
 import orderRouteRoutes from './order-routes';
 import otherConfigRoutes from './other-configs';
 import documentRoutes from '../documents/document.routes';
+import productImageRoutes from './product-images';
 import codeGeneratorRoutes from './code-generator.routes';
 import exchangeRateRoutes from './exchange-rate.routes';
 import rateSchedulerRoutes from './rate-scheduler.routes';
@@ -31,6 +32,9 @@ const router = Router();
 
 // ---- 统一单据 API (新) ----
 router.use('/documents', documentRoutes);
+
+// ---- 产品图片 API ----
+router.use('/product-images', productImageRoutes);
 
 // ---- 编码生成 API ----
 router.use('/code-generator', codeGeneratorRoutes);

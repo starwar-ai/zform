@@ -7,6 +7,11 @@
 import { documentTypeRegistry } from '../registry';
 import { salesContractAdapter } from './sales-contract.adapter';
 import { purchasePlanAdapter } from './purchase-plan.adapter';
+import { purchaseContractAdapter } from './purchase-contract.adapter';
+import { shippingPlanAdapter } from './shipping-plan.adapter';
+import { shippingOrderAdapter } from './shipping-order.adapter';
+import { customsDeclarationAdapter } from './customs-declaration.adapter';
+import { inspectionDeclarationAdapter } from './inspection-declaration.adapter';
 import {
   standardProductAdapter,
   customerProductAdapter,
@@ -33,6 +38,21 @@ export function registerAllAdapters(): void {
 
   // 采购计划
   documentTypeRegistry.register(purchasePlanAdapter);
+
+  // 采购合同
+  documentTypeRegistry.register(purchaseContractAdapter);
+
+  // 出运计划
+  documentTypeRegistry.register(shippingPlanAdapter);
+
+  // 出运单
+  documentTypeRegistry.register(shippingOrderAdapter);
+
+  // 报关单
+  documentTypeRegistry.register(customsDeclarationAdapter);
+
+  // 商检单
+  documentTypeRegistry.register(inspectionDeclarationAdapter);
 
   // 产品 (三种子类型)
   documentTypeRegistry.register(standardProductAdapter);

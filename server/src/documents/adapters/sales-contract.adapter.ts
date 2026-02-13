@@ -3,6 +3,61 @@
  */
 
 import type { DocumentTypeAdapter } from '../types';
+import prisma from '../../config/database';
+import { Decimal } from '@prisma/client/runtime/library';
+import {
+  calculateContainers,
+  validateStatusTransition,
+  SALES_CONTRACT_STATUS_CONFIG,
+  calculateSummary,
+  executeBatchOperation,
+} from '../../utils/business-utils';
+
+/**
+ * 计算合同明细总金额和汇总数据
+ */
+async function calculateContractSummary(contractId: string, prismaClient: any) {
+  const items = await prismaClient.salesContractItem.findMany({
+    where: {
+      salesContractId: contractId,
+      deletedAt: null,
+    },
+  });
+
+  let totalAmount = new Decimal(0);
+  let totalQuantity = new Decimal(0);
+  let totalBoxes = 0;
+  let totalGrossWeight = new Decimal(0);
+  let totalNetWeight = new Decimal(0);
+  let totalVolume = new Decimal(0);
+
+  for (const item of items) {
+    const quantity = new Decimal(item.quantity || 0);
+    const unitPrice = new Decimal(item.unitPrice || 0);
+    const amount = quantity.mul(unitPrice);
+
+    totalAmount = totalAmount.add(amount);
+    totalQuantity = totalQuantity.add(quantity);
+    totalBoxes += item.boxCount || 0;
+    totalGrossWeight = totalGrossWeight.add(new Decimal(item.grossWeight || 0));
+    totalNetWeight = totalNetWeight.add(new Decimal(item.netWeight || 0));
+    totalVolume = totalVolume.add(new Decimal(item.volume || 0));
+  }
+
+  return {
+    totalAmount: totalAmount.toNumber(),
+    totalQuantity: totalQuantity.toNumber(),
+    totalBoxes,
+    totalGrossWeight: totalGrossWeight.toNumber(),
+    totalNetWeight: totalNetWeight.toNumber(),
+    totalVolume: totalVolume.toNumber(),
+  };
+}
+
+/**
+ * 验证状态流转（已废弃，使用 business-utils 中的版本）
+ */
+// function validateStatusTransition() - 已移到 business-utils.ts
 
 export const salesContractAdapter: DocumentTypeAdapter = {
   typeId: 'sales_contract',
@@ -126,6 +181,104 @@ export const salesContractAdapter: DocumentTypeAdapter = {
     };
   },
 
+  // ---- 生命周期钩子 ----
+  async onCreate(data, userId, prismaClient) {
+    // 设置默认值
+    if (!data.entryDate) {
+      data.entryDate = new Date();
+    }
+    if (!data.status) {
+      data.status = 'DRAFT';
+    }
+    if (!data.approvalStatus) {
+      data.approvalStatus = 'PENDING';
+    }
+    
+    // 计算总金额（如果有明细）
+    if (data.items && Array.isArray(data.items) && data.items.length > 0) {
+      let totalAmount = new Decimal(0);
+      let totalQuantity = new Decimal(0);
+      
+      for (const item of data.items) {
+        const quantity = new Decimal(item.quantity || 0);
+        const unitPrice = new Decimal(item.unitPrice || 0);
+        totalAmount = totalAmount.add(quantity.mul(unitPrice));
+        totalQuantity = totalQuantity.add(quantity);
+      }
+      
+      data.totalAmount = totalAmount.toNumber();
+      data.totalQuantity = totalQuantity.toNumber();
+    }
+  },
+
+  async onUpdate(id, data, userId, prismaClient) {
+    // 重新计算总金额
+    const summary = await calculateContractSummary(id, prismaClient);
+    
+    Object.assign(data, {
+      totalAmount: summary.totalAmount,
+      totalQuantity: summary.totalQuantity,
+      totalBoxes: summary.totalBoxes,
+      totalGrossWeight: summary.totalGrossWeight,
+      totalNetWeight: summary.totalNetWeight,
+      totalVolume: summary.totalVolume,
+    });
+
+    // 自动计算柜型（如果有总体积）
+    if (summary.totalVolume > 0) {
+      const cabinets = calculateContainers(summary.totalVolume);
+      Object.assign(data, cabinets);
+    }
+
+    // 验证状态流转
+    if (data.status) {
+      const current = await prismaClient.salesContract.findUnique({
+        where: { id },
+        select: { status: true, approvalStatus: true },
+      });
+      
+      if (current && current.status !== data.status) {
+        validateStatusTransition(
+          current.status,
+          data.status,
+          SALES_CONTRACT_STATUS_CONFIG,
+          { approvalStatus: current.approvalStatus }
+        );
+      }
+    }
+  },
+
+  async beforeDelete(id: string, prismaClient: any) {
+    // 检查是否有下游单据
+    const [purchasePlans, processingOrders, outbounds] = await Promise.all([
+      prismaClient.purchasePlan.count({
+        where: { salesContractId: id, deletedAt: null },
+      }),
+      prismaClient.processingOrder.count({
+        where: { salesContractId: id, deletedAt: null },
+      }),
+      prismaClient.warehouseOutbound.count({
+        where: { salesContractId: id, deletedAt: null },
+      }),
+    ]);
+
+    if (purchasePlans > 0 || processingOrders > 0 || outbounds > 0) {
+      throw new Error(
+        `该销售合同存在下游单据（采购计划: ${purchasePlans}, 加工单: ${processingOrders}, 出库单: ${outbounds}），无法删除`
+      );
+    }
+
+    // 检查合同状态
+    const contract = await prismaClient.salesContract.findUnique({
+      where: { id },
+      select: { status: true, code: true },
+    });
+
+    if (contract && ['APPROVED', 'IN_PROGRESS', 'COMPLETED'].includes(contract.status)) {
+      throw new Error(`合同 ${contract.code} 状态为 ${contract.status}，不允许删除`);
+    }
+  },
+
   // ---- 自定义 Actions ----
   actions: {
     /** 审核 */
@@ -209,6 +362,336 @@ export const salesContractAdapter: DocumentTypeAdapter = {
         },
       });
       return { data: doc, message: '转采购计划成功' };
+    },
+
+    /** 计算柜型 */
+    async calculateContainers({ id, prisma }) {
+      const contract = await prisma.salesContract.findUnique({
+        where: { id },
+        include: {
+          items: {
+            where: { deletedAt: null },
+          },
+        },
+      });
+
+      if (!contract) {
+        throw new Error('合同不存在');
+      }
+
+      let totalVolume = new Decimal(0);
+      for (const item of contract.items) {
+        totalVolume = totalVolume.add(new Decimal(item.volume || 0));
+      }
+
+      const cabinets = calculateContainers(totalVolume.toNumber());
+
+      // 更新合同柜型
+      const updated = await prisma.salesContract.update({
+        where: { id },
+        data: cabinets,
+      });
+
+      return {
+        data: {
+          totalVolume: totalVolume.toNumber(),
+          ...cabinets,
+        },
+        message: '柜型计算完成',
+      };
+    },
+
+    /** 重新计算金额 */
+    async recalculateAmount({ id, prisma }) {
+      const summary = await calculateContractSummary(id, prisma);
+
+      const updated = await prisma.salesContract.update({
+        where: { id },
+        data: summary,
+      });
+
+      return {
+        data: summary,
+        message: '金额重新计算完成',
+      };
+    },
+
+    /** 获取关联单据 */
+    async getRelatedDocuments({ id, prisma }) {
+      const [purchasePlans, processingOrders, inbounds, outbounds] = await Promise.all([
+        prisma.purchasePlan.findMany({
+          where: { salesContractId: id, deletedAt: null },
+          select: {
+            id: true,
+            code: true,
+            status: true,
+            totalAmount: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        }),
+        prisma.processingOrder.findMany({
+          where: { salesContractId: id, deletedAt: null },
+          select: {
+            id: true,
+            code: true,
+            status: true,
+            totalAmount: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        }),
+        prisma.warehouseInbound.findMany({
+          where: { salesContractId: id, deletedAt: null },
+          select: {
+            id: true,
+            code: true,
+            status: true,
+            totalQuantity: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        }),
+        prisma.warehouseOutbound.findMany({
+          where: { salesContractId: id, deletedAt: null },
+          select: {
+            id: true,
+            code: true,
+            status: true,
+            totalQuantity: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        }),
+      ]);
+
+      return {
+        data: {
+          purchasePlans,
+          processingOrders,
+          inbounds,
+          outbounds,
+          summary: {
+            purchasePlansCount: purchasePlans.length,
+            processingOrdersCount: processingOrders.length,
+            inboundsCount: inbounds.length,
+            outboundsCount: outbounds.length,
+          },
+        },
+        message: '关联单据查询成功',
+      };
+    },
+
+    /** 批量审核 */
+    async batchApprove({ body, userId, prisma }) {
+      const { ids, approved } = body;
+
+      if (!Array.isArray(ids) || ids.length === 0) {
+        throw new Error('请选择要审核的合同');
+      }
+
+      const result = await executeBatchOperation(
+        ids,
+        async (id) => {
+          const contract = await prisma.salesContract.findUnique({
+            where: { id },
+            select: { code: true, status: true },
+          });
+
+          if (!contract) {
+            throw new Error('合同不存在');
+          }
+
+          if (contract.status !== 'PENDING') {
+            throw new Error(`状态为 ${contract.status}，无法审核`);
+          }
+
+          return await prisma.salesContract.update({
+            where: { id },
+            data: {
+              approvalStatus: approved ? 'APPROVED' : 'REJECTED',
+              status: approved ? 'APPROVED' : 'PENDING',
+              updatedBy: userId,
+            },
+          });
+        },
+        {
+          getCode: (id) => {
+            // 这里可以从缓存中获取 code，简化版直接用 id
+            return id;
+          },
+          continueOnError: true,
+        }
+      );
+
+      return {
+        data: result,
+        message: `批量审核完成：成功 ${result.successCount} 个，失败 ${result.errorCount} 个`,
+      };
+    },
+
+    /** 批量打印 */
+    async batchPrint({ body, userId, prisma }) {
+      const { ids } = body;
+
+      if (!Array.isArray(ids) || ids.length === 0) {
+        throw new Error('请选择要打印的合同');
+      }
+
+      const updated = await prisma.salesContract.updateMany({
+        where: {
+          id: { in: ids },
+          deletedAt: null,
+        },
+        data: {
+          printStatus: 'PRINTED',
+          updatedBy: userId,
+        },
+      });
+
+      // 更新打印次数
+      for (const id of ids) {
+        await prisma.salesContract.update({
+          where: { id },
+          data: {
+            printCount: { increment: 1 },
+          },
+        });
+      }
+
+      return {
+        data: { count: updated.count },
+        message: `批量打印成功：${updated.count} 个合同`,
+      };
+    },
+
+    /** 复制合同 */
+    async copy({ id, body, userId, prisma }) {
+      const original = await prisma.salesContract.findUnique({
+        where: { id },
+        include: {
+          items: {
+            where: { deletedAt: null },
+            orderBy: { lineNumber: 'asc' },
+          },
+        },
+      });
+
+      if (!original) {
+        throw new Error('原合同不存在');
+      }
+
+      // 创建新合同
+      const { id: _, code: __, items: ___, createdAt, updatedAt, deletedAt, ...masterData } = original;
+
+      const newContract = await prisma.salesContract.create({
+        data: {
+          ...masterData,
+          code: body.newCode || undefined, // 使用新编号或自动生成
+          status: 'DRAFT',
+          approvalStatus: 'PENDING',
+          confirmStatus: 'UNCONFIRMED',
+          printStatus: 'UNPRINTED',
+          signBackStatus: 'UNSIGNED',
+          toPurchasePlan: false,
+          createdBy: userId,
+          updatedBy: userId,
+          items: {
+            create: original.items.map((item: any) => {
+              const { id: _itemId, salesContractId: _contractId, createdAt: _createdAt, updatedAt: _updatedAt, deletedAt: _deletedAt, ...itemData } = item;
+              return {
+                ...itemData,
+                createdBy: userId,
+                updatedBy: userId,
+              };
+            }),
+          },
+        },
+        include: {
+          items: true,
+        },
+      });
+
+      return {
+        data: newContract,
+        message: `合同复制成功，新合同编号：${newContract.code}`,
+      };
+    },
+
+    /** 获取执行进度 */
+    async getExecutionProgress({ id, prisma }) {
+      const contract = await prisma.salesContract.findUnique({
+        where: { id },
+        include: {
+          items: {
+            where: { deletedAt: null },
+          },
+        },
+      });
+
+      if (!contract) {
+        throw new Error('合同不存在');
+      }
+
+      // 统计各产品的执行情况
+      const itemProgress = [];
+
+      for (const item of contract.items) {
+        // 查询出库数量
+        const outboundItems = await prisma.warehouseOutboundItem.findMany({
+          where: {
+            outbound: {
+              salesContractId: id,
+              deletedAt: null,
+              status: { in: ['APPROVED', 'COMPLETED'] },
+            },
+            productCode: item.productCode,
+            deletedAt: null,
+          },
+        });
+
+        let shippedQuantity = new Decimal(0);
+        for (const outboundItem of outboundItems) {
+          shippedQuantity = shippedQuantity.add(new Decimal(outboundItem.quantity || 0));
+        }
+
+        const plannedQuantity = new Decimal(item.quantity || 0);
+        const remainingQuantity = plannedQuantity.sub(shippedQuantity);
+        const completionRate = plannedQuantity.toNumber() > 0
+          ? (shippedQuantity.toNumber() / plannedQuantity.toNumber() * 100).toFixed(2)
+          : '0.00';
+
+        itemProgress.push({
+          lineNumber: item.lineNumber,
+          productCode: item.productCode,
+          productName: item.productName,
+          plannedQuantity: plannedQuantity.toNumber(),
+          shippedQuantity: shippedQuantity.toNumber(),
+          remainingQuantity: remainingQuantity.toNumber(),
+          completionRate: parseFloat(completionRate),
+          unit: item.unit,
+        });
+      }
+
+      // 计算整体进度
+      const totalPlanned = contract.totalQuantity ? Number(contract.totalQuantity) : 0;
+      const totalShipped = itemProgress.reduce((sum, item) => sum + item.shippedQuantity, 0);
+      const overallCompletionRate = totalPlanned > 0
+        ? (totalShipped / totalPlanned * 100).toFixed(2)
+        : '0.00';
+
+      return {
+        data: {
+          contractCode: contract.code,
+          contractStatus: contract.status,
+          totalPlanned,
+          totalShipped,
+          totalRemaining: totalPlanned - totalShipped,
+          overallCompletionRate: parseFloat(overallCompletionRate),
+          items: itemProgress,
+        },
+        message: '执行进度查询成功',
+      };
     },
   },
 };

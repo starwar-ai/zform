@@ -11,6 +11,7 @@
 import type { DocumentTypeAdapter } from '../types';
 import { ApprovalService } from '../../services/approval.service';
 import { codeGeneratorApi } from '../../services/code-generator.service';
+import { calculateContainers, decimalEqual } from '../../utils/business-utils';
 
 const approvalService = new ApprovalService();
 
@@ -19,114 +20,72 @@ const approvalService = new ApprovalService();
 // ============================================================
 
 /**
- * Decimal 精确比较（保留2位小数）
- */
-function decimalEqual(a: number, b: number): boolean {
-  return Math.abs(a - b) < 0.01;
-}
-
-/**
- * 计算柜型数量
- * 根据总体积计算各种柜型的数量
- * 
- * 算法: 优先填充 40尺高柜 → 40尺柜 → 20尺柜 → 剩余为散货
- */
-function calcCabinetNum(totalVolume: number): {
-  container20ft: number;
-  container40ft: number;
-  container40hq: number;
-  bulkCargo: number;
-} {
-  // 柜型容积（立方米）
-  const TWENTY_FOOT_VOLUME = 28; // 20尺柜
-  const FORTY_FOOT_VOLUME = 58; // 40尺柜
-  const FORTY_FOOT_HQ_VOLUME = 68; // 40尺高柜
-
-  const result = {
-    container20ft: 0,
-    container40ft: 0,
-    container40hq: 0,
-    bulkCargo: 0,
-  };
-
-  let remainingVolume = totalVolume;
-
-  // 优先填充40尺高柜
-  if (remainingVolume >= FORTY_FOOT_HQ_VOLUME) {
-    result.container40hq = Math.floor(remainingVolume / FORTY_FOOT_HQ_VOLUME);
-    remainingVolume = remainingVolume % FORTY_FOOT_HQ_VOLUME;
-  }
-
-  // 填充40尺柜
-  if (remainingVolume >= FORTY_FOOT_VOLUME) {
-    result.container40ft = Math.floor(remainingVolume / FORTY_FOOT_VOLUME);
-    remainingVolume = remainingVolume % FORTY_FOOT_VOLUME;
-  }
-
-  // 填充20尺柜
-  if (remainingVolume >= TWENTY_FOOT_VOLUME) {
-    result.container20ft = Math.floor(remainingVolume / TWENTY_FOOT_VOLUME);
-    remainingVolume = remainingVolume % TWENTY_FOOT_VOLUME;
-  }
-
-  // 剩余为散货
-  result.bulkCargo = Number(remainingVolume.toFixed(2));
-
-  return result;
-}
-
-/**
- * 验证明细柜型数量
+ * 验证明细柜型数量（使用共享的 calculateContainers 函数）
  * 
  * 规则:
  * 1. 箱数必须大于0
  * 2. 外箱体积必须大于0
  * 3. 计算的柜型数量必须与输入的一致
+ * 
+ * @param items - 报价单明细数组
+ * @throws 如果验证失败，抛出详细错误信息
  */
 function validateCabinetNumbers(items: any[]): void {
-  for (const item of items) {
-    // 检查箱数
-    if (!item.boxCount || item.boxCount <= 0) {
-      throw new Error('箱数不能为空或小于等于0');
-    }
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new Error('报价单明细不能为空');
+  }
 
-    // 检查外箱体积
-    if (!item.outerBoxVolume || item.outerBoxVolume <= 0) {
-      throw new Error('外箱体积不能为空');
-    }
-
-    // 计算总体积
-    const totalVolume = Number(item.outerBoxVolume) * item.boxCount;
-
-    // 计算柜型数量
-    const calculated = calcCabinetNum(totalVolume);
-
-    // 验证散货体积
-    if (item.bulkCargo !== undefined && item.bulkCargo !== null) {
-      if (!decimalEqual(calculated.bulkCargo, Number(item.bulkCargo))) {
-        throw new Error(`散货体积应为 ${calculated.bulkCargo} CBM`);
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const lineNumber = item.lineNumber || (i + 1);
+    
+    try {
+      // 检查箱数
+      if (!item.boxCount || item.boxCount <= 0) {
+        throw new Error('箱数不能为空或小于等于0');
       }
-    }
 
-    // 验证20尺柜
-    if (item.container20ft !== undefined && item.container20ft !== null) {
-      if (!decimalEqual(calculated.container20ft, Number(item.container20ft))) {
-        throw new Error(`20尺柜数量应为 ${calculated.container20ft} 个`);
+      // 检查外箱体积
+      if (!item.outerBoxVolume || item.outerBoxVolume <= 0) {
+        throw new Error('外箱体积不能为空');
       }
-    }
 
-    // 验证40尺柜
-    if (item.container40ft !== undefined && item.container40ft !== null) {
-      if (!decimalEqual(calculated.container40ft, Number(item.container40ft))) {
-        throw new Error(`40尺柜数量应为 ${calculated.container40ft} 个`);
-      }
-    }
+      // 计算总体积
+      const totalVolume = Number(item.outerBoxVolume) * item.boxCount;
 
-    // 验证40尺高柜
-    if (item.container40hq !== undefined && item.container40hq !== null) {
-      if (!decimalEqual(calculated.container40hq, Number(item.container40hq))) {
-        throw new Error(`40尺高柜数量应为 ${calculated.container40hq} 个`);
+      // 计算柜型数量
+      const calculated = calculateContainers(totalVolume);
+
+      // 验证散货体积
+      if (item.bulkCargo !== undefined && item.bulkCargo !== null) {
+        if (!decimalEqual(calculated.bulkCargo, Number(item.bulkCargo))) {
+          throw new Error(`散货体积应为 ${calculated.bulkCargo} CBM`);
+        }
       }
+
+      // 验证20尺柜
+      if (item.container20ft !== undefined && item.container20ft !== null) {
+        if (!decimalEqual(calculated.container20ft, Number(item.container20ft))) {
+          throw new Error(`20尺柜数量应为 ${calculated.container20ft} 个`);
+        }
+      }
+
+      // 验证40尺柜
+      if (item.container40ft !== undefined && item.container40ft !== null) {
+        if (!decimalEqual(calculated.container40ft, Number(item.container40ft))) {
+          throw new Error(`40尺柜数量应为 ${calculated.container40ft} 个`);
+        }
+      }
+
+      // 验证40尺高柜
+      if (item.container40hq !== undefined && item.container40hq !== null) {
+        if (!decimalEqual(calculated.container40hq, Number(item.container40hq))) {
+          throw new Error(`40尺高柜数量应为 ${calculated.container40hq} 个`);
+        }
+      }
+    } catch (error: any) {
+      // 为错误消息添加行号信息
+      throw new Error(`第 ${lineNumber} 行：${error.message}`);
     }
   }
 }
@@ -572,7 +531,7 @@ export const quotationAdapter: DocumentTypeAdapter = {
       }
 
       const totalVolume = Number(outerBoxVolume) * Number(boxCount);
-      const result = calcCabinetNum(totalVolume);
+      const result = calculateContainers(totalVolume);
 
       return {
         data: result,

@@ -497,6 +497,9 @@ model Product {
   // 变更记录
   changeLogs ProductChangeLog[]
 
+  // 产品图片
+  productImages ProductImage[]
+
   // 时间戳
   createdBy String?   @map("created_by")
   createdAt DateTime  @default(now()) @map("created_at")
@@ -538,6 +541,39 @@ model ProductBom {
   @@index([parentProductId])
   @@index([childProductId])
   @@map("product_boms")
+}
+
+// ==================== 产品图片表 ====================
+
+model ProductImage {
+  id String @id @default(cuid())
+
+  productId String  @map("product_id")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  /// 原始文件名 (用户上传时的名称)
+  originalName String @map("original_name")
+  /// 服务器存储路径 (相对于 uploads 目录)
+  filePath String @map("file_path")
+  /// 缩略图存储路径 (仅主图生成)
+  thumbnailPath String? @map("thumbnail_path")
+  /// 是否为主图
+  isPrimary Boolean @default(false) @map("is_primary")
+  /// 排序号
+  sortOrder Int @default(0) @map("sort_order")
+  /// 文件大小 (字节)
+  fileSize Int? @map("file_size")
+  /// MIME 类型
+  mimeType String? @map("mime_type")
+
+  createdBy String?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedBy String?   @map("updated_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([productId])
+  @@map("product_images")
 }
 
 // ==================== 产品辅料关联表 ====================

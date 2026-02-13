@@ -19,6 +19,7 @@ import { registry } from "@/core/registry"
 import { createDocumentApi, updateDocumentApi, fetchDocumentApi } from "@/apis/document-api"
 import { MasterForm } from "./master-form"
 import { DetailTable } from "./detail-table"
+import { ProductImageUpload } from "./product-image-upload"
 import { TracePanel } from "./trace-panel"
 import { ImpactDialog } from "./impact-dialog"
 import { UnsavedChangesDialog } from "./unsaved-changes-dialog"
@@ -326,6 +327,9 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
   const isEditable = doc.status === "draft"
   const isNew = Boolean(doc._isNew)
 
+  // 判断是否为产品类型 (需要显示图片 tab)
+  const isProductType = ["standard_product", "customer_product", "self_owned_product"].includes(doc.typeId)
+
   const handleSave = () => {
     // 构建新文档用于影响评估
     const store = getTraceableStore()
@@ -582,13 +586,16 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
             <Card>
               <CardContent className="pt-4">
                 <Tabs defaultValue="master">
-                  <TabsList>
+                    <TabsList>
                     <TabsTrigger value="master">主信息</TabsTrigger>
                     {schema.detailTables.map((t) => (
                       <TabsTrigger key={t.id} value={t.id}>
                         {t.label}
                       </TabsTrigger>
                     ))}
+                    {isProductType && (
+                      <TabsTrigger value="product_images">产品图片</TabsTrigger>
+                    )}
                   </TabsList>
 
                   <TabsContent value="master" className="mt-4">
@@ -629,6 +636,16 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
                       </TabsContent>
                     )
                   })}
+
+                  {/* 产品图片 Tab */}
+                  {isProductType && (
+                    <TabsContent value="product_images" className="mt-4">
+                      <ProductImageUpload
+                        productId={isNew ? null : docId}
+                        disabled={!isEditable}
+                      />
+                    </TabsContent>
+                  )}
                 </Tabs>
               </CardContent>
             </Card>

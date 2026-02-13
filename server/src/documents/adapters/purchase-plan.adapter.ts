@@ -3,6 +3,30 @@
  */
 
 import type { DocumentTypeAdapter } from '../types';
+import { Decimal } from '@prisma/client/runtime/library';
+import {
+  validateStatusTransition,
+  calculateSummary,
+  executeBatchOperation,
+  validateRequiredFields,
+  calculateDocumentSummary,
+  queryRelatedDocuments,
+} from '../../utils/business-utils';
+
+/**
+ * 采购计划状态流转配置
+ */
+const PURCHASE_PLAN_STATUS_CONFIG = {
+  transitions: {
+    DRAFT: ['PENDING', 'CANCELLED'],
+    PENDING: ['APPROVED', 'DRAFT', 'CANCELLED'],
+    APPROVED: ['IN_PROGRESS', 'CANCELLED'],
+    IN_PROGRESS: ['COMPLETED', 'CLOSED', 'CANCELLED'],
+    COMPLETED: ['CLOSED'],
+    CLOSED: [],
+    CANCELLED: [],
+  },
+};
 
 export const purchasePlanAdapter: DocumentTypeAdapter = {
   typeId: 'purchase_plan',
@@ -111,11 +135,87 @@ export const purchasePlanAdapter: DocumentTypeAdapter = {
   },
 
   // ---- 删除前校验 ----
-  async beforeDelete(id, prisma) {
-    const plan = await prisma.purchasePlan.findUnique({ where: { id } });
+  async beforeDelete(id: string, prisma: any) {
+    const plan = await prisma.purchasePlan.findUnique({ 
+      where: { id },
+      select: { planStatus: true, code: true }
+    });
+    
     if (!plan) throw new Error('采购计划不存在');
+    
     if (plan.planStatus !== 'DRAFT' && plan.planStatus !== 'CANCELLED') {
-      throw new Error('只能删除草稿或已取消的采购计划');
+      throw new Error(`采购计划 ${plan.code} 状态为 ${plan.planStatus}，只能删除草稿或已取消的计划`);
+    }
+
+    // 检查是否有下游单据（采购合同）
+    const purchaseContracts = await prisma.purchaseContract.count({
+      where: { purchasePlanId: id, deletedAt: null },
+    });
+
+    if (purchaseContracts > 0) {
+      throw new Error(`采购计划 ${plan.code} 已生成 ${purchaseContracts} 个采购合同，无法删除`);
+    }
+  },
+
+  // ---- 生命周期钩子 ----
+  async onCreate(data, userId, prismaClient) {
+    // 设置默认值
+    if (!data.planDate) {
+      data.planDate = new Date();
+    }
+    if (!data.planStatus) {
+      data.planStatus = 'DRAFT';
+    }
+    if (!data.approvalStatus) {
+      data.approvalStatus = 'PENDING';
+    }
+
+    // 计算总金额
+    if (data.items && Array.isArray(data.items)) {
+      let totalAmount = new Decimal(0);
+      let totalPurchaseQuantity = new Decimal(0);
+
+      for (const item of data.items) {
+        const qty = new Decimal(item.purchaseQuantity || 0);
+        const price = new Decimal(item.unitPrice || 0);
+        totalAmount = totalAmount.add(qty.mul(price));
+        totalPurchaseQuantity = totalPurchaseQuantity.add(qty);
+      }
+
+      data.totalAmount = totalAmount.toNumber();
+      data.totalPurchaseQuantity = totalPurchaseQuantity.toNumber();
+    }
+  },
+
+  async onUpdate(id, data, userId, prismaClient) {
+    // 重新计算汇总数据
+    const summary = await calculateDocumentSummary(
+      prismaClient,
+      'purchasePlanItem',
+      'purchasePlanId',
+      id,
+      [
+        { sourceField: 'purchaseQuantity', destField: 'totalPurchaseQuantity', type: 'sum' },
+        { sourceField: 'pendingQuantity', destField: 'totalPendingQuantity', type: 'sum' },
+        { sourceField: '', destField: 'totalAmount', type: 'multiply', multiplyFields: ['purchaseQuantity', 'unitPrice'] },
+      ]
+    );
+    Object.assign(data, summary);
+
+    // 验证状态流转
+    if (data.planStatus) {
+      const current = await prismaClient.purchasePlan.findUnique({
+        where: { id },
+        select: { planStatus: true },
+      });
+
+      if (current && current.planStatus !== data.planStatus) {
+        validateStatusTransition(
+          current.planStatus,
+          data.planStatus,
+          PURCHASE_PLAN_STATUS_CONFIG
+        );
+      }
     }
   },
 
@@ -259,6 +359,289 @@ export const purchasePlanAdapter: DocumentTypeAdapter = {
       });
 
       return { data: purchasePlan, message: '采购计划生成成功' };
+    },
+
+    /** 批量审核 */
+    async batchApprove({ body, userId, prisma }) {
+      const { ids } = body;
+
+      if (!Array.isArray(ids) || ids.length === 0) {
+        throw new Error('请选择要审核的采购计划');
+      }
+
+      const result = await executeBatchOperation(
+        ids,
+        async (id) => {
+          const plan = await prisma.purchasePlan.findUnique({
+            where: { id },
+            select: { code: true, planStatus: true, approvalStatus: true },
+          });
+
+          if (!plan) {
+            throw new Error('采购计划不存在');
+          }
+
+          if (plan.approvalStatus === 'APPROVED') {
+            throw new Error('采购计划已审核');
+          }
+
+          return await prisma.purchasePlan.update({
+            where: { id },
+            data: {
+              approvalStatus: 'APPROVED',
+              planStatus: 'APPROVED',
+              updatedBy: userId,
+            },
+          });
+        },
+        { continueOnError: true }
+      );
+
+      return {
+        data: result,
+        message: `批量审核完成：成功 ${result.successCount} 个，失败 ${result.errorCount} 个`,
+      };
+    },
+
+    /** 更新状态 */
+    async updateStatus({ id, body, userId, prisma }) {
+      const { status } = body;
+      
+      validateRequiredFields(body, ['status']);
+
+      const current = await prisma.purchasePlan.findUnique({
+        where: { id },
+        select: { planStatus: true, code: true },
+      });
+
+      if (!current) {
+        throw new Error('采购计划不存在');
+      }
+
+      validateStatusTransition(current.planStatus, status, PURCHASE_PLAN_STATUS_CONFIG);
+
+      const plan = await prisma.purchasePlan.update({
+        where: { id },
+        data: {
+          planStatus: status,
+          updatedBy: userId,
+        },
+      });
+
+      return { data: plan, message: '状态更新成功' };
+    },
+
+    /** 获取关联单据 */
+    async getRelatedDocuments({ id, prisma }) {
+      const result = await queryRelatedDocuments(prisma, [
+        {
+          model: 'purchaseContract',
+          where: { purchasePlanId: id, deletedAt: null },
+          select: {
+            id: true,
+            code: true,
+            status: true,
+            totalAmount: true,
+            supplierName: true,
+            createdAt: true,
+          },
+          label: 'purchaseContracts',
+        },
+        {
+          model: 'processingOrder',
+          where: { purchasePlanId: id, deletedAt: null },
+          select: {
+            id: true,
+            code: true,
+            status: true,
+            totalAmount: true,
+            createdAt: true,
+          },
+          label: 'processingOrders',
+        },
+      ]);
+
+      return {
+        data: result,
+        message: '关联单据查询成功',
+      };
+    },
+
+    /** 获取执行进度 */
+    async getExecutionProgress({ id, prisma }) {
+      const plan = await prisma.purchasePlan.findUnique({
+        where: { id },
+        include: {
+          items: {
+            where: { deletedAt: null },
+          },
+        },
+      });
+
+      if (!plan) {
+        throw new Error('采购计划不存在');
+      }
+
+      // 统计各产品的采购进度
+      const itemProgress = [];
+
+      for (const item of plan.items) {
+        // 查询采购合同数量
+        const contractItems = await prisma.purchaseContractItem.findMany({
+          where: {
+            contract: {
+              purchasePlanId: id,
+              deletedAt: null,
+            },
+            productCode: item.productCode,
+            deletedAt: null,
+          },
+        });
+
+        let contractedQuantity = new Decimal(0);
+        for (const contractItem of contractItems) {
+          contractedQuantity = contractedQuantity.add(
+            new Decimal(contractItem.quantity || 0)
+          );
+        }
+
+        const plannedQty = new Decimal(item.purchaseQuantity || 0);
+        const remainingQty = plannedQty.sub(contractedQuantity);
+        const completionRate =
+          plannedQty.toNumber() > 0
+            ? (contractedQuantity.toNumber() / plannedQty.toNumber() * 100).toFixed(2)
+            : '0.00';
+
+        itemProgress.push({
+          lineNumber: item.lineNumber,
+          productCode: item.productCode,
+          productName: item.productName,
+          plannedQuantity: plannedQty.toNumber(),
+          contractedQuantity: contractedQuantity.toNumber(),
+          remainingQuantity: remainingQty.toNumber(),
+          completionRate: parseFloat(completionRate),
+        });
+      }
+
+      // 计算整体进度
+      const totalPlanned = plan.totalPurchaseQuantity
+        ? Number(plan.totalPurchaseQuantity)
+        : 0;
+      const totalContracted = itemProgress.reduce(
+        (sum, item) => sum + item.contractedQuantity,
+        0
+      );
+      const overallCompletionRate =
+        totalPlanned > 0 ? (totalContracted / totalPlanned * 100).toFixed(2) : '0.00';
+
+      return {
+        data: {
+          planCode: plan.code,
+          planStatus: plan.planStatus,
+          totalPlanned,
+          totalContracted,
+          totalRemaining: totalPlanned - totalContracted,
+          overallCompletionRate: parseFloat(overallCompletionRate),
+          items: itemProgress,
+        },
+        message: '执行进度查询成功',
+      };
+    },
+
+    /** 复制计划 */
+    async copy({ id, body, userId, prisma }) {
+      const original = await prisma.purchasePlan.findUnique({
+        where: { id },
+        include: {
+          items: {
+            where: { deletedAt: null },
+            orderBy: { lineNumber: 'asc' },
+          },
+        },
+      });
+
+      if (!original) {
+        throw new Error('原采购计划不存在');
+      }
+
+      // 创建新计划
+      const {
+        id: _,
+        code: __,
+        items: ___,
+        createdAt,
+        updatedAt,
+        deletedAt,
+        ...masterData
+      } = original;
+
+      const newPlan = await prisma.purchasePlan.create({
+        data: {
+          ...masterData,
+          code: body.newCode || undefined,
+          planDate: new Date(),
+          planStatus: 'DRAFT',
+          approvalStatus: 'PENDING',
+          createdBy: userId,
+          updatedBy: userId,
+          items: {
+            create: original.items.map((item: any) => {
+              const {
+                id: _itemId,
+                purchasePlanId: _planId,
+                createdAt: _createdAt,
+                updatedAt: _updatedAt,
+                deletedAt: _deletedAt,
+                ...itemData
+              } = item;
+              return {
+                ...itemData,
+                pendingQuantity: item.purchaseQuantity, // 重置待采购数量
+                createdBy: userId,
+                updatedBy: userId,
+              };
+            }),
+          },
+        },
+        include: {
+          items: true,
+        },
+      });
+
+      return {
+        data: newPlan,
+        message: `采购计划复制成功，新计划编号：${newPlan.code}`,
+      };
+    },
+
+    /** 分配供应商 */
+    async assignSupplier({ id, body, userId, prisma }) {
+      const { itemIds, supplierId, supplierCode, supplierName } = body;
+
+      validateRequiredFields(body, ['itemIds', 'supplierId', 'supplierName']);
+
+      if (!Array.isArray(itemIds) || itemIds.length === 0) {
+        throw new Error('请选择要分配的明细行');
+      }
+
+      await prisma.purchasePlanItem.updateMany({
+        where: {
+          id: { in: itemIds },
+          purchasePlanId: id,
+          deletedAt: null,
+        },
+        data: {
+          supplierId,
+          supplierCode,
+          supplierName,
+          updatedBy: userId,
+        },
+      });
+
+      return {
+        data: { count: itemIds.length },
+        message: `成功为 ${itemIds.length} 个产品分配供应商`,
+      };
     },
   },
 };
