@@ -1,8 +1,30 @@
 /**
- * 入库通知单 Adapter
+ * 入库通知单 Adapter (Warehouse Inbound Notice)
  */
 
 import type { DocumentTypeAdapter } from '../types';
+import { Decimal } from '@prisma/client/runtime/library';
+import {
+  validateStatusTransition,
+  executeBatchOperation,
+  validateRequiredFields,
+  calculateDocumentSummary,
+  queryRelatedDocuments,
+} from '../../utils/business-utils';
+
+/**
+ * 入库通知单状态流转配置
+ */
+const INBOUND_NOTICE_STATUS_CONFIG = {
+  transitions: {
+    DRAFT: ['PENDING', 'CANCELLED'],
+    PENDING: ['APPROVED', 'DRAFT', 'CANCELLED'],
+    APPROVED: ['IN_PROGRESS', 'CANCELLED'],
+    IN_PROGRESS: ['COMPLETED', 'CANCELLED'],
+    COMPLETED: [],
+    CANCELLED: [],
+  },
+};
 
 export const warehouseInboundNoticeAdapter: DocumentTypeAdapter = {
   typeId: 'warehouse_inbound_notice',
@@ -148,6 +170,240 @@ export const warehouseInboundNoticeAdapter: DocumentTypeAdapter = {
     };
   },
 
-  // ---- 自定义操作 ----
-  actions: {},
+  // ---- 生命周期钩子 ----
+  async onCreate(data, userId, prismaClient) {
+    // 设置默认值
+    if (!data.noticeTime) {
+      data.noticeTime = new Date();
+    }
+    if (!data.noticeStatus) {
+      data.noticeStatus = 'DRAFT';
+    }
+    if (!data.type) {
+      data.type = 'INBOUND';
+    }
+  },
+
+  async onUpdate(id, data, userId, prismaClient) {
+    // 验证状态流转
+    if (data.noticeStatus) {
+      const current = await prismaClient.warehouseNotice.findUnique({
+        where: { id },
+        select: { noticeStatus: true },
+      });
+
+      if (current && current.noticeStatus !== data.noticeStatus) {
+        validateStatusTransition(
+          current.noticeStatus,
+          data.noticeStatus,
+          INBOUND_NOTICE_STATUS_CONFIG
+        );
+      }
+    }
+  },
+
+  async beforeDelete(id: string, prismaClient: any) {
+    const notice = await prismaClient.warehouseNotice.findUnique({
+      where: { id },
+      select: { noticeStatus: true, code: true },
+    });
+
+    if (!notice) {
+      throw new Error('入库通知单不存在');
+    }
+
+    if (['APPROVED', 'IN_PROGRESS', 'COMPLETED'].includes(notice.noticeStatus)) {
+      throw new Error(`入库通知单 ${notice.code} 状态为 ${notice.noticeStatus}，不允许删除`);
+    }
+
+    // 检查是否有下游入库单
+    const inboundOrders = await prismaClient.warehouseOrder.count({
+      where: { 
+        noticeId: id, 
+        type: 'INBOUND',
+        deletedAt: null 
+      },
+    });
+
+    if (inboundOrders > 0) {
+      throw new Error(`入库通知单 ${notice.code} 已生成 ${inboundOrders} 个入库单，无法删除`);
+    }
+  },
+
+  // ---- 自定义 Actions ----
+  actions: {
+    /** 审核 */
+    async approve({ id, body, userId, prisma }) {
+      const { approved } = body;
+
+      const notice = await prisma.warehouseNotice.findUnique({
+        where: { id },
+        select: { noticeStatus: true, code: true },
+      });
+
+      if (!notice) {
+        throw new Error('入库通知单不存在');
+      }
+
+      if (notice.noticeStatus !== 'PENDING') {
+        throw new Error(`入库通知单 ${notice.code} 状态为 ${notice.noticeStatus}，无法审核`);
+      }
+
+      const doc = await prisma.warehouseNotice.update({
+        where: { id },
+        data: {
+          approvalStatus: approved ? 'APPROVED' : 'REJECTED',
+          noticeStatus: approved ? 'APPROVED' : 'PENDING',
+          updatedBy: userId,
+        },
+      });
+
+      return {
+        data: doc,
+        message: `入库通知单${approved ? '审核通过' : '审核拒绝'}`,
+      };
+    },
+
+    /** 更新状态 */
+    async updateStatus({ id, body, userId, prisma }) {
+      const { status } = body;
+
+      validateRequiredFields(body, ['status']);
+
+      const current = await prisma.warehouseNotice.findUnique({
+        where: { id },
+        select: { noticeStatus: true, code: true },
+      });
+
+      if (!current) {
+        throw new Error('入库通知单不存在');
+      }
+
+      validateStatusTransition(
+        current.noticeStatus,
+        status,
+        INBOUND_NOTICE_STATUS_CONFIG
+      );
+
+      const notice = await prisma.warehouseNotice.update({
+        where: { id },
+        data: {
+          noticeStatus: status,
+          updatedBy: userId,
+        },
+      });
+
+      return { data: notice, message: '状态更新成功' };
+    },
+
+    /** 获取关联单据 */
+    async getRelatedDocuments({ id, prisma }) {
+      const result = await queryRelatedDocuments(prisma, [
+        {
+          model: 'warehouseOrder',
+          where: { noticeId: id, type: 'INBOUND', deletedAt: null },
+          select: {
+            id: true,
+            code: true,
+            orderStatus: true,
+            warehouseCode: true,
+            warehouseName: true,
+            createdAt: true,
+          },
+          label: 'inboundOrders',
+        },
+      ]);
+
+      return {
+        data: result,
+        message: '关联单据查询成功',
+      };
+    },
+
+    /** 批量审核 */
+    async batchApprove({ body, userId, prisma }) {
+      const { ids, approved } = body;
+
+      if (!Array.isArray(ids) || ids.length === 0) {
+        throw new Error('请选择要审核的入库通知单');
+      }
+
+      const result = await executeBatchOperation(
+        ids,
+        async (id) => {
+          const notice = await prisma.warehouseNotice.findUnique({
+            where: { id },
+            select: { code: true, noticeStatus: true },
+          });
+
+          if (!notice) {
+            throw new Error('入库通知单不存在');
+          }
+
+          if (notice.noticeStatus !== 'PENDING') {
+            throw new Error(`状态为 ${notice.noticeStatus}，无法审核`);
+          }
+
+          return await prisma.warehouseNotice.update({
+            where: { id },
+            data: {
+              approvalStatus: approved ? 'APPROVED' : 'REJECTED',
+              noticeStatus: approved ? 'APPROVED' : 'PENDING',
+              updatedBy: userId,
+            },
+          });
+        },
+        { continueOnError: true }
+      );
+
+      return {
+        data: result,
+        message: `批量审核完成：成功 ${result.successCount} 个，失败 ${result.errorCount} 个`,
+      };
+    },
+
+    /** 打印 */
+    async print({ id, prisma }) {
+      const notice = await prisma.warehouseNotice.update({
+        where: { id },
+        data: {
+          printStatus: 'PRINTED',
+          printCount: { increment: 1 },
+        },
+      });
+
+      return {
+        data: notice,
+        message: '打印成功',
+      };
+    },
+
+    /** 批量打印 */
+    async batchPrint({ body, prisma }) {
+      const { ids } = body;
+
+      if (!Array.isArray(ids) || ids.length === 0) {
+        throw new Error('请选择要打印的入库通知单');
+      }
+
+      const result = await executeBatchOperation(
+        ids,
+        async (id) => {
+          return await prisma.warehouseNotice.update({
+            where: { id },
+            data: {
+              printStatus: 'PRINTED',
+              printCount: { increment: 1 },
+            },
+          });
+        },
+        { continueOnError: true }
+      );
+
+      return {
+        data: result,
+        message: `批量打印完成：成功 ${result.successCount} 个`,
+      };
+    },
+  },
 };

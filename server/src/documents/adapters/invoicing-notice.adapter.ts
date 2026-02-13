@@ -1,8 +1,30 @@
 /**
- * 开票通知 Adapter
+ * 开票通知 Adapter (Invoicing Notice)
  */
 
 import type { DocumentTypeAdapter } from '../types';
+import { Decimal } from '@prisma/client/runtime/library';
+import {
+  validateStatusTransition,
+  executeBatchOperation,
+  validateRequiredFields,
+  calculateDocumentSummary,
+  queryRelatedDocuments,
+} from '../../utils/business-utils';
+
+/**
+ * 开票通知状态流转配置
+ */
+const INVOICING_NOTICE_STATUS_CONFIG = {
+  transitions: {
+    DRAFT: ['PENDING', 'CANCELLED'],
+    PENDING: ['APPROVED', 'DRAFT', 'CANCELLED'],
+    APPROVED: ['IN_PROGRESS', 'CANCELLED'],
+    IN_PROGRESS: ['COMPLETED', 'CANCELLED'],
+    COMPLETED: [],
+    CANCELLED: [],
+  },
+};
 
 export const invoicingNoticeAdapter: DocumentTypeAdapter = {
   typeId: 'invoicing_notice',
@@ -152,19 +174,90 @@ export const invoicingNoticeAdapter: DocumentTypeAdapter = {
     };
   },
 
+  // ---- 生命周期钩子 ----
+  async onCreate(data, userId, prismaClient) {
+    // 设置默认值
+    if (!data.entryDate) {
+      data.entryDate = new Date();
+    }
+    if (!data.status) {
+      data.status = 'DRAFT';
+    }
+    if (!data.invoiceStatus) {
+      data.invoiceStatus = 'NOT_INVOICED';
+    }
+  },
+
+  async onUpdate(id, data, userId, prismaClient) {
+    // 验证状态流转
+    if (data.status) {
+      const current = await prismaClient.invoicingNotice.findUnique({
+        where: { id },
+        select: { status: true },
+      });
+
+      if (current && current.status !== data.status) {
+        validateStatusTransition(
+          current.status,
+          data.status,
+          INVOICING_NOTICE_STATUS_CONFIG
+        );
+      }
+    }
+  },
+
+  async beforeDelete(id: string, prismaClient: any) {
+    const notice = await prismaClient.invoicingNotice.findUnique({
+      where: { id },
+      select: { status: true, code: true },
+    });
+
+    if (!notice) {
+      throw new Error('开票通知不存在');
+    }
+
+    if (['APPROVED', 'IN_PROGRESS', 'COMPLETED'].includes(notice.status)) {
+      throw new Error(`开票通知 ${notice.code} 状态为 ${notice.status}，不允许删除`);
+    }
+
+    // 检查是否有关联的发票登记
+    const registrations = await prismaClient.invoiceRegistration.count({
+      where: { invoicingNoticeId: id, deletedAt: null },
+    });
+
+    if (registrations > 0) {
+      throw new Error(`开票通知 ${notice.code} 已有 ${registrations} 个发票登记，无法删除`);
+    }
+  },
+
   // ---- 自定义 Actions ----
   actions: {
     /** 审核 */
     async approve({ id, body, userId, prisma }) {
       const { approved } = body;
+
+      const notice = await prisma.invoicingNotice.findUnique({
+        where: { id },
+        select: { status: true, code: true },
+      });
+
+      if (!notice) {
+        throw new Error('开票通知不存在');
+      }
+
+      if (notice.status !== 'PENDING') {
+        throw new Error(`开票通知 ${notice.code} 状态为 ${notice.status}，无法审核`);
+      }
+
       const doc = await prisma.invoicingNotice.update({
         where: { id },
         data: {
-          status: approved ? 'APPROVED' : 'CANCELLED',
+          status: approved ? 'APPROVED' : 'PENDING',
           approvalStatus: approved ? 'APPROVED' : 'REJECTED',
           updatedBy: userId,
         },
       });
+
       return {
         data: doc,
         message: `开票通知${approved ? '审核通过' : '审核拒绝'}`,
@@ -173,26 +266,214 @@ export const invoicingNoticeAdapter: DocumentTypeAdapter = {
 
     /** 更新状态 */
     async updateStatus({ id, body, userId, prisma }) {
+      const { status } = body;
+
+      validateRequiredFields(body, ['status']);
+
+      const current = await prisma.invoicingNotice.findUnique({
+        where: { id },
+        select: { status: true, code: true },
+      });
+
+      if (!current) {
+        throw new Error('开票通知不存在');
+      }
+
+      validateStatusTransition(
+        current.status,
+        status,
+        INVOICING_NOTICE_STATUS_CONFIG
+      );
+
       const doc = await prisma.invoicingNotice.update({
         where: { id },
         data: {
-          status: body.status,
+          status,
           updatedBy: userId,
         },
       });
+
       return { data: doc, message: '开票通知状态更新成功' };
     },
 
     /** 更新开票状态 */
     async updateInvoiceStatus({ id, body, userId, prisma }) {
+      const { invoiceStatus } = body;
+
+      validateRequiredFields(body, ['invoiceStatus']);
+
       const doc = await prisma.invoicingNotice.update({
         where: { id },
         data: {
-          invoiceStatus: body.invoiceStatus,
+          invoiceStatus,
           updatedBy: userId,
         },
       });
+
       return { data: doc, message: '开票状态更新成功' };
+    },
+
+    /** 获取关联单据 */
+    async getRelatedDocuments({ id, prisma }) {
+      const result = await queryRelatedDocuments(prisma, [
+        {
+          model: 'invoiceRegistration',
+          where: { invoicingNoticeId: id, deletedAt: null },
+          select: {
+            id: true,
+            code: true,
+            status: true,
+            invoiceNo: true,
+            invoiceAmount: true,
+            createdAt: true,
+          },
+          label: 'invoiceRegistrations',
+        },
+      ]);
+
+      return {
+        data: result,
+        message: '关联单据查询成功',
+      };
+    },
+
+    /** 批量审核 */
+    async batchApprove({ body, userId, prisma }) {
+      const { ids, approved } = body;
+
+      if (!Array.isArray(ids) || ids.length === 0) {
+        throw new Error('请选择要审核的开票通知');
+      }
+
+      const result = await executeBatchOperation(
+        ids,
+        async (id) => {
+          const notice = await prisma.invoicingNotice.findUnique({
+            where: { id },
+            select: { code: true, status: true },
+          });
+
+          if (!notice) {
+            throw new Error('开票通知不存在');
+          }
+
+          if (notice.status !== 'PENDING') {
+            throw new Error(`状态为 ${notice.status}，无法审核`);
+          }
+
+          return await prisma.invoicingNotice.update({
+            where: { id },
+            data: {
+              status: approved ? 'APPROVED' : 'PENDING',
+              approvalStatus: approved ? 'APPROVED' : 'REJECTED',
+              updatedBy: userId,
+            },
+          });
+        },
+        { continueOnError: true }
+      );
+
+      return {
+        data: result,
+        message: `批量审核完成：成功 ${result.successCount} 个，失败 ${result.errorCount} 个`,
+      };
+    },
+
+    /** 打印 */
+    async print({ id, prisma }) {
+      const notice = await prisma.invoicingNotice.update({
+        where: { id },
+        data: {
+          printStatus: 'PRINTED',
+          printDate: new Date(),
+        },
+      });
+
+      return {
+        data: notice,
+        message: '打印成功',
+      };
+    },
+
+    /** 从出运单生成 */
+    async createFromShippingOrder({ body, userId, prisma }) {
+      const { shippingOrderId, itemIds } = body;
+
+      validateRequiredFields(body, ['shippingOrderId']);
+
+      const shippingOrder = await prisma.shippingOrder.findUnique({
+        where: { id: shippingOrderId },
+        include: {
+          items: itemIds
+            ? {
+                where: {
+                  id: { in: itemIds },
+                  deletedAt: null,
+                },
+              }
+            : {
+                where: { deletedAt: null },
+              },
+        },
+      });
+
+      if (!shippingOrder) {
+        throw new Error('出运单不存在');
+      }
+
+      if (shippingOrder.items.length === 0) {
+        throw new Error('未找到选中的明细项');
+      }
+
+      // 生成编号
+      const today = new Date();
+      const prefix = `IN${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+      const lastNotice = await prisma.invoicingNotice.findFirst({
+        where: { code: { startsWith: prefix } },
+        orderBy: { code: 'desc' },
+      });
+      let seq = 1;
+      if (lastNotice) {
+        seq = parseInt(lastNotice.code.substring(prefix.length)) + 1;
+      }
+      const noticeCode = `${prefix}${String(seq).padStart(4, '0')}`;
+
+      const notice = await prisma.invoicingNotice.create({
+        data: {
+          code: noticeCode,
+          entryDate: new Date(),
+          shippingOrderId: shippingOrder.id,
+          shippingOrderNo: shippingOrder.code,
+          shippingInvoiceNo: shippingOrder.invoiceNo,
+          orderLinkCode: shippingOrder.orderLinkCode,
+          status: 'DRAFT',
+          invoiceStatus: 'NOT_INVOICED',
+          sourceType: 'AUTO',
+          isManual: false,
+          createdBy: userId,
+          updatedBy: userId,
+          items: {
+            create: shippingOrder.items.map((item: any, index: number) => ({
+              productId: item.productId,
+              skuCode: item.productCode,
+              productName: item.productName,
+              noticeQuantity: item.quantity,
+              customsQuantity: item.quantity,
+              hsCode: item.hsCode,
+              invoicingStatus: 'NOT_INVOICED',
+              invoiceRegStatus: 'NOT_REGISTERED',
+              createdBy: userId,
+              updatedBy: userId,
+            })),
+          },
+        },
+        include: { items: true },
+      });
+
+      return {
+        data: notice,
+        message: '开票通知生成成功',
+      };
     },
   },
 };
