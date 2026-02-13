@@ -179,6 +179,29 @@ export const paymentApplyAdapter: DocumentTypeAdapter = {
     /** 审核 */
     async approve({ id, body, userId, prisma }) {
       const { approved } = body;
+
+      const apply = await prisma.paymentApply.findUnique({
+        where: { id },
+        select: {
+          paymentPlanId: true,
+          purchaseContractId: true,
+        },
+        include: {
+          items: {
+            where: { deletedAt: null },
+          },
+        },
+      });
+
+      if (!apply) {
+        throw new Error('付款申请不存在');
+      }
+
+      // 【业务逻辑补充】审批通过后更新付款计划状态
+      if (approved && apply.items && apply.items.length > 0) {
+        await updatePaymentPlanStatus(prisma, apply.items, userId);
+      }
+
       const doc = await prisma.paymentApply.update({
         where: { id },
         data: {
@@ -187,6 +210,7 @@ export const paymentApplyAdapter: DocumentTypeAdapter = {
           updatedBy: userId,
         },
       });
+
       return {
         data: doc,
         message: `付款申请${approved ? '审核通过' : '审核拒绝'}`,
@@ -237,3 +261,46 @@ export const paymentApplyAdapter: DocumentTypeAdapter = {
     },
   },
 };
+
+/**
+ * 辅助函数：更新付款计划状态
+ * @param prisma Prisma client
+ * @param items 付款申请明细
+ * @param userId 用户ID
+ */
+async function updatePaymentPlanStatus(
+  prisma: any,
+  items: any[],
+  userId: string
+) {
+  // 提取所有关联的付款计划ID
+  const paymentPlanIds = items
+    .map((item: any) => item.paymentPlanId)
+    .filter(Boolean);
+
+  if (paymentPlanIds.length === 0) return;
+
+  // 更新付款计划状态为"申请中"
+  for (const planId of paymentPlanIds) {
+    await prisma.purchasePaymentPlan.update({
+      where: { id: planId },
+      data: {
+        executionStatus: 'IN_PAYMENT', // 付款中
+        updatedBy: userId,
+      },
+    });
+  }
+
+  // 更新采购合同明细的已申请付款金额
+  for (const item of items) {
+    if (item.purchaseContractItemId) {
+      await prisma.purchaseContractItem.update({
+        where: { id: item.purchaseContractItemId },
+        data: {
+          appliedAmount: { increment: item.currentApplyAmount || 0 },
+          updatedBy: userId,
+        },
+      });
+    }
+  }
+}

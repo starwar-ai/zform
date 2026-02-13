@@ -164,6 +164,11 @@ export const invoiceRegistrationAdapter: DocumentTypeAdapter = {
       data.approvalStatus = 'PENDING';
     }
 
+    // 【业务逻辑补充】校验登记数量不能超过开票通知数量
+    if (data.invoicingNoticeId && data.items && Array.isArray(data.items)) {
+      await validateRegistrationQuantity(prismaClient, data.invoicingNoticeId, data.items);
+    }
+
     // 计算汇总金额
     if (data.items && Array.isArray(data.items)) {
       let invoiceAmount = new Decimal(0);
@@ -250,7 +255,17 @@ export const invoiceRegistrationAdapter: DocumentTypeAdapter = {
 
       const registration = await prisma.invoiceRegistration.findUnique({
         where: { id },
-        select: { status: true, code: true },
+        select: { 
+          status: true, 
+          code: true, 
+          invoicingNoticeId: true,
+          registrationDate: true,
+        },
+        include: {
+          items: {
+            where: { deletedAt: null },
+          },
+        },
       });
 
       if (!registration) {
@@ -259,6 +274,26 @@ export const invoiceRegistrationAdapter: DocumentTypeAdapter = {
 
       if (registration.status !== 'SUBMITTED') {
         throw new Error(`发票登记 ${registration.code} 状态为 ${registration.status}，无法审核`);
+      }
+
+      // 【业务逻辑补充】审核通过后的级联更新
+      if (approved) {
+        // 1. 回写开票通知的登票日期
+        if (registration.invoicingNoticeId) {
+          await prisma.invoicingNotice.update({
+            where: { id: registration.invoicingNoticeId },
+            data: {
+              registrationDate: registration.registrationDate || new Date(),
+              invoiceStatus: 'REGISTERED',
+            },
+          });
+
+          // 2. 更新开票通知明细的登记状态
+          await updateInvoicingNoticeItemStatus(prisma, registration.items);
+        }
+
+        // 3. 更新采购合同明细的已登票数量
+        await updatePurchaseContractRegisteredQty(prisma, registration.items);
       }
 
       const doc = await prisma.invoiceRegistration.update({
@@ -518,3 +553,126 @@ export const invoiceRegistrationAdapter: DocumentTypeAdapter = {
     },
   },
 };
+
+/**
+ * 辅助函数：校验登记数量不能超过开票通知数量
+ * @param prisma Prisma client
+ * @param invoicingNoticeId 开票通知ID
+ * @param items 发票登记明细
+ */
+async function validateRegistrationQuantity(
+  prisma: any,
+  invoicingNoticeId: string,
+  items: any[]
+) {
+  // 获取开票通知明细
+  const noticeItems = await prisma.invoicingNoticeItem.findMany({
+    where: {
+      invoicingNoticeId,
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+      noticeQuantity: true,
+    },
+  });
+
+  const noticeQuantityMap = new Map(
+    noticeItems.map((item: any) => [item.id, item.noticeQuantity || 0])
+  );
+
+  // 校验每个明细的登记数量
+  for (const item of items) {
+    if (item.invoicingNoticeItemId) {
+      const noticeQty = noticeQuantityMap.get(item.invoicingNoticeItemId) || 0;
+      const registeredQty = item.quantity || 0;
+
+      if (registeredQty > noticeQty) {
+        throw new Error(
+          `登记数量 ${registeredQty} 超过开票通知数量 ${noticeQty}`
+        );
+      }
+    }
+  }
+}
+
+/**
+ * 辅助函数：更新开票通知明细的登记状态
+ * @param prisma Prisma client
+ * @param items 发票登记明细
+ */
+async function updateInvoicingNoticeItemStatus(prisma: any, items: any[]) {
+  const itemQuantityMap = new Map<string, number>();
+
+  // 统计每个开票通知明细的已登记数量
+  for (const item of items) {
+    if (item.invoicingNoticeItemId) {
+      const currentQty = itemQuantityMap.get(item.invoicingNoticeItemId) || 0;
+      itemQuantityMap.set(
+        item.invoicingNoticeItemId,
+        currentQty + (item.quantity || 0)
+      );
+    }
+  }
+
+  // 批量更新开票通知明细
+  for (const [itemId, registeredQty] of itemQuantityMap.entries()) {
+    // 获取开票通知明细的总数量
+    const noticeItem = await prisma.invoicingNoticeItem.findUnique({
+      where: { id: itemId },
+      select: { noticeQuantity: true, invoiceRegQty: true },
+    });
+
+    if (!noticeItem) continue;
+
+    const newRegQty = (noticeItem.invoiceRegQty || 0) + registeredQty;
+    const totalQty = noticeItem.noticeQuantity || 0;
+
+    // 判断登记状态
+    let registrationStatus = 'NOT_REGISTERED';
+    if (newRegQty > 0 && newRegQty < totalQty) {
+      registrationStatus = 'PARTIALLY_REGISTERED';
+    } else if (newRegQty >= totalQty) {
+      registrationStatus = 'FULLY_REGISTERED';
+    }
+
+    await prisma.invoicingNoticeItem.update({
+      where: { id: itemId },
+      data: {
+        invoiceRegQty: newRegQty,
+        invoiceRegStatus: registrationStatus,
+      },
+    });
+  }
+}
+
+/**
+ * 辅助函数：更新采购合同明细的已登票数量
+ * @param prisma Prisma client
+ * @param items 发票登记明细
+ */
+async function updatePurchaseContractRegisteredQty(prisma: any, items: any[]) {
+  const itemQuantityMap = new Map<string, number>();
+
+  // 统计每个采购合同明细的已登票数量
+  for (const item of items) {
+    if (item.purchaseContractItemId) {
+      const currentQty = itemQuantityMap.get(item.purchaseContractItemId) || 0;
+      itemQuantityMap.set(
+        item.purchaseContractItemId,
+        currentQty + (item.quantity || 0)
+      );
+    }
+  }
+
+  // 批量更新采购合同明细
+  for (const [itemId, registeredQty] of itemQuantityMap.entries()) {
+    await prisma.purchaseContractItem.update({
+      where: { id: itemId },
+      data: {
+        registeredQuantity: { increment: registeredQty },
+        registrationStatus: 'REGISTERED',
+      },
+    });
+  }
+}

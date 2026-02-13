@@ -282,7 +282,16 @@ export const warehouseOutboundAdapter: DocumentTypeAdapter = {
     async complete({ id, userId, prisma }) {
       const order = await prisma.warehouseOrder.findUnique({
         where: { id },
-        select: { orderStatus: true, code: true },
+        select: { 
+          orderStatus: true, 
+          code: true,
+          warehouseId: true,
+        },
+        include: {
+          items: {
+            where: { deletedAt: null },
+          },
+        },
       });
 
       if (!order) {
@@ -293,10 +302,16 @@ export const warehouseOutboundAdapter: DocumentTypeAdapter = {
         throw new Error(`出库单 ${order.code} 状态为 ${order.orderStatus}，无法完成`);
       }
 
+      // 【业务逻辑补充】完成出库时扣减库存
+      if (order.items && order.items.length > 0) {
+        await updateInventoryOnOutbound(prisma, order, userId);
+      }
+
       const updated = await prisma.warehouseOrder.update({
         where: { id },
         data: {
           orderStatus: 'COMPLETED',
+          completedAt: new Date(),
           updatedBy: userId,
         },
       });
@@ -479,3 +494,124 @@ export const warehouseOutboundAdapter: DocumentTypeAdapter = {
     },
   },
 };
+
+/**
+ * 辅助函数：出库时扣减库存
+ * @param prisma Prisma client
+ * @param order 出库单信息
+ * @param userId 用户ID
+ */
+async function updateInventoryOnOutbound(
+  prisma: any,
+  order: any,
+  userId: string
+) {
+  for (const item of order.items) {
+    // 查找对应的库存记录
+    const inventory = await prisma.inventory.findFirst({
+      where: {
+        skuCode: item.skuCode,
+        warehouseId: order.warehouseId,
+        batchCode: item.batchCode || 'DEFAULT',
+        deletedAt: null,
+      },
+    });
+
+    if (!inventory) {
+      throw new Error(`产品 ${item.skuCode} 在仓库中无可用库存`);
+    }
+
+    const outboundQty = item.actualQuantity || item.expectedQuantity || 0;
+
+    // 检查可用库存是否足够
+    if (inventory.availableQuantity < outboundQty) {
+      throw new Error(
+        `产品 ${item.skuCode} 可用库存不足：需要 ${outboundQty}，当前可用 ${inventory.availableQuantity}`
+      );
+    }
+
+    // 扣减库存：减少可用数量和总数量
+    await prisma.inventory.update({
+      where: { id: inventory.id },
+      data: {
+        availableQuantity: { decrement: outboundQty },
+        totalQuantity: { decrement: outboundQty },
+        updatedBy: userId,
+      },
+    });
+
+    // 如果是从锁定库存出库，同时减少锁定数量
+    if (item.isFromLock && inventory.lockedQuantity >= outboundQty) {
+      await prisma.inventory.update({
+        where: { id: inventory.id },
+        data: {
+          lockedQuantity: { decrement: outboundQty },
+          updatedBy: userId,
+        },
+      });
+    }
+
+    // 更新出库通知单明细的转单标识
+    if (item.noticeItemId) {
+      await prisma.warehouseNoticeItem.update({
+        where: { id: item.noticeItemId },
+        data: {
+          convertedToOrderFlag: true,
+          outboundedQuantity: { increment: outboundQty },
+          updatedBy: userId,
+        },
+      });
+    }
+  }
+
+  // 更新出库通知单状态
+  if (order.noticeId) {
+    await updateNoticeStatusAfterOutbound(prisma, order.noticeId, userId);
+  }
+}
+
+/**
+ * 辅助函数：出库后更新通知单状态
+ * @param prisma Prisma client
+ * @param noticeId 通知单ID
+ * @param userId 用户ID
+ */
+async function updateNoticeStatusAfterOutbound(
+  prisma: any,
+  noticeId: string,
+  userId: string
+) {
+  const notice = await prisma.warehouseNotice.findUnique({
+    where: { id: noticeId },
+    include: {
+      items: {
+        where: { deletedAt: null },
+      },
+    },
+  });
+
+  if (!notice || !notice.items) return;
+
+  // 检查所有明细是否都已转单
+  const allConverted = notice.items.every(
+    (item: any) => item.convertedToOrderFlag === true
+  );
+
+  if (allConverted) {
+    await prisma.warehouseNotice.update({
+      where: { id: noticeId },
+      data: {
+        noticeStatus: 'COMPLETED',
+        updatedBy: userId,
+      },
+    });
+  } else {
+    await prisma.warehouseNotice.update({
+      where: { id: noticeId },
+      data: {
+        noticeStatus: 'IN_PROGRESS',
+        updatedBy: userId,
+      },
+    });
+  }
+}

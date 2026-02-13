@@ -231,7 +231,18 @@ export const purchaseContractAdapter: DocumentTypeAdapter = {
 
       const contract = await prisma.purchaseContract.findUnique({
         where: { id },
-        select: { status: true, code: true },
+        select: { 
+          status: true, 
+          code: true,
+          purchasePlanId: true,
+          managerId: true,
+          buyerId: true,
+        },
+        include: {
+          items: {
+            where: { deletedAt: null },
+          },
+        },
       });
 
       if (!contract) {
@@ -240,6 +251,25 @@ export const purchaseContractAdapter: DocumentTypeAdapter = {
 
       if (contract.status !== 'PENDING') {
         throw new Error(`采购合同 ${contract.code} 状态为 ${contract.status}，无法审核`);
+      }
+
+      // 【业务逻辑补充】审批通过后的级联更新
+      if (approved && contract.items && contract.items.length > 0) {
+        // 1. 回写销售合同明细的真实采购价和跟单员信息
+        await updateSalesContractRealPurchasePrice(
+          prisma,
+          contract.items,
+          contract.managerId,
+          contract.buyerId
+        );
+
+        // 2. 回写销售合同的赠品数量
+        await updateSalesContractFreeQuantity(prisma, contract.items);
+
+        // 3. 回写采购计划状态（如果来自采购计划）
+        if (contract.purchasePlanId) {
+          await updatePurchasePlanStatus(prisma, contract.purchasePlanId);
+        }
       }
 
       const doc = await prisma.purchaseContract.update({
@@ -667,3 +697,124 @@ export const purchaseContractAdapter: DocumentTypeAdapter = {
     },
   },
 };
+
+/**
+ * 辅助函数：回写销售合同明细的真实采购价和跟单员
+ * @param prisma Prisma client
+ * @param items 采购合同明细
+ * @param managerId 跟单员ID
+ * @param buyerId 采购员ID
+ */
+async function updateSalesContractRealPurchasePrice(
+  prisma: any,
+  items: any[],
+  managerId?: string,
+  buyerId?: string
+) {
+  const salesItemUpdates = new Map<string, any>();
+
+  // 统计每个销售合同明细的真实采购价（取最新的采购价）
+  for (const item of items) {
+    if (item.salesContractItemId) {
+      const unitPrice = item.unitPriceWithTax || item.unitPrice || 0;
+      
+      salesItemUpdates.set(item.salesContractItemId, {
+        realPurchasePrice: unitPrice,
+        realPurchasePriceUpdatedAt: new Date(),
+        ...(managerId && { managerId }),
+        ...(buyerId && { realBuyerId: buyerId }),
+      });
+    }
+  }
+
+  // 批量更新销售合同明细
+  for (const [itemId, updateData] of salesItemUpdates.entries()) {
+    await prisma.salesContractItem.update({
+      where: { id: itemId },
+      data: updateData,
+    });
+  }
+}
+
+/**
+ * 辅助函数：回写销售合同的赠品数量
+ * @param prisma Prisma client
+ * @param items 采购合同明细
+ */
+async function updateSalesContractFreeQuantity(prisma: any, items: any[]) {
+  const freeQuantityMap = new Map<string, number>();
+
+  // 统计每个销售合同明细的赠品数量
+  for (const item of items) {
+    if (
+      item.salesContractItemId &&
+      item.isFree &&
+      item.freeQuantity &&
+      item.freeQuantity > 0
+    ) {
+      const currentQty = freeQuantityMap.get(item.salesContractItemId) || 0;
+      freeQuantityMap.set(
+        item.salesContractItemId,
+        currentQty + item.freeQuantity
+      );
+    }
+  }
+
+  // 批量更新销售合同明细的赠品数量
+  for (const [itemId, freeQty] of freeQuantityMap.entries()) {
+    await prisma.salesContractItem.update({
+      where: { id: itemId },
+      data: {
+        purchaseFreeQuantity: { increment: freeQty },
+      },
+    });
+  }
+}
+
+/**
+ * 辅助函数：回写采购计划状态
+ * @param prisma Prisma client
+ * @param purchasePlanId 采购计划ID
+ */
+async function updatePurchasePlanStatus(
+  prisma: any,
+  purchasePlanId: string
+) {
+  // 检查该采购计划下的所有采购合同是否都已审批通过
+  const contracts = await prisma.purchaseContract.findMany({
+    where: {
+      purchasePlanId,
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+      approvalStatus: true,
+    },
+  });
+
+  if (contracts.length === 0) return;
+
+  // 判断是否全部审批通过
+  const allApproved = contracts.every(
+    (c: any) => c.approvalStatus === 'APPROVED'
+  );
+
+  if (allApproved) {
+    // 更新采购计划状态为"待采购"或"进行中"
+    await prisma.purchasePlan.update({
+      where: { id: purchasePlanId },
+      data: {
+        planStatus: 'IN_PROGRESS',
+        toContractStatus: 'COMPLETED', // 标记为已全部转采购合同
+      },
+    });
+  } else {
+    // 部分审批通过，更新为"部分转合同"
+    await prisma.purchasePlan.update({
+      where: { id: purchasePlanId },
+      data: {
+        toContractStatus: 'PARTIAL',
+      },
+    });
+  }
+}

@@ -186,6 +186,16 @@ export const invoicingNoticeAdapter: DocumentTypeAdapter = {
     if (!data.invoiceStatus) {
       data.invoiceStatus = 'NOT_INVOICED';
     }
+
+    // 【业务逻辑补充】创建后更新上游单据的开票状态
+    // 根据 sourceType 决定更新哪个上游单据
+    if (data.sourceType === 'SHIPPING_ORDER' && data.shippingOrderId && data.items) {
+      // 更新出运单明细的开票数量和状态
+      await updateShippingOrderInvoiceStatus(prismaClient, data.shippingOrderId, data.items);
+    } else if (data.sourceType === 'PURCHASE_CONTRACT' && data.items) {
+      // 更新采购合同明细的开票数量和状态
+      await updatePurchaseContractInvoiceStatus(prismaClient, data.items);
+    }
   },
 
   async onUpdate(id, data, userId, prismaClient) {
@@ -477,3 +487,89 @@ export const invoicingNoticeAdapter: DocumentTypeAdapter = {
     },
   },
 };
+
+/**
+ * 辅助函数：更新出运单明细的开票状态
+ * @param prisma Prisma client
+ * @param shippingOrderId 出运单ID
+ * @param items 开票通知明细
+ */
+async function updateShippingOrderInvoiceStatus(
+  prisma: any,
+  shippingOrderId: string,
+  items: any[]
+) {
+  // 统计每个出运单明细的开票数量
+  const itemQuantityMap = new Map<string, number>();
+  
+  for (const item of items) {
+    if (item.shippingOrderItemId) {
+      const currentQty = itemQuantityMap.get(item.shippingOrderItemId) || 0;
+      itemQuantityMap.set(
+        item.shippingOrderItemId,
+        currentQty + (item.noticeQuantity || 0)
+      );
+    }
+  }
+
+  // 批量更新出运单明细
+  for (const [itemId, quantity] of itemQuantityMap.entries()) {
+    await prisma.shippingOrderItem.update({
+      where: { id: itemId },
+      data: {
+        invoicedQuantity: { increment: quantity },
+        invoiceStatus: 'PARTIALLY_INVOICED', // 后续可根据数量判断是否完全开票
+      },
+    });
+  }
+}
+
+/**
+ * 辅助函数：更新采购合同明细的开票状态
+ * @param prisma Prisma client
+ * @param items 开票通知明细
+ */
+async function updatePurchaseContractInvoiceStatus(prisma: any, items: any[]) {
+  // 统计每个采购合同明细的开票数量
+  const itemQuantityMap = new Map<string, number>();
+  
+  for (const item of items) {
+    if (item.purchaseContractItemId) {
+      const currentQty = itemQuantityMap.get(item.purchaseContractItemId) || 0;
+      itemQuantityMap.set(
+        item.purchaseContractItemId,
+        currentQty + (item.noticeQuantity || 0)
+      );
+    }
+  }
+
+  // 批量更新采购合同明细
+  for (const [itemId, quantity] of itemQuantityMap.entries()) {
+    // 获取当前明细信息
+    const contractItem = await prisma.purchaseContractItem.findUnique({
+      where: { id: itemId },
+      select: { quantity: true, invoicedQuantity: true },
+    });
+
+    if (!contractItem) continue;
+
+    const newInvoicedQty = (contractItem.invoicedQuantity || 0) + quantity;
+    const totalQty = contractItem.quantity || 0;
+
+    // 判断开票状态
+    let invoiceStatus = 'NOT_INVOICED';
+    if (newInvoicedQty > 0 && newInvoicedQty < totalQty) {
+      invoiceStatus = 'PARTIALLY_INVOICED';
+    } else if (newInvoicedQty >= totalQty) {
+      invoiceStatus = 'FULLY_INVOICED';
+    }
+
+    await prisma.purchaseContractItem.update({
+      where: { id: itemId },
+      data: {
+        invoicedQuantity: newInvoicedQty,
+        invoiceStatus,
+      },
+    });
+  }
+}

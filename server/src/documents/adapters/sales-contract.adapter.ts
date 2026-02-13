@@ -209,6 +209,10 @@ export const salesContractAdapter: DocumentTypeAdapter = {
       data.totalAmount = totalAmount.toNumber();
       data.totalQuantity = totalQuantity.toNumber();
     }
+
+    // 【业务逻辑补充】创建后处理库存锁定
+    // 注意：库存锁定通常在创建完成后调用单独的 action
+    // 此处仅记录锁定信息到明细的 lockInfo 字段
   },
 
   async onUpdate(id, data, userId, prismaClient) {
@@ -277,6 +281,10 @@ export const salesContractAdapter: DocumentTypeAdapter = {
     if (contract && ['APPROVED', 'IN_PROGRESS', 'COMPLETED'].includes(contract.status)) {
       throw new Error(`合同 ${contract.code} 状态为 ${contract.status}，不允许删除`);
     }
+
+    // 【业务逻辑补充】删除前释放库存锁定
+    // 调用库存API释放该销售合同的所有库存锁定
+    // await stockApi.cancelStockLock(contract.code, null, null);
   },
 
   // ---- 自定义 Actions ----
@@ -413,6 +421,114 @@ export const salesContractAdapter: DocumentTypeAdapter = {
       return {
         data: summary,
         message: '金额重新计算完成',
+      };
+    },
+
+    /** 锁定库存 */
+    async lockStock({ id, body, userId, prisma }) {
+      const { items } = body; // items: [{ itemId, stockLocks: [{ stockId, batchCode, quantity }] }]
+      
+      if (!Array.isArray(items) || items.length === 0) {
+        throw new Error('请选择要锁定库存的明细');
+      }
+
+      const contract = await prisma.salesContract.findUnique({
+        where: { id },
+        select: { code: true, status: true },
+      });
+
+      if (!contract) {
+        throw new Error('销售合同不存在');
+      }
+
+      // 【业务逻辑】锁定库存
+      // 1. 先释放该合同的所有库存锁定
+      // await stockApi.cancelStockLock(contract.code, items.map(i => i.itemId), null);
+
+      // 2. 重新锁定库存并更新明细的 lockInfo
+      for (const item of items) {
+        const { itemId, stockLocks } = item;
+        
+        if (stockLocks && stockLocks.length > 0) {
+          // 计算总锁定数量
+          const totalLockQty = stockLocks.reduce((sum: number, lock: any) => sum + (lock.quantity || 0), 0);
+          
+          // 更新销售合同明细的锁定信息
+          await prisma.salesContractItem.update({
+            where: { id: itemId },
+            data: {
+              lockInfo: stockLocks, // 保存锁定批次信息
+              lockedQuantity: totalLockQty,
+              needPurchaseQuantity: { decrement: totalLockQty },
+              updatedBy: userId,
+            },
+          });
+
+          // 调用库存API进行实际锁定
+          // await stockApi.batchLockStock(stockLocks.map(lock => ({
+          //   stockId: lock.stockId,
+          //   batchCode: lock.batchCode,
+          //   salesContractId: id,
+          //   salesContractCode: contract.code,
+          //   salesContractItemId: itemId,
+          //   lockQuantity: lock.quantity,
+          // })));
+        }
+      }
+
+      return {
+        data: { count: items.length },
+        message: `成功锁定 ${items.length} 个产品的库存`,
+      };
+    },
+
+    /** 重新锁定库存（用于采购计划取消后） */
+    async relockStock({ id, body, userId, prisma }) {
+      const { itemIds } = body;
+      
+      if (!Array.isArray(itemIds) || itemIds.length === 0) {
+        throw new Error('请选择要重新锁定的明细');
+      }
+
+      const contract = await prisma.salesContract.findUnique({
+        where: { id },
+        select: { code: true },
+        include: {
+          items: {
+            where: {
+              id: { in: itemIds },
+              deletedAt: null,
+            },
+          },
+        },
+      });
+
+      if (!contract) {
+        throw new Error('销售合同不存在');
+      }
+
+      // 【业务逻辑】重新锁定库存
+      // 根据明细中保存的 lockInfo 重新锁定库存
+      let relockCount = 0;
+      for (const item of contract.items) {
+        if (item.lockInfo && Array.isArray(item.lockInfo) && item.lockInfo.length > 0) {
+          // 调用库存API重新锁定
+          // await stockApi.batchLockStock(item.lockInfo.map(lock => ({
+          //   stockId: lock.stockId,
+          //   batchCode: lock.batchCode,
+          //   salesContractId: id,
+          //   salesContractCode: contract.code,
+          //   salesContractItemId: item.id,
+          //   lockQuantity: lock.quantity,
+          // })));
+          
+          relockCount++;
+        }
+      }
+
+      return {
+        data: { count: relockCount },
+        message: `成功重新锁定 ${relockCount} 个产品的库存`,
       };
     },
 

@@ -178,6 +178,30 @@ export const exchangeSettlementAdapter: DocumentTypeAdapter = {
     };
   },
 
+  // ---- 生命周期钩子 ----
+  async onCreate(data, userId, prismaClient) {
+    // 【业务逻辑补充】创建后更新出运单明细的转结汇标识
+    if (data.items && Array.isArray(data.items)) {
+      await updateShippingItemSettlementFlag(prismaClient, data.items, true, userId);
+    }
+  },
+
+  async beforeDelete(id: string, prismaClient: any) {
+    // 【业务逻辑补充】删除前回滚出运单明细的转结汇标识
+    const settlement = await prismaClient.exchangeSettlement.findUnique({
+      where: { id },
+      include: {
+        items: {
+          where: { deletedAt: null },
+        },
+      },
+    });
+
+    if (settlement && settlement.items) {
+      await updateShippingItemSettlementFlag(prismaClient, settlement.items, false, null);
+    }
+  },
+
   // ---- 自定义 Actions ----
   actions: {
     /** 审核 */
@@ -209,3 +233,34 @@ export const exchangeSettlementAdapter: DocumentTypeAdapter = {
     },
   },
 };
+
+/**
+ * 辅助函数：更新出运单明细的转结汇标识
+ * @param prisma Prisma client
+ * @param items 结汇单明细
+ * @param toSettlement 是否转结汇（true: 创建时设置, false: 删除时回滚）
+ * @param userId 用户ID
+ */
+async function updateShippingItemSettlementFlag(
+  prisma: any,
+  items: any[],
+  toSettlement: boolean,
+  userId: string | null
+) {
+  const shippingItemIds = items
+    .map((item: any) => item.shippingItemId)
+    .filter(Boolean);
+
+  if (shippingItemIds.length === 0) return;
+
+  // 批量更新出运单明细的转结汇标识
+  for (const itemId of shippingItemIds) {
+    await prisma.shippingOrderItem.update({
+      where: { id: itemId },
+      data: {
+        convertedToSettlement: toSettlement,
+        ...(userId && { updatedBy: userId }),
+      },
+    });
+  }
+}

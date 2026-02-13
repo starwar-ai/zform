@@ -185,6 +185,15 @@ export const purchasePlanAdapter: DocumentTypeAdapter = {
       data.totalAmount = totalAmount.toNumber();
       data.totalPurchaseQuantity = totalPurchaseQuantity.toNumber();
     }
+
+    // 【业务逻辑补充】创建后回写销售合同明细的转采购标识
+    if (data.salesContractId && data.items && Array.isArray(data.items)) {
+      await updateSalesContractItemPurchaseFlag(
+        prismaClient,
+        data.items.map((item: any) => item.salesContractItemId).filter(Boolean),
+        true
+      );
+    }
   },
 
   async onUpdate(id, data, userId, prismaClient) {
@@ -223,7 +232,15 @@ export const purchasePlanAdapter: DocumentTypeAdapter = {
   actions: {
     /** 审核 */
     async approve({ id, userId, prisma }) {
-      const plan = await prisma.purchasePlan.findUnique({ where: { id } });
+      const plan = await prisma.purchasePlan.findUnique({ 
+        where: { id },
+        include: {
+          items: {
+            where: { deletedAt: null },
+          },
+        },
+      });
+      
       if (!plan) throw new Error('采购计划不存在');
       if (plan.approvalStatus === 'APPROVED') {
         throw new Error('采购计划已审核');
@@ -238,6 +255,10 @@ export const purchasePlanAdapter: DocumentTypeAdapter = {
         },
         include: { items: true },
       });
+
+      // 【业务逻辑补充】审核通过时不需要额外操作，创建时已回写
+      // 如果需要审核后再回写，可在此处添加逻辑
+
       return { data: doc, message: '采购计划审核通过' };
     },
 
@@ -263,20 +284,49 @@ export const purchasePlanAdapter: DocumentTypeAdapter = {
 
     /** 取消 */
     async cancel({ id, userId, prisma }) {
-      const plan = await prisma.purchasePlan.findUnique({ where: { id } });
+      const plan = await prisma.purchasePlan.findUnique({ 
+        where: { id },
+        include: {
+          items: {
+            where: { deletedAt: null },
+          },
+        },
+      });
+      
       if (!plan) throw new Error('采购计划不存在');
       if (plan.planStatus === 'COMPLETED' || plan.planStatus === 'CLOSED') {
         throw new Error('已完成或已结案的采购计划不能取消');
+      }
+
+      // 【业务逻辑补充】取消时回写销售合同明细的转采购标识
+      if (plan.items && plan.items.length > 0) {
+        const salesItemIds = plan.items
+          .map((item: any) => item.salesContractItemId)
+          .filter(Boolean);
+
+        if (salesItemIds.length > 0) {
+          // 检查是否有其他有效的采购计划引用这些销售明细
+          await updateSalesContractItemPurchaseFlag(prisma, salesItemIds, false);
+
+          // 释放销售合同锁定的库存（如果有）
+          if (plan.salesContractCode) {
+            // 调用库存 API 释放锁定 (假设有 cancelStockLock 方法)
+            // await stockApi.cancelStockLock(plan.salesContractCode, salesItemIds);
+          }
+        }
       }
 
       const doc = await prisma.purchasePlan.update({
         where: { id },
         data: {
           planStatus: 'CANCELLED',
+          cancelledAt: new Date(),
+          cancelledBy: userId,
           updatedBy: userId,
         },
         include: { items: true },
       });
+
       return { data: doc, message: '采购计划已取消' };
     },
 
@@ -645,3 +695,48 @@ export const purchasePlanAdapter: DocumentTypeAdapter = {
     },
   },
 };
+
+/**
+ * 辅助函数：更新销售合同明细的转采购标识
+ * @param prisma Prisma client
+ * @param salesItemIds 销售合同明细ID列表
+ * @param toPurchase 是否转采购 (true=已转采购, false=取消转采购)
+ */
+async function updateSalesContractItemPurchaseFlag(
+  prisma: any,
+  salesItemIds: string[],
+  toPurchase: boolean
+) {
+  if (!salesItemIds || salesItemIds.length === 0) return;
+
+  for (const itemId of salesItemIds) {
+    // 如果是取消转采购，需要检查是否还有其他有效的采购计划引用此明细
+    if (!toPurchase) {
+      const otherPlans = await prisma.purchasePlanItem.count({
+        where: {
+          salesContractItemId: itemId,
+          deletedAt: null,
+          purchasePlan: {
+            planStatus: {
+              notIn: ['CANCELLED', 'CLOSED'],
+            },
+          },
+        },
+      });
+
+      // 如果还有其他有效采购计划，不修改标识
+      if (otherPlans > 0) {
+        continue;
+      }
+    }
+
+    // 更新销售合同明细的转采购标识
+    await prisma.salesContractItem.update({
+      where: { id: itemId },
+      data: {
+        toPurchasePlan: toPurchase,
+        toPurchasePlanTime: toPurchase ? new Date() : null,
+      },
+    });
+  }
+}

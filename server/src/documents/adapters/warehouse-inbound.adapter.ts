@@ -282,7 +282,19 @@ export const warehouseInboundAdapter: DocumentTypeAdapter = {
     async complete({ id, userId, prisma }) {
       const order = await prisma.warehouseOrder.findUnique({
         where: { id },
-        select: { orderStatus: true, code: true },
+        select: { 
+          orderStatus: true, 
+          code: true,
+          warehouseId: true,
+          warehouseName: true,
+          companyId: true,
+          companyName: true,
+        },
+        include: {
+          items: {
+            where: { deletedAt: null },
+          },
+        },
       });
 
       if (!order) {
@@ -293,10 +305,16 @@ export const warehouseInboundAdapter: DocumentTypeAdapter = {
         throw new Error(`入库单 ${order.code} 状态为 ${order.orderStatus}，无法完成`);
       }
 
+      // 【业务逻辑补充】完成入库时更新库存
+      if (order.items && order.items.length > 0) {
+        await updateInventoryOnInbound(prisma, order, userId);
+      }
+
       const updated = await prisma.warehouseOrder.update({
         where: { id },
         data: {
           orderStatus: 'COMPLETED',
+          completedAt: new Date(),
           updatedBy: userId,
         },
       });
@@ -479,3 +497,128 @@ export const warehouseInboundAdapter: DocumentTypeAdapter = {
     },
   },
 };
+
+/**
+ * 辅助函数：入库时更新库存
+ * @param prisma Prisma client
+ * @param order 入库单信息
+ * @param userId 用户ID
+ */
+async function updateInventoryOnInbound(
+  prisma: any,
+  order: any,
+  userId: string
+) {
+  for (const item of order.items) {
+    // 查找是否已存在该产品在该仓库的库存记录
+    const existingStock = await prisma.inventory.findFirst({
+      where: {
+        skuCode: item.skuCode,
+        warehouseId: order.warehouseId,
+        batchCode: item.batchCode || 'DEFAULT',
+        deletedAt: null,
+      },
+    });
+
+    if (existingStock) {
+      // 更新现有库存：增加可用数量和初始数量
+      await prisma.inventory.update({
+        where: { id: existingStock.id },
+        data: {
+          availableQuantity: { increment: item.actualQuantity || item.expectedQuantity || 0 },
+          totalQuantity: { increment: item.actualQuantity || item.expectedQuantity || 0 },
+          updatedBy: userId,
+        },
+      });
+    } else {
+      // 创建新库存记录
+      const quantity = item.actualQuantity || item.expectedQuantity || 0;
+      await prisma.inventory.create({
+        data: {
+          skuCode: item.skuCode,
+          skuName: item.skuName,
+          warehouseId: order.warehouseId,
+          warehouseName: order.warehouseName,
+          warehouseCode: item.warehouseCode,
+          batchCode: item.batchCode || 'DEFAULT',
+          batchDate: new Date(),
+          companyId: order.companyId,
+          companyName: order.companyName,
+          totalQuantity: quantity,
+          availableQuantity: quantity,
+          lockedQuantity: 0,
+          allocatedQuantity: 0,
+          inboundOrderId: order.id,
+          inboundOrderCode: order.code,
+          purchaseContractId: item.purchaseContractId,
+          purchaseContractCode: item.purchaseContractCode,
+          createdBy: userId,
+          updatedBy: userId,
+        },
+      });
+    }
+
+    // 更新入库通知单明细的转单标识
+    if (item.noticeItemId) {
+      await prisma.warehouseNoticeItem.update({
+        where: { id: item.noticeItemId },
+        data: {
+          convertedToOrderFlag: true,
+          inboundedQuantity: { increment: item.actualQuantity || item.expectedQuantity || 0 },
+          updatedBy: userId,
+        },
+      });
+    }
+  }
+
+  // 更新入库通知单状态
+  if (order.noticeId) {
+    await updateNoticeStatusAfterInbound(prisma, order.noticeId, userId);
+  }
+}
+
+/**
+ * 辅助函数：入库后更新通知单状态
+ * @param prisma Prisma client
+ * @param noticeId 通知单ID
+ * @param userId 用户ID
+ */
+async function updateNoticeStatusAfterInbound(
+  prisma: any,
+  noticeId: string,
+  userId: string
+) {
+  const notice = await prisma.warehouseNotice.findUnique({
+    where: { id: noticeId },
+    include: {
+      items: {
+        where: { deletedAt: null },
+      },
+    },
+  });
+
+  if (!notice || !notice.items) return;
+
+  // 检查所有明细是否都已转单
+  const allConverted = notice.items.every(
+    (item: any) => item.convertedToOrderFlag === true
+  );
+
+  if (allConverted) {
+    await prisma.warehouseNotice.update({
+      where: { id: noticeId },
+      data: {
+        noticeStatus: 'COMPLETED',
+        updatedBy: userId,
+      },
+    });
+  } else {
+    await prisma.warehouseNotice.update({
+      where: { id: noticeId },
+      data: {
+        noticeStatus: 'IN_PROGRESS',
+        updatedBy: userId,
+      },
+    });
+  }
+}

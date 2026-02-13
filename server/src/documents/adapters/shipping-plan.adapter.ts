@@ -164,6 +164,9 @@ export const shippingPlanAdapter: DocumentTypeAdapter = {
       }
 
       Object.assign(data, summary);
+
+      // 【业务逻辑补充】创建后回写销售合同明细的出运数量
+      await updateSalesContractShippingQuantity(prismaClient, data.items, false, userId);
     }
   },
 
@@ -512,3 +515,43 @@ export const shippingPlanAdapter: DocumentTypeAdapter = {
     },
   },
 };
+
+/**
+ * 辅助函数：更新销售合同明细的出运数量
+ * @param prisma Prisma client
+ * @param items 出运计划明细
+ * @param isRollback 是否回滚（true: 删除时减少, false: 创建时增加）
+ * @param userId 用户ID
+ */
+async function updateSalesContractShippingQuantity(
+  prisma: any,
+  items: any[],
+  isRollback: boolean,
+  userId: string
+) {
+  const shippingQtyMap = new Map<string, number>();
+
+  // 统计每个销售合同明细的出运数量
+  for (const item of items) {
+    if (item.salesContractItemId && item.quantity) {
+      const currentQty = shippingQtyMap.get(item.salesContractItemId) || 0;
+      shippingQtyMap.set(
+        item.salesContractItemId,
+        currentQty + Number(item.quantity)
+      );
+    }
+  }
+
+  // 批量更新销售合同明细的出运数量
+  for (const [itemId, qty] of shippingQtyMap.entries()) {
+    await prisma.salesContractItem.update({
+      where: { id: itemId },
+      data: {
+        shippedQuantity: isRollback
+          ? { decrement: qty }
+          : { increment: qty },
+        updatedBy: userId,
+      },
+    });
+  }
+}
