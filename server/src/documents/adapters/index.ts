@@ -12,6 +12,8 @@ import { shippingPlanAdapter } from './shipping-plan.adapter';
 import { shippingOrderAdapter } from './shipping-order.adapter';
 import { customsDeclarationAdapter } from './customs-declaration.adapter';
 import { inspectionDeclarationAdapter } from './inspection-declaration.adapter';
+import { invoicingNoticeAdapter } from './invoicing-notice.adapter';
+import { invoiceRegistrationAdapter } from './invoice-registration.adapter';
 import {
   standardProductAdapter,
   customerProductAdapter,
@@ -27,7 +29,6 @@ import { warehouseOutboundAdapter } from './warehouse-outbound.adapter';
 import { warehouseInboundNoticeAdapter } from './warehouse-inbound-notice.adapter';
 import { warehouseOutboundNoticeAdapter } from './warehouse-outbound-notice.adapter';
 import { exchangeSettlementAdapter } from './exchange-settlement.adapter';
-import { invoicingNoticeAdapter } from './invoicing-notice.adapter';
 import { paymentApplyAdapter } from './payment-apply.adapter';
 import { processingOrderAdapter } from './processing-order.adapter';
 import { quotationAdapter } from './quotation.adapter';
@@ -54,6 +55,12 @@ export function registerAllAdapters(): void {
   // 商检单
   documentTypeRegistry.register(inspectionDeclarationAdapter);
 
+  // 开票通知
+  documentTypeRegistry.register(invoicingNoticeAdapter);
+
+  // 发票登记
+  documentTypeRegistry.register(invoiceRegistrationAdapter);
+
   // 产品 (三种子类型)
   documentTypeRegistry.register(standardProductAdapter);
   documentTypeRegistry.register(customerProductAdapter);
@@ -72,9 +79,6 @@ export function registerAllAdapters(): void {
 
   // 结汇单
   documentTypeRegistry.register(exchangeSettlementAdapter);
-
-  // 开票通知
-  documentTypeRegistry.register(invoicingNoticeAdapter);
 
   // 付款申请
   documentTypeRegistry.register(paymentApplyAdapter);
