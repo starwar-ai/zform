@@ -16,6 +16,14 @@ enum ProductType {
   SELF_OWNED // 自营产品
 }
 
+// 产品分类（参考 zexport SkuTypeEnum）：普通产品、组合产品、配件、辅料
+enum SkuType {
+  GENERAL_PRODUCTS    // 1 普通产品
+  PRODUCT_MIX         // 2 组合产品
+  ACCESSORIES         // 3 配件
+  AUXILIARY_MATERIALS // 4 辅料
+}
+
 enum ProductStatus {
   ACTIVE // 活跃
   INACTIVE // 停用
@@ -408,6 +416,7 @@ model Product {
 
   // 产品类型与继承关系
   productType     ProductType @default(STANDARD) @map("product_type")
+  skuType         SkuType?    @map("sku_type") // 产品分类：普通/组合/配件/辅料，仅 STANDARD 产品使用
   baseProductId   String?     @map("base_product_id")
   baseProduct     Product?    @relation("ProductInheritance", fields: [baseProductId], references: [id])
   derivedProducts Product[]   @relation("ProductInheritance")

@@ -585,14 +585,19 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
           <div className="h-full pr-2 overflow-auto">
             <Card>
               <CardContent className="pt-4">
+                {(() => {
+                  const visibleDetailTables = schema.detailTables.filter(
+                    (t) => !t.visibleWhen || t.visibleWhen(doc.masterData)
+                  )
+                  return (
                 <Tabs defaultValue="master">
                     <TabsList>
                     <TabsTrigger value="master">主信息</TabsTrigger>
-                    {schema.detailTables.map((t) => (
-                      <TabsTrigger key={t.id} value={t.id}>
-                        {t.label}
-                      </TabsTrigger>
-                    ))}
+                    {visibleDetailTables.map((t) => (
+                        <TabsTrigger key={t.id} value={t.id}>
+                          {t.label}
+                        </TabsTrigger>
+                      ))}
                     {isProductType && (
                       <TabsTrigger value="product_images">产品图片</TabsTrigger>
                     )}
@@ -614,7 +619,7 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
                     />
                   </TabsContent>
 
-                  {schema.detailTables.map((tableDef) => {
+                  {visibleDetailTables.map((tableDef) => {
                     const tableData = doc.detailTables.find(
                       (t) => t.tableId === tableDef.id
                     )
@@ -652,6 +657,8 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
                     </TabsContent>
                   )}
                 </Tabs>
+                  )
+                })()}
               </CardContent>
             </Card>
           </div>

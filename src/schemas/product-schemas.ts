@@ -3,6 +3,14 @@
  *
  * 产品管理单据定义（基于后端 Prisma Schema）
  * 产品类型: 标准产品(STANDARD) → 客户产品(CUSTOMER) / 自营产品(SELF_OWNED)
+ *
+ * 产品分类（参考 zexport SkuTypeEnum）：
+ * - 普通产品(GENERAL_PRODUCTS)
+ * - 组合产品(PRODUCT_MIX)
+ * - 配件(ACCESSORIES)
+ * - 辅料(AUXILIARY_MATERIALS)
+ *
+ * 普通产品、组合产品下可有「是否代理」属性，代理产品录入内容更少。
  */
 
 import type { DocumentSchema, PushDownRule, ChangeRule, ComboboxOption, FieldEffect } from "@/core/types"
@@ -90,6 +98,45 @@ async function fetchDepartmentOptions(): Promise<ComboboxOption[]> {
 }
 
 // ============================================================
+// 产品分类与代理 - 条件显示辅助函数（参考 zexport SkuTypeEnum）
+// ============================================================
+
+type FormData = Record<string, unknown>
+
+/** 产品分类枚举值 */
+const SKU_TYPE = {
+  GENERAL: "GENERAL_PRODUCTS",
+  MIX: "PRODUCT_MIX",
+  ACCESSORIES: "ACCESSORIES",
+  AUXILIARY: "AUXILIARY_MATERIALS",
+} as const
+
+const getSkuType = (d: FormData) => String(d.skuType ?? SKU_TYPE.GENERAL)
+
+// ---- 原子谓词 ----
+/** 辅料 */
+const isAuxiliary = (d: FormData) => getSkuType(d) === SKU_TYPE.AUXILIARY
+/** 组合产品 */
+const isProductMix = (d: FormData) => getSkuType(d) === SKU_TYPE.MIX
+/** 普通产品或组合产品 */
+const isGeneralOrMix = (d: FormData) =>
+  getSkuType(d) === SKU_TYPE.GENERAL || getSkuType(d) === SKU_TYPE.MIX
+/** 是否勾选了代理（仅普通/组合产品下有意义） */
+const isAgentProduct = (d: FormData) => Boolean(d.isAgent) && isGeneralOrMix(d)
+
+// ---- 组合谓词（供 visibleWhen 直接引用，避免每处重复写箭头函数）----
+/** 非辅料 */
+const notAuxiliary = (d: FormData) => !isAuxiliary(d)
+/** 完整录入模式：非辅料、非配件的代理 */
+const isFullInputMode = (d: FormData) => !isAuxiliary(d) && !isAgentProduct(d)
+/** 需要自动编码（非辅料、非代理） */
+const needsAutoCode = isFullInputMode
+/** 需要手动编码（辅料 或 代理产品） */
+const needsManualCode = (d: FormData) => isAuxiliary(d) || isAgentProduct(d)
+/** 显示辅料清单（普通/组合 + 非代理） */
+const showAccessoryList = (d: FormData) => isGeneralOrMix(d) && !isAgentProduct(d)
+
+// ============================================================
 // 产品编号自动生成 Effect
 // ============================================================
 
@@ -128,13 +175,43 @@ export const standardProductSchema: DocumentSchema = {
   typeId: "standard_product",
   typeName: "标准产品",
   masterFields: [
-    // === 基本信息 ===
-    // 产品编号子字段（由 skuCode 复合控件管理，隐藏不单独渲染）
+    // === 产品分类（优先选择，决定后续录入内容）===
+    {
+      id: "skuType",
+      label: "产品分类",
+      type: "select",
+      required: true,
+      defaultValue: "GENERAL_PRODUCTS",
+      group: "基本信息",
+      options: [
+        { label: "普通产品", value: "GENERAL_PRODUCTS" },
+        { label: "组合产品", value: "PRODUCT_MIX" },
+        { label: "配件", value: "ACCESSORIES" },
+        { label: "辅料", value: "AUXILIARY_MATERIALS" },
+      ],
+    },
+    {
+      id: "isAgent",
+      label: "是否代理产品",
+      type: "checkbox",
+      defaultValue: false,
+      group: "基本信息",
+      visibleWhen: isGeneralOrMix,
+    },
+    // === 产品编号子字段（由 skuCode 复合控件管理，隐藏不单独渲染）===
     { id: "preCode", label: "前缀码", type: "text", hidden: true, group: "基本信息" },
     { id: "xhCode", label: "序号", type: "text", hidden: true, group: "基本信息" },
     { id: "afterCode", label: "后缀", type: "text", hidden: true, group: "基本信息" },
     { id: "serialLength", label: "序号长度", type: "number", hidden: true, defaultValue: 3, group: "基本信息" },
-    { id: "code", label: "产品编码", type: "text", hidden: true, required: true, group: "基本信息" },
+    {
+      id: "code",
+      label: "产品编码",
+      type: "text",
+      required: true,
+      group: "基本信息",
+      placeholder: "请手动输入产品编码",
+      visibleWhen: needsManualCode,
+    },
     {
       id: "skuCode",
       label: "产品编码",
@@ -151,12 +228,14 @@ export const standardProductSchema: DocumentSchema = {
         serialLengthField: "serialLength",
       },
       effect: skuCodeGenerationEffect,
+      visibleWhen: needsAutoCode,
     },
     {
       id: "barcode",
       label: "条形码",
       type: "text",
       group: "基本信息",
+      visibleWhen: notAuxiliary,
     },
     {
       id: "name",
@@ -184,6 +263,7 @@ export const standardProductSchema: DocumentSchema = {
       defaultValue: "ACTIVE",
       required: true,
       group: "基本信息",
+      visibleWhen: notAuxiliary,
     },
     {
       id: "unit",
@@ -205,7 +285,7 @@ export const standardProductSchema: DocumentSchema = {
       group: "基本信息",
     },
 
-    // === 分类与品牌 ===
+    // === 分类与品牌（辅料不需要）===
     {
       id: "categoryId",
       label: "产品分类",
@@ -216,6 +296,7 @@ export const standardProductSchema: DocumentSchema = {
         fetchOptions: fetchProductCategoryOptions,
         isTree: true,
       },
+      visibleWhen: notAuxiliary,
     },
     {
       id: "brandId",
@@ -226,6 +307,7 @@ export const standardProductSchema: DocumentSchema = {
       comboboxConfig: {
         fetchOptions: fetchBrandOptions,
       },
+      visibleWhen: isFullInputMode,
     },
     {
       id: "departmentId",
@@ -237,9 +319,10 @@ export const standardProductSchema: DocumentSchema = {
         fetchOptions: fetchDepartmentOptions,
         isTree: true,
       },
+      visibleWhen: isFullInputMode,
     },
 
-    // === 规格尺寸 ===
+    // === 规格尺寸（辅料、代理产品不需要）===
     {
       id: "dimensions",
       label: "规格尺寸(cm)",
@@ -255,6 +338,7 @@ export const standardProductSchema: DocumentSchema = {
           height: "高",
         },
       },
+      visibleWhen: isFullInputMode,
     },
     {
       id: "netWeight",
@@ -262,9 +346,10 @@ export const standardProductSchema: DocumentSchema = {
       type: "number",
       placeholder: "0.000",
       group: "规格尺寸",
+      visibleWhen: isFullInputMode,
     },
 
-    // === 材料信息 ===
+    // === 材料信息（辅料、代理产品不需要）===
     {
       id: "source",
       label: "来源",
@@ -274,28 +359,32 @@ export const standardProductSchema: DocumentSchema = {
         { label: "采购开发", value: "PURCHASE_DEV" },
         { label: "部门开发", value: "DEPARTMENT_DEV" },
       ],
-      group: "材料信息",
+      group: "其他信息",
+      visibleWhen: isFullInputMode,
     },
     {
       id: "material",
       label: "材质",
       type: "text",
       group: "材料信息",
+      visibleWhen: isFullInputMode,
     },
     {
       id: "accessoryMaterial",
       label: "配件材质",
       type: "text",
       group: "材料信息",
+      visibleWhen: isFullInputMode,
     },
 
-    // === 价格与加工 ===
+    // === 价格与加工（辅料不需要）===
     {
       id: "unitProcessingFee",
       label: "单件加工费",
       type: "number",
       placeholder: "0.00",
       group: "价格信息",
+      visibleWhen: notAuxiliary,
     },
     {
       id: "salePrice",
@@ -303,6 +392,7 @@ export const standardProductSchema: DocumentSchema = {
       type: "number",
       placeholder: "0.00",
       group: "价格信息",
+      visibleWhen: notAuxiliary,
     },
     {
       id: "companyPrice",
@@ -310,6 +400,7 @@ export const standardProductSchema: DocumentSchema = {
       type: "number",
       placeholder: "0.00",
       group: "价格信息",
+      visibleWhen: notAuxiliary,
     },
     {
       id: "processingNote",
@@ -317,9 +408,10 @@ export const standardProductSchema: DocumentSchema = {
       type: "textarea",
       span: 4,
       group: "价格信息",
+      visibleWhen: isFullInputMode,
     },
 
-    // === 报关信息 ===
+    // === 报关信息（辅料不需要）===
     {
       id: "hsCodeId",
       label: "海关编码",
@@ -329,6 +421,7 @@ export const standardProductSchema: DocumentSchema = {
       comboboxConfig: {
         fetchOptions: fetchHsCodeOptions,
       },
+      visibleWhen: notAuxiliary,
     },
     {
       id: "isCustomsInspection",
@@ -336,36 +429,41 @@ export const standardProductSchema: DocumentSchema = {
       type: "checkbox",
       defaultValue: false,
       group: "报关信息",
+      visibleWhen: isFullInputMode,
     },
     {
       id: "customsNameCn",
       label: "报关中文名",
       type: "text",
       group: "报关信息",
+      visibleWhen: notAuxiliary,
     },
     {
       id: "customsNameEn",
       label: "报关英文名",
       type: "text",
       group: "报关信息",
+      visibleWhen: notAuxiliary,
     },
 
-    // === 包装信息 ===
+    // === 包装信息（辅料、代理产品不需要）===
     {
       id: "packageMethodId",
       label: "包装方式",
       type: "text",
       placeholder: "选择包装方式",
       group: "包装信息",
+      visibleWhen: isFullInputMode,
     },
 
-    // === 标识字段 ===
+    // === 标识字段（辅料、代理产品不需要）===
     {
       id: "isSelfBrand",
       label: "是否自有品牌",
       type: "checkbox",
       defaultValue: false,
       group: "其他信息",
+      visibleWhen: isFullInputMode,
     },
     {
       id: "isAdvantage",
@@ -373,13 +471,7 @@ export const standardProductSchema: DocumentSchema = {
       type: "checkbox",
       defaultValue: false,
       group: "其他信息",
-    },
-    {
-      id: "isAgent",
-      label: "是否代理",
-      type: "checkbox",
-      defaultValue: false,
-      group: "其他信息",
+      visibleWhen: isFullInputMode,
     },
     {
       id: "isCommonAccessory",
@@ -387,6 +479,7 @@ export const standardProductSchema: DocumentSchema = {
       type: "checkbox",
       defaultValue: false,
       group: "其他信息",
+      visibleWhen: isFullInputMode,
     },
 
     // === 描述与备注 ===
@@ -419,6 +512,7 @@ export const standardProductSchema: DocumentSchema = {
       id: "bom_items",
       label: "BOM 清单",
       editable: true,
+      visibleWhen: (d) => isProductMix(d),
       fields: [
         {
           id: "childProductCode",
@@ -455,6 +549,7 @@ export const standardProductSchema: DocumentSchema = {
       id: "accessories",
       label: "辅料清单",
       editable: true,
+      visibleWhen: showAccessoryList,
       fields: [
         {
           id: "accessoryCode",

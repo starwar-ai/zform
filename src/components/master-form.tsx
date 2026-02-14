@@ -8,7 +8,7 @@
  * 本组件不包含任何特定业务逻辑。
  */
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import type { FieldDef, FormMode } from "@/core/types"
 import { FieldRenderer } from "./field-renderer"
 import { useFieldEffects } from "@/hooks/use-field-effects"
@@ -49,8 +49,15 @@ export function MasterForm({
   // 通用字段副作用：检测 fields 中声明了 effect 的字段，按需触发
   useFieldEffects({ fields, data, onChange, mode })
 
-  // 按 group 分组，过滤隐藏字段
-  const groups = groupFields(fields.filter((f) => !f.hidden))
+  // 按 group 分组，过滤隐藏字段及不满足 visibleWhen 的字段
+  const groups = useMemo(() => {
+    const visibleFields = fields.filter(
+      (f) =>
+        !f.hidden &&
+        (!f.visibleWhen || f.visibleWhen(data))
+    )
+    return groupFields(visibleFields)
+  }, [fields, data])
 
   return (
     <div ref={containerRef} className="space-y-6">
@@ -122,21 +129,24 @@ export function MasterForm({
   )
 }
 
-/** 按 group 属性分组字段 */
+/** 按 group 属性分组字段（同 group 的字段会合并到同一分组，与 schema 中顺序无关） */
 function groupFields(
   fields: FieldDef[]
 ): { title?: string; fields: FieldDef[] }[] {
-  const groups: { title?: string; fields: FieldDef[] }[] = []
-  let currentGroup: { title?: string; fields: FieldDef[] } | undefined
+  const groupMap = new Map<string | undefined, FieldDef[]>()
+  const groupOrder: (string | undefined)[] = []
 
   for (const field of fields) {
     const groupTitle = field.group
-    if (!currentGroup || currentGroup.title !== groupTitle) {
-      currentGroup = { title: groupTitle, fields: [] }
-      groups.push(currentGroup)
+    if (!groupMap.has(groupTitle)) {
+      groupMap.set(groupTitle, [])
+      groupOrder.push(groupTitle)
     }
-    currentGroup.fields.push(field)
+    groupMap.get(groupTitle)!.push(field)
   }
 
-  return groups
+  return groupOrder.map((title) => ({
+    title,
+    fields: groupMap.get(title)!,
+  }))
 }

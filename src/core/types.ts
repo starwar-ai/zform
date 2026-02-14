@@ -154,6 +154,8 @@ export interface FieldDef {
   skuCodeConfig?: SkuCodeFieldConfig
   /** 字段副作用：当依赖字段变化时自动触发（如编号生成、价格计算） */
   effect?: FieldEffect
+  /** 条件显示：根据当前表单数据决定字段是否显示，返回 false 时隐藏 */
+  visibleWhen?: (data: Record<string, unknown>) => boolean
 }
 
 // ============================================================
@@ -174,6 +176,8 @@ export interface DetailTableDef {
   minRows?: number
   /** 最大行数 */
   maxRows?: number
+  /** 条件显示：根据主数据决定明细表是否显示，返回 false 时隐藏该 Tab */
+  visibleWhen?: (masterData: Record<string, unknown>) => boolean
 }
 
 /** 单据 Schema —— 完整描述一种单据的结构 */
