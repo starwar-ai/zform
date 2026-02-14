@@ -5,7 +5,7 @@
  * 支持搜索、分类/品牌筛选、分页、单选/多选。
  */
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import type { ColumnFilter } from "@/components/list-table/types"
 import { fetchDocumentListApi } from "@/apis/document-api"
 import { fetchCategoryListApi } from "@/apis/category-api"
@@ -181,12 +181,14 @@ export function AccessorySelectorDialog({
   const [pageSize] = useState(20)
   const [total, setTotal] = useState(0)
 
-  // 弹窗打开时同步 selectedIds
+  // 弹窗打开时同步 selectedIds（仅 open 时同步，避免 selectedIds 默认 [] 导致依赖变化引发无限循环）
+  const selectedIdsRef = useRef(selectedIds)
+  selectedIdsRef.current = selectedIds
   useEffect(() => {
     if (open) {
-      setSelectedProducts(new Set(selectedIds))
+      setSelectedProducts(new Set(selectedIdsRef.current))
     }
-  }, [open, selectedIds])
+  }, [open])
 
   useEffect(() => {
     if (open) {

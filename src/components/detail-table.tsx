@@ -719,19 +719,21 @@ export function DetailTable({
         const [moved] = next.splice(oldIdx, 1)
         next.splice(newIdx, 0, moved)
         setFieldColumnOrder(next)
-      } else if (rowIds.includes(activeStr)) {
-        // 行拖拽
+      } else {
+        // 行拖拽：在回调内从 rows 计算 ids，避免与 rowIds 的声明顺序依赖
         const ids = rows.map((r) => r.id)
-        const oldIdx = ids.indexOf(activeStr)
-        const newIdx = ids.indexOf(String(over.id))
-        if (oldIdx === -1 || newIdx === -1) return
-        const next = [...ids]
-        const [moved] = next.splice(oldIdx, 1)
-        next.splice(newIdx, 0, moved)
-        onReorderRows?.(next)
+        if (ids.includes(activeStr)) {
+          const oldIdx = ids.indexOf(activeStr)
+          const newIdx = ids.indexOf(String(over.id))
+          if (oldIdx === -1 || newIdx === -1) return
+          const next = [...ids]
+          const [moved] = next.splice(oldIdx, 1)
+          next.splice(newIdx, 0, moved)
+          onReorderRows?.(next)
+        }
       }
     },
-    [resolvedFieldOrder, rowIds, rows, onReorderRows]
+    [resolvedFieldOrder, rows, onReorderRows]
   )
 
   // ---- 渲染 ----
