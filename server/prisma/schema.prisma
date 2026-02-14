@@ -21,6 +21,7 @@ enum ProductStatus {
   INACTIVE // 停用
   DRAFT // 草稿
   DISCONTINUED // 停产
+  PENDING_APPROVAL // 待审核
 }
 
 enum MaterialSource {
@@ -31,6 +32,7 @@ enum MaterialSource {
 
 enum ApprovalStatus {
   PENDING // 待审核
+  SUBMITTED // 已提交
   APPROVED // 已审核
   REJECTED // 已拒绝
 }
@@ -279,13 +281,15 @@ model Brand {
 // ==================== 产品分类表（支持多级）====================
 
 model ProductCategory {
-  id       String            @id @default(cuid())
-  code     String            @unique
-  name     String
-  level    Int               @default(1)
-  parentId String?           @map("parent_id")
-  parent   ProductCategory?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
-  children ProductCategory[] @relation("CategoryTree")
+  id           String            @id @default(cuid())
+  code         String            @unique
+  name         String
+  level        Int               @default(1)
+  codePrefix   String?           @map("code_prefix") // 产品编码前缀（各级连接）
+  serialLength Int               @default(3) @map("serial_length") // 流水号长度
+  parentId     String?           @map("parent_id")
+  parent       ProductCategory?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children     ProductCategory[] @relation("CategoryTree")
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
@@ -447,6 +451,7 @@ model Product {
   // 代理与通用辅料
   isAgent           Boolean @default(false) @map("is_agent")
   isCommonAccessory Boolean @default(false) @map("is_common_accessory")
+  isOnShelf         Boolean @default(false) @map("is_on_shelf")
 
   // 审核状态
   approvalStatus ApprovalStatus @default(PENDING) @map("approval_status")
@@ -496,6 +501,9 @@ model Product {
 
   // 变更记录
   changeLogs ProductChangeLog[]
+  
+  // 产品变更申请
+  changeRequests ProductChange[]
 
   // 产品图片
   productImages ProductImage[]
@@ -614,13 +622,14 @@ model ProductChangeLog {
   productId String  @map("product_id")
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  version     Int
-  changeType  String  @map("change_type") // CREATE, UPDATE, DELETE, STATUS_CHANGE 等
-  fieldName   String? @map("field_name")
-  oldValue    String? @map("old_value")
-  newValue    String? @map("new_value")
-  description String?
-  reason      String?
+  version        Int
+  changeType     String  @map("change_type") // CREATE, UPDATE, DELETE, STATUS_CHANGE 等
+  fieldName      String? @map("field_name")
+  oldValue       String? @map("old_value")
+  newValue       String? @map("new_value")
+  description    String?
+  reason         String?
+  changeDetails  Json?   @map("change_details")
 
   changedBy String   @map("changed_by")
   changedAt DateTime @default(now()) @map("changed_at")
@@ -628,6 +637,34 @@ model ProductChangeLog {
   @@index([productId])
   @@index([changedAt])
   @@map("product_change_logs")
+}
+
+// ==================== 产品变更申请表 ====================
+
+model ProductChange {
+  id String @id @default(cuid())
+
+  productId String  @map("product_id")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  originalData   Json   @map("original_data")   // 原始产品数据
+  changeData     Json   @map("change_data")     // 变更内容
+  changeReason   String @map("change_reason")   // 变更原因
+  changeStatus   ChangeStatus @default(PENDING) @map("change_status")
+  
+  requestedBy    String   @map("requested_by")  // 申请人
+  approvedBy     String?  @map("approved_by")   // 审核人
+  approvedAt     DateTime? @map("approved_at")   // 审核时间
+  approvalComment String?  @map("approval_comment") // 审核意见
+
+  createdBy String   @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedBy String?  @map("updated_by")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([productId])
+  @@index([changeStatus])
+  @@map("product_changes")
 }
 
 // ==================== 供应商相关枚举 ====================

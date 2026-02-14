@@ -445,6 +445,349 @@ export const standardProductAdapter: DocumentTypeAdapter = {
 
       return { data: newProduct, message: '产品复制成功' };
     },
+
+    /** 提交审核 */
+    async submit({ id, userId, prisma }) {
+      const product = await prisma.product.findUnique({
+        where: { id },
+      });
+      if (!product) {
+        throw new Error('产品不存在');
+      }
+      if (product.approvalStatus !== 'PENDING') {
+        throw new Error('只有待提交状态的产品才能提交审核');
+      }
+
+      const updated = await prisma.product.update({
+        where: { id },
+        data: {
+          approvalStatus: 'SUBMITTED',
+          status: 'PENDING_APPROVAL',
+          updatedBy: userId,
+        },
+      });
+
+      return { data: updated, message: '产品已提交审核' };
+    },
+
+    /** 审核通过 */
+    async approve({ id, body, userId, prisma }) {
+      const { comment } = body;
+      const product = await prisma.product.findUnique({
+        where: { id },
+      });
+      if (!product) {
+        throw new Error('产品不存在');
+      }
+      if (product.approvalStatus !== 'SUBMITTED') {
+        throw new Error('只有已提交的产品才能审核');
+      }
+
+      const updated = await prisma.product.update({
+        where: { id },
+        data: {
+          approvalStatus: 'APPROVED',
+          status: 'ACTIVE',
+          updatedBy: userId,
+          version: { increment: 1 },
+        },
+      });
+
+      // 记录审核日志
+      await prisma.productChangeLog.create({
+        data: {
+          productId: id,
+          version: updated.version,
+          changeType: 'APPROVE',
+          changedBy: userId,
+          changeDetails: comment ? { comment } : undefined,
+        },
+      });
+
+      return { data: updated, message: '产品审核通过' };
+    },
+
+    /** 审核拒绝 */
+    async reject({ id, body, userId, prisma }) {
+      const { reason } = body;
+      const product = await prisma.product.findUnique({
+        where: { id },
+      });
+      if (!product) {
+        throw new Error('产品不存在');
+      }
+      if (product.approvalStatus !== 'SUBMITTED') {
+        throw new Error('只有已提交的产品才能审核');
+      }
+
+      const updated = await prisma.product.update({
+        where: { id },
+        data: {
+          approvalStatus: 'REJECTED',
+          status: 'DRAFT',
+          updatedBy: userId,
+        },
+      });
+
+      // 记录拒绝日志
+      await prisma.productChangeLog.create({
+        data: {
+          productId: id,
+          version: product.version,
+          changeType: 'REJECT',
+          changedBy: userId,
+          changeDetails: reason ? { reason } : undefined,
+        },
+      });
+
+      return { data: updated, message: '产品审核已拒绝' };
+    },
+
+    /** 设置上架标识 */
+    async setOnshelfFlag({ id, body, userId, prisma }) {
+      const { isOnShelf } = body;
+      const product = await prisma.product.update({
+        where: { id },
+        data: {
+          isOnShelf: isOnShelf ?? false,
+          updatedBy: userId,
+        },
+      });
+      return { data: product, message: isOnShelf ? '产品已上架' : '产品已下架' };
+    },
+
+    /** 反审核 */
+    async revertAudit({ id, userId, prisma }) {
+      const product = await prisma.product.findUnique({
+        where: { id },
+      });
+      if (!product) {
+        throw new Error('产品不存在');
+      }
+      if (product.approvalStatus !== 'APPROVED') {
+        throw new Error('只有已审核通过的产品才能反审核');
+      }
+
+      const updated = await prisma.product.update({
+        where: { id },
+        data: {
+          approvalStatus: 'PENDING',
+          status: 'DRAFT',
+          updatedBy: userId,
+        },
+      });
+
+      // 记录反审核日志
+      await prisma.productChangeLog.create({
+        data: {
+          productId: id,
+          version: product.version,
+          changeType: 'REVERT_AUDIT',
+          changedBy: userId,
+        },
+      });
+
+      return { data: updated, message: '产品已反审核' };
+    },
+
+    /** 产品变更申请 */
+    async requestChange({ id, body, userId, prisma }) {
+      const product = await prisma.product.findUnique({
+        where: { id },
+        include: {
+          bomItems: true,
+          accessories: true,
+        },
+      });
+      if (!product) {
+        throw new Error('产品不存在');
+      }
+      if (product.approvalStatus !== 'APPROVED') {
+        throw new Error('只有已审核通过的产品才能申请变更');
+      }
+
+      const { changeData, changeReason } = body;
+
+      // 创建产品变更记录
+      const changeRequest = await prisma.productChange.create({
+        data: {
+          productId: id,
+          originalData: product as any,
+          changeData,
+          changeReason,
+          changeStatus: 'PENDING',
+          requestedBy: userId,
+          createdBy: userId,
+          updatedBy: userId,
+        },
+      });
+
+      return { data: changeRequest, message: '产品变更申请已创建' };
+    },
+
+    /** 提交产品变更 */
+    async submitChange({ id, body, userId, prisma }) {
+      const { changeId } = body;
+      const changeRequest = await prisma.productChange.findUnique({
+        where: { id: changeId },
+      });
+      if (!changeRequest) {
+        throw new Error('变更申请不存在');
+      }
+      if (changeRequest.changeStatus !== 'PENDING') {
+        throw new Error('只有待提交的变更申请才能提交');
+      }
+
+      const updated = await prisma.productChange.update({
+        where: { id: changeId },
+        data: {
+          changeStatus: 'SUBMITTED',
+          updatedBy: userId,
+        },
+      });
+
+      return { data: updated, message: '产品变更已提交审核' };
+    },
+
+    /** 审核产品变更 - 通过 */
+    async approveChange({ id, body, userId, prisma }) {
+      const { changeId, comment } = body;
+      const changeRequest = await prisma.productChange.findUnique({
+        where: { id: changeId },
+      });
+      if (!changeRequest) {
+        throw new Error('变更申请不存在');
+      }
+      if (changeRequest.changeStatus !== 'SUBMITTED') {
+        throw new Error('只有已提交的变更申请才能审核');
+      }
+
+      // 应用变更到产品
+      const changeData = changeRequest.changeData as any;
+      await prisma.product.update({
+        where: { id: changeRequest.productId },
+        data: {
+          ...changeData,
+          updatedBy: userId,
+          version: { increment: 1 },
+        },
+      });
+
+      // 更新变更申请状态
+      const updated = await prisma.productChange.update({
+        where: { id: changeId },
+        data: {
+          changeStatus: 'APPROVED',
+          approvedBy: userId,
+          approvedAt: new Date(),
+          approvalComment: comment,
+          updatedBy: userId,
+        },
+      });
+
+      // 记录变更日志
+      await prisma.productChangeLog.create({
+        data: {
+          productId: changeRequest.productId,
+          version: (await prisma.product.findUnique({ where: { id: changeRequest.productId } }))!.version,
+          changeType: 'CHANGE_APPROVED',
+          changedBy: userId,
+          changeDetails: changeData,
+        },
+      });
+
+      return { data: updated, message: '产品变更已审核通过' };
+    },
+
+    /** 审核产品变更 - 拒绝 */
+    async rejectChange({ id, body, userId, prisma }) {
+      const { changeId, reason } = body;
+      const changeRequest = await prisma.productChange.findUnique({
+        where: { id: changeId },
+      });
+      if (!changeRequest) {
+        throw new Error('变更申请不存在');
+      }
+      if (changeRequest.changeStatus !== 'SUBMITTED') {
+        throw new Error('只有已提交的变更申请才能审核');
+      }
+
+      const updated = await prisma.productChange.update({
+        where: { id: changeId },
+        data: {
+          changeStatus: 'REJECTED',
+          approvedBy: userId,
+          approvedAt: new Date(),
+          approvalComment: reason,
+          updatedBy: userId,
+        },
+      });
+
+      return { data: updated, message: '产品变更已拒绝' };
+    },
+
+    /** 获取产品变更列表 */
+    async getChangeList({ id, body, prisma }) {
+      const { page = 1, pageSize = 20 } = body;
+      const skip = (Number(page) - 1) * Number(pageSize);
+
+      const [changes, total] = await Promise.all([
+        prisma.productChange.findMany({
+          where: { productId: id },
+          skip,
+          take: Number(pageSize),
+          orderBy: { createdAt: 'desc' },
+        }),
+        prisma.productChange.count({ where: { productId: id } }),
+      ]);
+
+      return {
+        data: { changes, total, page: Number(page), pageSize: Number(pageSize) },
+        message: 'Success',
+      };
+    },
+
+    /** 获取产品变更详情 */
+    async getChangeDetail({ id, body, prisma }) {
+      const { changeId } = body;
+      const change = await prisma.productChange.findUnique({
+        where: { id: changeId },
+        include: {
+          product: {
+            include: {
+              category: true,
+              brand: true,
+            },
+          },
+        },
+      });
+
+      if (!change) {
+        throw new Error('变更申请不存在');
+      }
+
+      return { data: change, message: 'Success' };
+    },
+
+    /** 删除产品变更 */
+    async deleteChange({ id, body, userId, prisma }) {
+      const { changeId } = body;
+      const changeRequest = await prisma.productChange.findUnique({
+        where: { id: changeId },
+      });
+      if (!changeRequest) {
+        throw new Error('变更申请不存在');
+      }
+      if (changeRequest.changeStatus !== 'PENDING') {
+        throw new Error('只有待提交的变更申请才能删除');
+      }
+
+      await prisma.productChange.delete({
+        where: { id: changeId },
+      });
+
+      return { data: null, message: '产品变更已删除' };
+    },
   },
 };
 
