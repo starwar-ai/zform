@@ -1035,10 +1035,10 @@ async function main() {
     },
   });
 
-  // 报价单菜单
+  // 客户报价菜单
   const quotationMenu = await prisma.sysMenu.create({
     data: {
-      title: '报价单',
+      title: '客户报价',
       icon: 'FileText',
       path: '/type-list/quotation',
       parentId: businessEntryMenu.id,

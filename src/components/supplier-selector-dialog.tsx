@@ -26,6 +26,14 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { FilterSelect } from "@/components/ui/filter-select"
 import { Search, Building2, ChevronLeft, ChevronRight } from "lucide-react"
 import type { RowSelectorDialogProps } from "@/core/row-selector-registry"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
 // ============================================================
 // 常量
@@ -77,10 +85,10 @@ const stageLabelMap: Record<string, string> = {
 }
 
 // ============================================================
-// 子组件：供应商卡片
+// 子组件：供应商表格行
 // ============================================================
 
-function SupplierCard({
+function SupplierTableRow({
   supplier,
   selected,
   onToggle,
@@ -90,78 +98,72 @@ function SupplierCard({
   onToggle: () => void
 }) {
   return (
-    <div
-      className={`
-        border rounded-lg p-3 cursor-pointer transition-colors
-        ${selected ? "bg-primary/5 border-primary" : "hover:bg-muted/50"}
-      `}
+    <TableRow 
+      className={selected ? "bg-primary/5" : "hover:bg-muted/50"}
       onClick={onToggle}
     >
-      <div className="flex items-start gap-3">
-        <div className="pt-1">
-          <Checkbox
-            checked={selected}
-            onCheckedChange={onToggle}
-            onClick={(e) => e.stopPropagation()}
-          />
+      <TableCell className="w-12">
+        <Checkbox
+          checked={selected}
+          onCheckedChange={onToggle}
+          onClick={(e) => e.stopPropagation()}
+        />
+      </TableCell>
+      <TableCell className="font-medium">
+        <div className="flex flex-col">
+          <div className="flex items-center gap-2">
+            <span>{supplier.name}</span>
+            {supplier.shortName && (
+              <span className="text-sm text-muted-foreground">
+                ({supplier.shortName})
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+            <span>编码: {supplier._docNumber}</span>
+            {supplier.companyCity && (
+              <>
+                <span>•</span>
+                <span>{supplier.companyCity}</span>
+              </>
+            )}
+            {supplier.currency && (
+              <>
+                <span>•</span>
+                <span>币种: {supplier.currency}</span>
+              </>
+            )}
+          </div>
         </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-medium">{supplier.name}</span>
-                {supplier.shortName && (
-                  <span className="text-sm text-muted-foreground">
-                    ({supplier.shortName})
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                <span>编码: {supplier._docNumber}</span>
-                {supplier.companyCity && (
-                  <>
-                    <span>•</span>
-                    <span>{supplier.companyCity}</span>
-                  </>
-                )}
-                {supplier.currency && (
-                  <>
-                    <span>•</span>
-                    <span>币种: {supplier.currency}</span>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 mt-2 flex-wrap">
-            <Badge
-              variant={supplier.stage === "FORMAL" ? "default" : "outline"}
-              className="text-xs"
-            >
-              {stageLabelMap[supplier.stage] ?? supplier.stage}
+      </TableCell>
+      <TableCell>
+        <div className="flex flex-col gap-1">
+          <Badge
+            variant={supplier.stage === "FORMAL" ? "default" : "outline"}
+            className="text-xs w-fit"
+          >
+            {stageLabelMap[supplier.stage] ?? supplier.stage}
+          </Badge>
+          {supplier.supplierLevel && (
+            <Badge variant="secondary" className="text-xs w-fit">
+              {supplier.supplierLevel}级
             </Badge>
-            {supplier.supplierLevel && (
-              <Badge variant="secondary" className="text-xs">
-                {supplier.supplierLevel}级
-              </Badge>
-            )}
-            {supplier.isEnabled === false && (
-              <Badge variant="destructive" className="text-xs">
-                已停用
-              </Badge>
-            )}
-          </div>
-
-          {supplier.mainBusiness && (
-            <div className="mt-1 text-xs text-muted-foreground line-clamp-1">
-              {supplier.mainBusiness}
-            </div>
+          )}
+          {supplier.isEnabled === false && (
+            <Badge variant="destructive" className="text-xs w-fit">
+              已停用
+            </Badge>
           )}
         </div>
-      </div>
-    </div>
+      </TableCell>
+      <TableCell>
+        {supplier.mainBusiness && (
+          <div className="text-sm text-muted-foreground line-clamp-1">
+            {supplier.mainBusiness}
+          </div>
+        )}
+      </TableCell>
+    </TableRow>
   )
 }
 
@@ -383,16 +385,26 @@ export function SupplierSelectorDialog({
               </div>
             </div>
           ) : (
-            <div className="space-y-2">
-              {suppliers.map((supplier) => (
-                <SupplierCard
-                  key={supplier._id}
-                  supplier={supplier}
-                  selected={selectedSuppliers.has(supplier._id)}
-                  onToggle={() => handleToggleSupplier(supplier._id)}
-                />
-              ))}
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12"></TableHead>
+                  <TableHead>供应商信息</TableHead>
+                  <TableHead>状态/等级</TableHead>
+                  <TableHead>主营业务</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {suppliers.map((supplier) => (
+                  <SupplierTableRow
+                    key={supplier._id}
+                    supplier={supplier}
+                    selected={selectedSuppliers.has(supplier._id)}
+                    onToggle={() => handleToggleSupplier(supplier._id)}
+                  />
+                ))}
+              </TableBody>
+            </Table>
           )}
         </div>
 

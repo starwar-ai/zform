@@ -7,9 +7,11 @@
 
 import { AccessorySelectorDialog } from "@/components/accessory-selector-dialog"
 import { SupplierSelectorDialog } from "@/components/supplier-selector-dialog"
+import { StandardProductSelectorDialog } from "@/components/standard-product-selector-dialog"
 import { registerRowSelector } from "@/core/row-selector-registry"
 
 export function registerRowSelectors(): void {
   registerRowSelector("accessory", AccessorySelectorDialog)
   registerRowSelector("supplier", SupplierSelectorDialog)
+  registerRowSelector("product", StandardProductSelectorDialog)
 }

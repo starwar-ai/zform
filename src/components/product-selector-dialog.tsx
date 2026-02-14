@@ -30,6 +30,14 @@ import { FilterSelect } from "@/components/ui/filter-select"
 import { productStatusLabels } from "@/lib/product-status"
 import { Search, Box, ChevronLeft, ChevronRight } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
 // ============================================================
 // 配置接口
@@ -108,10 +116,10 @@ interface ProductItem {
 }
 
 // ============================================================
-// 子组件：产品卡片
+// 子组件：产品表格行
 // ============================================================
 
-function ProductCard({
+function ProductTableRow({
   product,
   selected,
   onToggle,
@@ -123,81 +131,73 @@ function ProductCard({
   typeBadgeLabel?: string
 }) {
   return (
-    <div
-      className={`
-        border rounded-lg p-3 cursor-pointer transition-colors
-        ${selected ? "bg-primary/5 border-primary" : "hover:bg-muted/50"}
-      `}
+    <TableRow 
+      className={selected ? "bg-primary/5" : "hover:bg-muted/50"}
       onClick={onToggle}
     >
-      <div className="flex items-start gap-3">
-        <div className="pt-1">
-          <Checkbox
-            checked={selected}
-            onCheckedChange={onToggle}
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-medium">{product.name}</span>
-                {product.nameEn && (
-                  <span className="text-sm text-muted-foreground">
-                    {product.nameEn}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                <span>编码: {product._docNumber}</span>
+      <TableCell className="w-12">
+        <Checkbox
+          checked={selected}
+          onCheckedChange={onToggle}
+          onClick={(e) => e.stopPropagation()}
+        />
+      </TableCell>
+      <TableCell className="font-medium">
+        <div className="flex flex-col">
+          <div className="flex items-center gap-2">
+            <span>{product.name}</span>
+            {product.nameEn && (
+              <span className="text-sm text-muted-foreground">
+                {product.nameEn}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+            <span>编码: {product._docNumber}</span>
+            <span>•</span>
+            <span>单位: {product.unit}</span>
+            {product.barcode && (
+              <>
                 <span>•</span>
-                <span>单位: {product.unit}</span>
-                {product.barcode && (
-                  <>
-                    <span>•</span>
-                    <span>条形码: {product.barcode}</span>
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-col items-end gap-1">
-              {product.salePrice != null && (
-                <span className="text-sm font-medium">
-                  ¥{product.salePrice}
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 mt-2 flex-wrap">
-            {typeBadgeLabel && (
-              <Badge variant="secondary" className="text-xs">
-                {typeBadgeLabel}
-              </Badge>
+                <span>条形码: {product.barcode}</span>
+              </>
             )}
-            {product.categoryName && (
-              <Badge variant="outline" className="text-xs">
-                {product.categoryName}
-              </Badge>
-            )}
-            {product.brandName && (
-              <Badge variant="outline" className="text-xs">
-                {product.brandName}
-              </Badge>
-            )}
-            <Badge
-              variant={product.status === "ACTIVE" ? "default" : "outline"}
-              className="text-xs"
-            >
-              {productStatusLabels[product.status] ?? product.status}
-            </Badge>
           </div>
         </div>
-      </div>
-    </div>
+      </TableCell>
+      <TableCell>
+        <div className="flex flex-col gap-1">
+          {typeBadgeLabel && (
+            <Badge variant="secondary" className="text-xs w-fit">
+              {typeBadgeLabel}
+            </Badge>
+          )}
+          {product.categoryName && (
+            <Badge variant="outline" className="text-xs w-fit">
+              {product.categoryName}
+            </Badge>
+          )}
+          {product.brandName && (
+            <Badge variant="outline" className="text-xs w-fit">
+              {product.brandName}
+            </Badge>
+          )}
+          <Badge
+            variant={product.status === "ACTIVE" ? "default" : "outline"}
+            className="text-xs w-fit"
+          >
+            {productStatusLabels[product.status] ?? product.status}
+          </Badge>
+        </div>
+      </TableCell>
+      <TableCell className="text-right">
+        {product.salePrice != null && (
+          <span className="font-medium">
+            ¥{product.salePrice}
+          </span>
+        )}
+      </TableCell>
+    </TableRow>
   )
 }
 
@@ -476,17 +476,27 @@ export function ProductSelectorDialog({
               </div>
             </div>
           ) : (
-            <div className="space-y-2">
-              {products.map((product) => (
-                <ProductCard
-                  key={product._id}
-                  product={product}
-                  selected={selectedProducts.has(product._id)}
-                  onToggle={() => handleToggleProduct(product._id)}
-                  typeBadgeLabel={typeBadgeLabel}
-                />
-              ))}
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12"></TableHead>
+                  <TableHead>产品信息</TableHead>
+                  <TableHead>分类/品牌/状态</TableHead>
+                  <TableHead className="text-right">售价</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {products.map((product) => (
+                  <ProductTableRow
+                    key={product._id}
+                    product={product}
+                    selected={selectedProducts.has(product._id)}
+                    onToggle={() => handleToggleProduct(product._id)}
+                    typeBadgeLabel={typeBadgeLabel}
+                  />
+                ))}
+              </TableBody>
+            </Table>
           )}
         </div>
 
