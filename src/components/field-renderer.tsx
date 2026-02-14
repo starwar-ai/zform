@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { SkuCodeField } from "@/components/ui/sku-code-field"
 import { PriceField } from "@/components/ui/price-field"
+import { CURRENCY_OPTIONS, DEFAULT_CURRENCY } from "@/lib/currency"
 import {
   Select,
   SelectContent,
@@ -171,7 +172,7 @@ export function FieldRenderer({
         if (!config || !onBatchChange || !data) return null
         const priceValue = {
           amount: data[config.amountField] as number | undefined,
-          currency: (data[config.currencyField] as string) ?? "USD",
+          currency: (data[config.currencyField] as string) ?? DEFAULT_CURRENCY,
         }
         return (
           <PriceField
@@ -180,7 +181,7 @@ export function FieldRenderer({
               onBatchChange(config.amountField, v.amount)
               onBatchChange(config.currencyField, v.currency)
             }}
-            currencyOptions={field.options}
+            currencyOptions={field.options ?? CURRENCY_OPTIONS}
             placeholder={field.placeholder}
             disabled={isDisabled}
             readOnly={fieldReadOnly}

@@ -131,7 +131,7 @@ export function DetailTable({
               className="cursor-pointer min-h-[28px] flex items-center px-1"
               onClick={() => handleCellClick(row.original.id, field.id)}
             >
-              {formatDisplayValue(value, field.type)}
+              {formatDisplayValue(value, field.type, field)}
             </div>
           )
         },
@@ -278,9 +278,22 @@ export function DetailTable({
   )
 }
 
-function formatDisplayValue(value: unknown, fieldType: string): string {
+function formatDisplayValue(
+  value: unknown,
+  fieldType: string,
+  field?: { priceConfig?: { amountField: string; currencyField: string } }
+): string {
   if (value === null || value === undefined || value === "") return "-"
   if (fieldType === "checkbox") return value ? "是" : "否"
+  if (fieldType === "price" && value && typeof value === "object" && "amount" in value) {
+    const v = value as { amount?: unknown; currency?: string }
+    const amt = v.amount
+    const cur = v.currency ?? ""
+    if (amt == null || amt === "") return "-"
+    const num = Number(amt)
+    if (Number.isNaN(num)) return "-"
+    return cur ? `${num.toLocaleString()} ${cur}` : num.toLocaleString()
+  }
   if (fieldType === "number" && typeof value === "number") {
     return value.toLocaleString()
   }

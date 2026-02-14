@@ -20,6 +20,7 @@ import { fetchCategoryListApi } from "@/apis/category-api"
 import { fetchBrandsApi } from "@/apis/business-config-api"
 import { fetchDepartmentTreeApi } from "@/apis/department-api"
 import { generateSkuCodeApi, formatSkuCode } from "@/apis/sku-api"
+import { DEFAULT_CURRENCY } from "@/lib/currency"
 
 // ============================================================
 // 工具函数：将树形分类拍平为 ComboboxOption[]
@@ -378,44 +379,65 @@ export const standardProductSchema: DocumentSchema = {
     },
 
     // === 价格与加工（组合产品才需要）===
+    // 单件加工费币种（隐藏字段，由 price 组件管理）
     {
-      id: "currency",
-      label: "币种",
-      type: "select",
-      options: [
-        { label: "USD", value: "USD" },
-        { label: "CNY", value: "CNY" },
-        { label: "EUR", value: "EUR" },
-        { label: "GBP", value: "GBP" },
-        { label: "JPY", value: "JPY" },
-      ],
-      defaultValue: "USD",
+      id: "unitProcessingFeeCurrency",
+      label: "单件加工费币种",
+      type: "text",
+      hidden: true,
+      defaultValue: DEFAULT_CURRENCY,
       group: "价格信息",
-      visibleWhen: notAuxiliary,
     },
     {
       id: "unitProcessingFee",
       label: "单件加工费",
-      type: "number",
-      placeholder: "0.00",
+      type: "price",
       group: "价格信息",
       visibleWhen: isProductMix,
+      priceConfig: {
+        amountField: "unitProcessingFee",
+        currencyField: "unitProcessingFeeCurrency",
+      },
+    },
+    // 销售价格币种（隐藏字段，由 price 组件管理）
+    {
+      id: "salePriceCurrency",
+      label: "销售价格币种",
+      type: "text",
+      hidden: true,
+      defaultValue: DEFAULT_CURRENCY,
+      group: "价格信息",
     },
     {
       id: "salePrice",
       label: "销售价格",
-      type: "number",
-      placeholder: "0.00",
+      type: "price",
       group: "价格信息",
       visibleWhen: notAuxiliary,
+      priceConfig: {
+        amountField: "salePrice",
+        currencyField: "salePriceCurrency",
+      },
+    },
+    // 公司价格币种（隐藏字段，由 price 组件管理）
+    {
+      id: "companyPriceCurrency",
+      label: "公司价格币种",
+      type: "text",
+      hidden: true,
+      defaultValue: DEFAULT_CURRENCY,
+      group: "价格信息",
     },
     {
       id: "companyPrice",
       label: "公司价格",
-      type: "number",
-      placeholder: "0.00",
+      type: "price",
       group: "价格信息",
       visibleWhen: notAuxiliary,
+      priceConfig: {
+        amountField: "companyPrice",
+        currencyField: "companyPriceCurrency",
+      },
     },
     {
       id: "processingNote",
@@ -742,41 +764,64 @@ export const customerProductSchema: DocumentSchema = {
     },
 
     // === 价格信息 ===
+    // 销售价格币种（隐藏字段，由 price 组件管理）
     {
-      id: "currency",
-      label: "币种",
-      type: "select",
-      options: [
-        { label: "USD", value: "USD" },
-        { label: "CNY", value: "CNY" },
-        { label: "EUR", value: "EUR" },
-        { label: "GBP", value: "GBP" },
-        { label: "JPY", value: "JPY" },
-      ],
-      defaultValue: "USD",
+      id: "salePriceCurrency",
+      label: "销售价格币种",
+      type: "text",
+      hidden: true,
+      defaultValue: DEFAULT_CURRENCY,
       group: "价格信息",
     },
     {
       id: "salePrice",
       label: "销售价格",
-      type: "number",
+      type: "price",
       required: true,
       placeholder: "针对该客户的销售价格",
+      group: "价格信息",
+      priceConfig: {
+        amountField: "salePrice",
+        currencyField: "salePriceCurrency",
+      },
+    },
+    // 公司价格币种（隐藏字段，由 price 组件管理）
+    {
+      id: "companyPriceCurrency",
+      label: "公司价格币种",
+      type: "text",
+      hidden: true,
+      defaultValue: DEFAULT_CURRENCY,
       group: "价格信息",
     },
     {
       id: "companyPrice",
       label: "公司价格",
-      type: "number",
-      placeholder: "0.00",
+      type: "price",
+      group: "价格信息",
+      priceConfig: {
+        amountField: "companyPrice",
+        currencyField: "companyPriceCurrency",
+      },
+    },
+    // 单件加工费币种（隐藏字段，由 price 组件管理）
+    {
+      id: "unitProcessingFeeCurrency",
+      label: "单件加工费币种",
+      type: "text",
+      hidden: true,
+      defaultValue: DEFAULT_CURRENCY,
       group: "价格信息",
     },
     {
       id: "unitProcessingFee",
       label: "单件加工费",
-      type: "number",
-      placeholder: "0.00",
+      type: "price",
       group: "价格信息",
+      priceConfig: {
+        amountField: "unitProcessingFee",
+        currencyField: "unitProcessingFeeCurrency",
+      },
     },
 
     // === 规格尺寸（辅料、代理不需要）===
@@ -1029,41 +1074,65 @@ export const selfOwnedProductSchema: DocumentSchema = {
     },
 
     // === 价格信息 ===
+    // 销售价格币种（隐藏字段，由 price 组件管理）
     {
-      id: "currency",
-      label: "币种",
-      type: "select",
-      options: [
-        { label: "USD", value: "USD" },
-        { label: "CNY", value: "CNY" },
-        { label: "EUR", value: "EUR" },
-        { label: "GBP", value: "GBP" },
-        { label: "JPY", value: "JPY" },
-      ],
-      defaultValue: "USD",
+      id: "salePriceCurrency",
+      label: "销售价格币种",
+      type: "text",
+      hidden: true,
+      defaultValue: DEFAULT_CURRENCY,
       group: "价格信息",
     },
     {
       id: "salePrice",
       label: "建议零售价",
-      type: "number",
+      type: "price",
       required: true,
       placeholder: "市场建议零售价",
+      group: "价格信息",
+      priceConfig: {
+        amountField: "salePrice",
+        currencyField: "salePriceCurrency",
+      },
+    },
+    // 公司价格币种（隐藏字段，由 price 组件管理）
+    {
+      id: "companyPriceCurrency",
+      label: "批发价格币种",
+      type: "text",
+      hidden: true,
+      defaultValue: DEFAULT_CURRENCY,
       group: "价格信息",
     },
     {
       id: "companyPrice",
       label: "批发价格",
-      type: "number",
+      type: "price",
       placeholder: "批发渠道价格",
+      group: "价格信息",
+      priceConfig: {
+        amountField: "companyPrice",
+        currencyField: "companyPriceCurrency",
+      },
+    },
+    // 单件加工费币种（隐藏字段，由 price 组件管理）
+    {
+      id: "unitProcessingFeeCurrency",
+      label: "单件加工费币种",
+      type: "text",
+      hidden: true,
+      defaultValue: DEFAULT_CURRENCY,
       group: "价格信息",
     },
     {
       id: "unitProcessingFee",
       label: "单件加工费",
-      type: "number",
-      placeholder: "0.00",
+      type: "price",
       group: "价格信息",
+      priceConfig: {
+        amountField: "unitProcessingFee",
+        currencyField: "unitProcessingFeeCurrency",
+      },
     },
 
     // === 规格尺寸（辅料、代理不需要）===
@@ -1253,10 +1322,12 @@ export const standardToCustomerProductRule: PushDownRule = {
     { sourceField: "master.width", targetField: "width" },
     { sourceField: "master.height", targetField: "height" },
     { sourceField: "master.netWeight", targetField: "netWeight" },
-    { sourceField: "master.currency", targetField: "currency" },
     { sourceField: "master.salePrice", targetField: "salePrice" },
+    { sourceField: "master.salePriceCurrency", targetField: "salePriceCurrency" },
     { sourceField: "master.companyPrice", targetField: "companyPrice" },
+    { sourceField: "master.companyPriceCurrency", targetField: "companyPriceCurrency" },
     { sourceField: "master.unitProcessingFee", targetField: "unitProcessingFee" },
+    { sourceField: "master.unitProcessingFeeCurrency", targetField: "unitProcessingFeeCurrency" },
     { sourceField: "master.customsNameCn", targetField: "customsNameCn" },
     { sourceField: "master.customsNameEn", targetField: "customsNameEn" },
     { sourceField: "master.description", targetField: "description" },
@@ -1301,7 +1372,6 @@ export const standardToSelfOwnedProductRule: PushDownRule = {
     { sourceField: "master.width", targetField: "width" },
     { sourceField: "master.height", targetField: "height" },
     { sourceField: "master.netWeight", targetField: "netWeight" },
-    { sourceField: "master.currency", targetField: "currency" },
     {
       sourceField: "master.salePrice",
       targetField: "salePrice",
@@ -1311,6 +1381,7 @@ export const standardToSelfOwnedProductRule: PushDownRule = {
         return Math.round(basePrice * 1.5 * 100) / 100
       },
     },
+    { sourceField: "master.salePriceCurrency", targetField: "salePriceCurrency" },
     {
       sourceField: "master.companyPrice",
       targetField: "companyPrice",
@@ -1320,7 +1391,9 @@ export const standardToSelfOwnedProductRule: PushDownRule = {
         return Math.round(basePrice * 1.3 * 100) / 100
       },
     },
+    { sourceField: "master.companyPriceCurrency", targetField: "companyPriceCurrency" },
     { sourceField: "master.unitProcessingFee", targetField: "unitProcessingFee" },
+    { sourceField: "master.unitProcessingFeeCurrency", targetField: "unitProcessingFeeCurrency" },
     { sourceField: "master.packageMethodId", targetField: "packageMethodId" },
     { sourceField: "master.customsNameCn", targetField: "customsNameCn" },
     { sourceField: "master.customsNameEn", targetField: "customsNameEn" },

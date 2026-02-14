@@ -17,30 +17,23 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
+import type { CurrencyOption } from "@/lib/currency"
+import { CURRENCY_OPTIONS, DEFAULT_CURRENCY } from "@/lib/currency"
 
-/** 默认币种选项 */
-export const DEFAULT_CURRENCY_OPTIONS = [
-  { label: "USD", value: "USD" },
-  { label: "CNY", value: "CNY" },
-  { label: "EUR", value: "EUR" },
-  { label: "GBP", value: "GBP" },
-  { label: "JPY", value: "JPY" },
-] as const
+/** 默认币种选项（从统一常量引用，保持向后兼容） */
+export const DEFAULT_CURRENCY_OPTIONS = CURRENCY_OPTIONS
+
+export type { CurrencyOption }
 
 export interface PriceValue {
   amount?: number
   currency?: string
 }
 
-export interface CurrencyOption {
-  label: string
-  value: string
-}
-
 interface PriceFieldProps {
   value?: PriceValue | null
   onChange?: (value: PriceValue) => void
-  /** 币种选项，默认 USD/CNY/EUR/GBP/JPY */
+  /** 币种选项，默认从统一常量获取 */
   currencyOptions?: CurrencyOption[]
   /** 默认币种 */
   defaultCurrency?: string
@@ -64,7 +57,7 @@ export function PriceField({
   value,
   onChange,
   currencyOptions = DEFAULT_CURRENCY_OPTIONS,
-  defaultCurrency = "USD",
+  defaultCurrency = DEFAULT_CURRENCY,
   placeholder = "0.00",
   disabled,
   readOnly,
