@@ -317,7 +317,11 @@ export function DocumentListTable({
     // 从 schema.masterFields 中取前几个关键字段作为列表列
     // 过滤掉 textarea 和 computed 类型 (不适合列表显示)
     const listableFields = schema.masterFields.filter(
-      (f) => f.type !== "textarea" && f.type !== "computed"
+      (f) =>
+        !f.hidden &&
+        f.type !== "textarea" &&
+        f.type !== "computed" &&
+        f.type !== "skuCode"
     )
 
     for (const field of listableFields) {

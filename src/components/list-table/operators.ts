@@ -30,6 +30,7 @@ const ALL_OPERATORS: Record<FilterOperator, OperatorMeta> = {
 const OPERATORS_BY_TYPE: Record<FieldType, FilterOperator[]> = {
   text:     ["eq", "neq", "contains", "startsWith", "endsWith", "isEmpty", "isNotEmpty"],
   textarea: ["eq", "neq", "contains", "startsWith", "endsWith", "isEmpty", "isNotEmpty"],
+  skuCode:  ["eq", "neq", "contains", "startsWith", "endsWith", "isEmpty", "isNotEmpty"],
   number:   ["eq", "neq", "gt", "gte", "lt", "lte", "between", "isEmpty", "isNotEmpty"],
   date:     ["eq", "before", "after", "between", "isEmpty", "isNotEmpty"],
   select:   ["eq", "neq", "in", "isEmpty", "isNotEmpty"],
@@ -53,6 +54,7 @@ export function getDefaultOperator(type: FieldType): FilterOperator {
   switch (type) {
     case "text":
     case "textarea":
+    case "skuCode":
       return "contains"
     case "number":
       return "eq"

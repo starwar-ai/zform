@@ -38,6 +38,7 @@ export type FieldType =
   | "computed"
   | "combobox"
   | "dimensions"
+  | "skuCode"
 
 /** Combobox 下拉选项 */
 export interface ComboboxOption {
@@ -71,6 +72,50 @@ export interface DimensionsFieldConfig {
   }
 }
 
+/** 产品编号字段配置 */
+export interface SkuCodeFieldConfig {
+  /** 关联的产品分类字段 ID */
+  categoryIdField: FieldId
+  /** 前缀码字段 ID */
+  preCodeField: FieldId
+  /** 序号字段 ID (3位) */
+  xhCodeField: FieldId
+  /** 后缀字段 ID */
+  afterCodeField: FieldId
+  /** 最终完整编号字段 ID */
+  codeField: FieldId
+}
+
+// ============================================================
+// 字段副作用 (Field Effect)
+// ============================================================
+
+/** 表单模式 */
+export type FormMode = "create" | "copy" | "edit"
+
+/**
+ * 字段副作用配置 —— 声明式定义字段间联动逻辑
+ *
+ * 当 watchFields 中任一字段值发生变化时，MasterForm 自动调用 handler。
+ * 业务逻辑（如编号生成、价格计算）完全留在 Schema 定义中，
+ * MasterForm 只负责通用的"检测变化 → 触发 handler"。
+ */
+export interface FieldEffect {
+  /** 需要监听的字段 ID 列表 */
+  watchFields: FieldId[]
+  /** 仅在指定模式下生效（不设则所有模式都生效） */
+  modes?: FormMode[]
+  /**
+   * 副作用处理函数
+   * @param data     当前表单全量数据
+   * @param onChange  字段更新回调 (fieldId, value)
+   */
+  handler: (
+    data: Record<string, unknown>,
+    onChange: (fieldId: string, value: unknown) => void,
+  ) => Promise<void> | void
+}
+
 /** 字段定义 */
 export interface FieldDef {
   /** 字段唯一标识 */
@@ -83,6 +128,8 @@ export interface FieldDef {
   required?: boolean
   /** 是否只读 */
   readOnly?: boolean
+  /** 仅在指定模式下只读（如 ["edit"] 表示编辑时锁定） */
+  readOnlyModes?: FormMode[]
   /** 默认值 */
   defaultValue?: unknown
   /** 下拉选项 (type=select 时) */
@@ -93,12 +140,18 @@ export interface FieldDef {
   span?: number
   /** 占位提示 */
   placeholder?: string
+  /** 是否隐藏（不渲染，用于 skuCode 的子字段等） */
+  hidden?: boolean
   /** 字段分组标题 (用于表单分段) */
   group?: string
   /** Combobox 配置 (type=combobox 时) */
   comboboxConfig?: ComboboxConfig
   /** 规格尺寸配置 (type=dimensions 时) */
   dimensionConfig?: DimensionsFieldConfig
+  /** 产品编号配置 (type=skuCode 时) */
+  skuCodeConfig?: SkuCodeFieldConfig
+  /** 字段副作用：当依赖字段变化时自动触发（如编号生成、价格计算） */
+  effect?: FieldEffect
 }
 
 // ============================================================

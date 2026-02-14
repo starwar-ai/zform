@@ -5,12 +5,13 @@
  * 产品类型: 标准产品(STANDARD) → 客户产品(CUSTOMER) / 自营产品(SELF_OWNED)
  */
 
-import type { DocumentSchema, PushDownRule, ChangeRule, ComboboxOption } from "@/core/types"
+import type { DocumentSchema, PushDownRule, ChangeRule, ComboboxOption, FieldEffect } from "@/core/types"
 import type { HsCode, ProductCategoryTreeNode } from "@/types/category"
 import type { DepartmentTreeNode } from "@/types/department"
 import { fetchCategoryListApi } from "@/apis/category-api"
 import { fetchBrandsApi } from "@/apis/business-config-api"
 import { fetchDepartmentTreeApi } from "@/apis/department-api"
+import { generateSkuCodeApi, parseSkuCode, formatSkuCode } from "@/apis/sku-api"
 
 // ============================================================
 // 工具函数：将树形分类拍平为 ComboboxOption[]
@@ -89,6 +90,36 @@ async function fetchDepartmentOptions(): Promise<ComboboxOption[]> {
 }
 
 // ============================================================
+// 产品编号自动生成 Effect
+// ============================================================
+
+/**
+ * 当 categoryId 变化时，调用后端生成产品编号并填充 preCode / xhCode / code
+ */
+const skuCodeGenerationEffect: FieldEffect = {
+  watchFields: ["categoryId"],
+  modes: ["create", "copy"],
+  handler: async (data, onChange) => {
+    const categoryId = String(data.categoryId ?? "").trim()
+    if (!categoryId) return
+
+    const autoCode = await generateSkuCodeApi(categoryId)
+    if (!autoCode || autoCode.length < 3) {
+      console.warn("[SkuCode] 自动生成序号异常，长度小于3:", autoCode)
+      return
+    }
+
+    const { preCode, xhCode } = parseSkuCode(autoCode)
+    const afterCode = String(data.afterCode ?? "").trim()
+    const code = formatSkuCode(preCode, xhCode, afterCode)
+
+    onChange("preCode", preCode)
+    onChange("xhCode", xhCode)
+    onChange("code", code)
+  },
+}
+
+// ============================================================
 // 标准产品 (Standard Product)
 // ProductType.STANDARD
 // ============================================================
@@ -98,13 +129,26 @@ export const standardProductSchema: DocumentSchema = {
   typeName: "标准产品",
   masterFields: [
     // === 基本信息 ===
+    // 产品编号子字段（由 skuCode 复合控件管理，隐藏不单独渲染）
+    { id: "preCode", label: "前缀码", type: "text", hidden: true, group: "基本信息" },
+    { id: "xhCode", label: "序号", type: "text", hidden: true, group: "基本信息" },
+    { id: "afterCode", label: "后缀", type: "text", hidden: true, group: "基本信息" },
+    { id: "code", label: "产品编码", type: "text", hidden: true, required: true, group: "基本信息" },
     {
-      id: "code",
+      id: "skuCode",
       label: "产品编码",
-      type: "text",
-      readOnly: true,
+      type: "skuCode",
       required: true,
+      readOnlyModes: ["edit"],
       group: "基本信息",
+      skuCodeConfig: {
+        categoryIdField: "categoryId",
+        preCodeField: "preCode",
+        xhCodeField: "xhCode",
+        afterCodeField: "afterCode",
+        codeField: "code",
+      },
+      effect: skuCodeGenerationEffect,
     },
     {
       id: "barcode",

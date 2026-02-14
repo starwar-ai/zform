@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
+import { SkuCodeField } from "@/components/ui/sku-code-field"
 import {
   Select,
   SelectContent,
@@ -22,16 +23,25 @@ interface FieldRendererProps {
   field: FieldDef
   value: unknown
   onChange: (value: unknown) => void
+  /** 用于 skuCode 等需要访问其他字段的复合控件 */
+  data?: Record<string, unknown>
+  /** 用于 skuCode：支持 (fieldId, value) 批量更新 */
+  onBatchChange?: (fieldId: string, value: unknown) => void
   disabled?: boolean
+  /** 字段是否只读（由 MasterForm 根据 field.readOnly + field.readOnlyModes 计算） */
+  fieldReadOnly?: boolean
 }
 
 export function FieldRenderer({
   field,
   value,
   onChange,
+  data,
+  onBatchChange,
   disabled,
+  fieldReadOnly = false,
 }: FieldRendererProps) {
-  const isDisabled = disabled || field.readOnly
+  const isDisabled = disabled || field.readOnly || fieldReadOnly
 
   const renderField = () => {
     switch (field.type) {
@@ -127,6 +137,27 @@ export function FieldRenderer({
             className="bg-muted"
           />
         )
+
+      case "skuCode": {
+        const config = field.skuCodeConfig
+        if (!config || !onBatchChange || !data) return null
+        const skuValue = {
+          preCode: String(data[config.preCodeField] ?? ""),
+          xhCode: String(data[config.xhCodeField] ?? ""),
+          afterCode: String(data[config.afterCodeField] ?? ""),
+        }
+        return (
+          <SkuCodeField
+            value={skuValue}
+            onChange={onBatchChange}
+            xhCodeFieldId={config.xhCodeField}
+            afterCodeFieldId={config.afterCodeField}
+            codeFieldId={config.codeField}
+            disabled={isDisabled}
+            readOnly={fieldReadOnly}
+          />
+        )
+      }
 
       case "dimensions": {
         const config = field.dimensionConfig

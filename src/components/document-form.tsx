@@ -606,6 +606,11 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
                         updateMasterField(docId, fieldId, value)
                       }
                       disabled={!isEditable}
+                      mode={
+                        isNew
+                          ? (doc.sourceRef ? "copy" : "create")
+                          : "edit"
+                      }
                     />
                   </TabsContent>
 
