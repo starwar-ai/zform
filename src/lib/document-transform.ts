@@ -65,6 +65,13 @@ export function normalizeDocumentData(
     }
   }
 
+  // 客户产品/自营产品：如果自身没有 skuType，从基础产品继承
+  const derivedTypes = ['customer_product', 'self_owned_product']
+  if (derivedTypes.includes(typeId) && masterData.skuType == null && rawDoc.baseProduct) {
+    masterData.skuType = rawDoc.baseProduct.skuType ?? null
+    masterData.isAgent = rawDoc.baseProduct.isAgent ?? false
+  }
+
   return {
     id: rawDoc.id,
     typeId,

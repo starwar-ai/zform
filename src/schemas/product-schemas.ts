@@ -234,7 +234,7 @@ export const standardProductSchema: DocumentSchema = {
       id: "barcode",
       label: "条形码",
       type: "text",
-      group: "基本信息",
+      group: "其他信息",
       visibleWhen: notAuxiliary,
     },
     {
@@ -377,14 +377,29 @@ export const standardProductSchema: DocumentSchema = {
       visibleWhen: isFullInputMode,
     },
 
-    // === 价格与加工（辅料不需要）===
+    // === 价格与加工（组合产品才需要）===
+    {
+      id: "currency",
+      label: "币种",
+      type: "select",
+      options: [
+        { label: "USD", value: "USD" },
+        { label: "CNY", value: "CNY" },
+        { label: "EUR", value: "EUR" },
+        { label: "GBP", value: "GBP" },
+        { label: "JPY", value: "JPY" },
+      ],
+      defaultValue: "USD",
+      group: "价格信息",
+      visibleWhen: notAuxiliary,
+    },
     {
       id: "unitProcessingFee",
       label: "单件加工费",
       type: "number",
       placeholder: "0.00",
       group: "价格信息",
-      visibleWhen: notAuxiliary,
+      visibleWhen: isProductMix,
     },
     {
       id: "salePrice",
@@ -408,7 +423,7 @@ export const standardProductSchema: DocumentSchema = {
       type: "textarea",
       span: 4,
       group: "价格信息",
-      visibleWhen: isFullInputMode,
+      visibleWhen: isProductMix,
     },
 
     // === 报关信息（辅料不需要）===
@@ -479,7 +494,7 @@ export const standardProductSchema: DocumentSchema = {
       type: "checkbox",
       defaultValue: false,
       group: "其他信息",
-      visibleWhen: isFullInputMode,
+      visibleWhen: isAuxiliary,
     },
 
     // === 描述与备注 ===
@@ -510,38 +525,47 @@ export const standardProductSchema: DocumentSchema = {
   detailTables: [
     {
       id: "bom_items",
-      label: "BOM 清单",
+      label: "BOM 清单（组合产品）",
       editable: true,
       visibleWhen: (d) => isProductMix(d),
       fields: [
         {
+          id: "childProductId",
+          label: "子产品",
+          type: "productSelector",
+          required: true,
+          width: "300px",
+          productSelectorConfig: {
+            productType: "standard",
+          },
+        },
+        {
           id: "childProductCode",
           label: "子产品编码",
           type: "text",
-          required: true,
+          readOnly: true,
+          width: "150px",
         },
         {
           id: "childProductName",
           label: "子产品名称",
           type: "text",
           readOnly: true,
+          width: "200px",
         },
         {
           id: "quantity",
           label: "用量",
           type: "number",
           required: true,
+          width: "100px",
         },
         {
           id: "unit",
           label: "单位",
           type: "text",
           readOnly: true,
-        },
-        {
-          id: "productType",
-          label: "产品类型",
-          type: "text",
+          width: "80px",
         },
       ],
     },
@@ -552,36 +576,49 @@ export const standardProductSchema: DocumentSchema = {
       visibleWhen: showAccessoryList,
       fields: [
         {
+          id: "accessoryId",
+          label: "辅料",
+          type: "accessorySelector",
+          required: true,
+          width: "300px",
+        },
+        {
           id: "accessoryCode",
           label: "辅料编码",
           type: "text",
-          required: true,
+          readOnly: true,
+          width: "150px",
         },
         {
           id: "accessoryName",
           label: "辅料名称",
           type: "text",
           readOnly: true,
+          width: "200px",
         },
         {
           id: "productRatio",
           label: "产品比例",
           type: "number",
+          width: "100px",
         },
         {
           id: "accessoryRatio",
           label: "辅料比例",
           type: "number",
+          width: "100px",
         },
         {
           id: "description",
           label: "说明",
           type: "text",
+          width: "150px",
         },
         {
           id: "remark",
           label: "备注",
           type: "text",
+          width: "150px",
         },
       ],
     },
@@ -597,6 +634,28 @@ export const customerProductSchema: DocumentSchema = {
   typeId: "customer_product",
   typeName: "客户产品",
   masterFields: [
+    // === 产品分类（继承自标准产品，只读显示）===
+    {
+      id: "skuType",
+      label: "产品分类",
+      type: "select",
+      readOnly: true,
+      group: "基本信息",
+      options: [
+        { label: "普通产品", value: "GENERAL_PRODUCTS" },
+        { label: "组合产品", value: "PRODUCT_MIX" },
+        { label: "配件", value: "ACCESSORIES" },
+        { label: "辅料", value: "AUXILIARY_MATERIALS" },
+      ],
+    },
+    {
+      id: "isAgent",
+      label: "是否代理产品",
+      type: "checkbox",
+      readOnly: true,
+      group: "基本信息",
+      visibleWhen: isGeneralOrMix,
+    },
     // === 基本信息（继承自标准产品，只读）===
     {
       id: "code",
@@ -611,7 +670,8 @@ export const customerProductSchema: DocumentSchema = {
       label: "条形码",
       type: "text",
       readOnly: true,
-      group: "基本信息",
+      group: "其他信息",
+      visibleWhen: notAuxiliary,
     },
     {
       id: "name",
@@ -683,6 +743,20 @@ export const customerProductSchema: DocumentSchema = {
 
     // === 价格信息 ===
     {
+      id: "currency",
+      label: "币种",
+      type: "select",
+      options: [
+        { label: "USD", value: "USD" },
+        { label: "CNY", value: "CNY" },
+        { label: "EUR", value: "EUR" },
+        { label: "GBP", value: "GBP" },
+        { label: "JPY", value: "JPY" },
+      ],
+      defaultValue: "USD",
+      group: "价格信息",
+    },
+    {
       id: "salePrice",
       label: "销售价格",
       type: "number",
@@ -705,7 +779,7 @@ export const customerProductSchema: DocumentSchema = {
       group: "价格信息",
     },
 
-    // === 规格尺寸（可调整）===
+    // === 规格尺寸（辅料、代理不需要）===
     {
       id: "dimensions",
       label: "规格尺寸(cm)",
@@ -722,6 +796,7 @@ export const customerProductSchema: DocumentSchema = {
           height: "高",
         },
       },
+      visibleWhen: isFullInputMode,
     },
     {
       id: "netWeight",
@@ -729,20 +804,23 @@ export const customerProductSchema: DocumentSchema = {
       type: "number",
       placeholder: "0.000",
       group: "规格尺寸",
+      visibleWhen: isFullInputMode,
     },
 
-    // === 报关信息 ===
+    // === 报关信息（辅料不需要）===
     {
       id: "customsNameCn",
       label: "报关中文名",
       type: "text",
       group: "报关信息",
+      visibleWhen: notAuxiliary,
     },
     {
       id: "customsNameEn",
       label: "报关英文名",
       type: "text",
       group: "报关信息",
+      visibleWhen: notAuxiliary,
     },
 
     // === 其他信息 ===
@@ -767,6 +845,7 @@ export const customerProductSchema: DocumentSchema = {
       id: "bom_items",
       label: "BOM 清单",
       editable: true,
+      visibleWhen: isProductMix,
       fields: [
         {
           id: "childProductCode",
@@ -798,6 +877,7 @@ export const customerProductSchema: DocumentSchema = {
       id: "accessories",
       label: "辅料清单",
       editable: true,
+      visibleWhen: showAccessoryList,
       fields: [
         {
           id: "accessoryCode",
@@ -840,6 +920,28 @@ export const selfOwnedProductSchema: DocumentSchema = {
   typeId: "self_owned_product",
   typeName: "自营产品",
   masterFields: [
+    // === 产品分类（继承自标准产品，只读显示）===
+    {
+      id: "skuType",
+      label: "产品分类",
+      type: "select",
+      readOnly: true,
+      group: "基本信息",
+      options: [
+        { label: "普通产品", value: "GENERAL_PRODUCTS" },
+        { label: "组合产品", value: "PRODUCT_MIX" },
+        { label: "配件", value: "ACCESSORIES" },
+        { label: "辅料", value: "AUXILIARY_MATERIALS" },
+      ],
+    },
+    {
+      id: "isAgent",
+      label: "是否代理产品",
+      type: "checkbox",
+      readOnly: true,
+      group: "基本信息",
+      visibleWhen: isGeneralOrMix,
+    },
     // === 基本信息（继承自标准产品，只读）===
     {
       id: "code",
@@ -853,7 +955,8 @@ export const selfOwnedProductSchema: DocumentSchema = {
       id: "barcode",
       label: "条形码",
       type: "text",
-      group: "基本信息",
+      group: "其他信息",
+      visibleWhen: notAuxiliary,
     },
     {
       id: "name",
@@ -927,6 +1030,20 @@ export const selfOwnedProductSchema: DocumentSchema = {
 
     // === 价格信息 ===
     {
+      id: "currency",
+      label: "币种",
+      type: "select",
+      options: [
+        { label: "USD", value: "USD" },
+        { label: "CNY", value: "CNY" },
+        { label: "EUR", value: "EUR" },
+        { label: "GBP", value: "GBP" },
+        { label: "JPY", value: "JPY" },
+      ],
+      defaultValue: "USD",
+      group: "价格信息",
+    },
+    {
       id: "salePrice",
       label: "建议零售价",
       type: "number",
@@ -949,7 +1066,7 @@ export const selfOwnedProductSchema: DocumentSchema = {
       group: "价格信息",
     },
 
-    // === 规格尺寸 ===
+    // === 规格尺寸（辅料、代理不需要）===
     {
       id: "dimensions",
       label: "规格尺寸(cm)",
@@ -966,6 +1083,7 @@ export const selfOwnedProductSchema: DocumentSchema = {
           height: "高",
         },
       },
+      visibleWhen: isFullInputMode,
     },
     {
       id: "netWeight",
@@ -973,29 +1091,33 @@ export const selfOwnedProductSchema: DocumentSchema = {
       type: "number",
       placeholder: "0.000",
       group: "规格尺寸",
+      visibleWhen: isFullInputMode,
     },
 
-    // === 包装信息 ===
+    // === 包装信息（辅料、代理不需要）===
     {
       id: "packageMethodId",
       label: "包装方式",
       type: "text",
       placeholder: "选择包装方式",
       group: "包装信息",
+      visibleWhen: isFullInputMode,
     },
 
-    // === 报关信息 ===
+    // === 报关信息（辅料不需要）===
     {
       id: "customsNameCn",
       label: "报关中文名",
       type: "text",
       group: "报关信息",
+      visibleWhen: notAuxiliary,
     },
     {
       id: "customsNameEn",
       label: "报关英文名",
       type: "text",
       group: "报关信息",
+      visibleWhen: notAuxiliary,
     },
     {
       id: "hsCodeId",
@@ -1003,15 +1125,17 @@ export const selfOwnedProductSchema: DocumentSchema = {
       type: "text",
       placeholder: "选择海关编码",
       group: "报关信息",
+      visibleWhen: notAuxiliary,
     },
 
-    // === 优势标识 ===
+    // === 优势标识（辅料、代理不需要）===
     {
       id: "isAdvantage",
       label: "优势产品",
       type: "checkbox",
       defaultValue: false,
       group: "其他信息",
+      visibleWhen: isFullInputMode,
     },
 
     // === 描述 ===
@@ -1044,6 +1168,7 @@ export const selfOwnedProductSchema: DocumentSchema = {
       id: "bom_items",
       label: "BOM 清单",
       editable: true,
+      visibleWhen: isProductMix,
       fields: [
         {
           id: "childProductCode",
@@ -1075,6 +1200,7 @@ export const selfOwnedProductSchema: DocumentSchema = {
       id: "accessories",
       label: "辅料清单",
       editable: true,
+      visibleWhen: showAccessoryList,
       fields: [
         {
           id: "accessoryCode",
@@ -1127,6 +1253,7 @@ export const standardToCustomerProductRule: PushDownRule = {
     { sourceField: "master.width", targetField: "width" },
     { sourceField: "master.height", targetField: "height" },
     { sourceField: "master.netWeight", targetField: "netWeight" },
+    { sourceField: "master.currency", targetField: "currency" },
     { sourceField: "master.salePrice", targetField: "salePrice" },
     { sourceField: "master.companyPrice", targetField: "companyPrice" },
     { sourceField: "master.unitProcessingFee", targetField: "unitProcessingFee" },
@@ -1174,6 +1301,7 @@ export const standardToSelfOwnedProductRule: PushDownRule = {
     { sourceField: "master.width", targetField: "width" },
     { sourceField: "master.height", targetField: "height" },
     { sourceField: "master.netWeight", targetField: "netWeight" },
+    { sourceField: "master.currency", targetField: "currency" },
     {
       sourceField: "master.salePrice",
       targetField: "salePrice",

@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { SkuCodeField } from "@/components/ui/sku-code-field"
+import { PriceField } from "@/components/ui/price-field"
 import {
   Select,
   SelectContent,
@@ -110,11 +111,13 @@ export function FieldRenderer({
 
       case "checkbox":
         return (
-          <Checkbox
-            checked={(value as boolean) ?? false}
-            onCheckedChange={onChange}
-            disabled={isDisabled}
-          />
+          <div className="flex min-h-9 items-center">
+            <Checkbox
+              checked={(value as boolean) ?? false}
+              onCheckedChange={onChange}
+              disabled={isDisabled}
+            />
+          </div>
         )
 
       case "combobox":
@@ -157,6 +160,28 @@ export function FieldRenderer({
             afterCodeFieldId={config.afterCodeField}
             codeFieldId={config.codeField}
             serialLength={serialLength}
+            disabled={isDisabled}
+            readOnly={fieldReadOnly}
+          />
+        )
+      }
+
+      case "price": {
+        const config = field.priceConfig
+        if (!config || !onBatchChange || !data) return null
+        const priceValue = {
+          amount: data[config.amountField] as number | undefined,
+          currency: (data[config.currencyField] as string) ?? "USD",
+        }
+        return (
+          <PriceField
+            value={priceValue}
+            onChange={(v) => {
+              onBatchChange(config.amountField, v.amount)
+              onBatchChange(config.currencyField, v.currency)
+            }}
+            currencyOptions={field.options}
+            placeholder={field.placeholder}
             disabled={isDisabled}
             readOnly={fieldReadOnly}
           />

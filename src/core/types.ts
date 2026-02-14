@@ -39,6 +39,7 @@ export type FieldType =
   | "combobox"
   | "dimensions"
   | "skuCode"
+  | "price"
 
 /** Combobox 下拉选项 */
 export interface ComboboxOption {
@@ -86,6 +87,14 @@ export interface SkuCodeFieldConfig {
   codeField: FieldId
   /** 序号长度字段 ID（取自 ProductCategory.serial_length，默认 3） */
   serialLengthField?: FieldId
+}
+
+/** 价格字段配置：金额与币种映射到独立字段 */
+export interface PriceFieldConfig {
+  /** 金额字段 ID */
+  amountField: FieldId
+  /** 币种字段 ID */
+  currencyField: FieldId
 }
 
 // ============================================================
@@ -152,6 +161,8 @@ export interface FieldDef {
   dimensionConfig?: DimensionsFieldConfig
   /** 产品编号配置 (type=skuCode 时) */
   skuCodeConfig?: SkuCodeFieldConfig
+  /** 价格字段配置 (type=price 时)：金额与币种映射到独立字段 */
+  priceConfig?: PriceFieldConfig
   /** 字段副作用：当依赖字段变化时自动触发（如编号生成、价格计算） */
   effect?: FieldEffect
   /** 条件显示：根据当前表单数据决定字段是否显示，返回 false 时隐藏 */

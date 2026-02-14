@@ -75,15 +75,21 @@ export function MasterForm({
             {group.fields.map((field) => {
               // 计算值 (computed 字段)
               const isDimensions = field.type === "dimensions" && field.dimensionConfig
+              const isPrice = field.type === "price" && field.priceConfig
               const value = isDimensions
                 ? {
                     length: data[field.dimensionConfig!.lengthId],
                     width: data[field.dimensionConfig!.widthId],
                     height: data[field.dimensionConfig!.heightId],
                   }
-                : field.type === "computed" && field.compute
-                  ? field.compute(data)
-                  : data[field.id]
+                : isPrice
+                  ? {
+                      amount: data[field.priceConfig!.amountField],
+                      currency: data[field.priceConfig!.currencyField],
+                    }
+                  : field.type === "computed" && field.compute
+                    ? field.compute(data)
+                    : data[field.id]
 
               const span = Math.min(field.span ?? 1, cols)
               const isSkuCode = field.type === "skuCode" && field.skuCodeConfig
@@ -114,8 +120,8 @@ export function MasterForm({
                       }
                       onChange(field.id, v)
                     }}
-                    data={isSkuCode ? data : undefined}
-                    onBatchChange={isSkuCode ? onChange : undefined}
+                    data={isSkuCode || isPrice ? data : undefined}
+                    onBatchChange={isSkuCode || isPrice ? onChange : undefined}
                     disabled={disabled}
                     fieldReadOnly={fieldReadOnly}
                   />

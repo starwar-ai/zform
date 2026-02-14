@@ -97,10 +97,16 @@ export function DetailTable({
           const isEditing =
             editingCell?.rowId === row.original.id &&
             editingCell?.fieldId === field.id
+          const isPrice = field.type === "price" && field.priceConfig
           const value =
             field.type === "computed" && field.compute
               ? field.compute(row.original.data)
-              : row.original.data[field.id]
+              : isPrice
+                ? {
+                    amount: row.original.data[field.priceConfig!.amountField],
+                    currency: row.original.data[field.priceConfig!.currencyField],
+                  }
+                : row.original.data[field.id]
 
           if (isEditing && field.type !== "computed" && !field.readOnly) {
             return (
@@ -109,6 +115,12 @@ export function DetailTable({
                   field={field}
                   value={value}
                   onChange={(v) => onUpdateCell(row.original.id, field.id, v)}
+                  data={isPrice ? row.original.data : undefined}
+                  onBatchChange={
+                    isPrice
+                      ? (fid, v) => onUpdateCell(row.original.id, fid, v)
+                      : undefined
+                  }
                 />
               </div>
             )

@@ -352,6 +352,19 @@ const supplierDetailTables: DetailTableDef[] = [
         required: true,
       },
       {
+        id: "currency",
+        label: "币种",
+        type: "select",
+        options: [
+          { label: "USD", value: "USD" },
+          { label: "CNY", value: "CNY" },
+          { label: "EUR", value: "EUR" },
+          { label: "GBP", value: "GBP" },
+          { label: "JPY", value: "JPY" },
+        ],
+        defaultValue: "CNY",
+      },
+      {
         id: "unitPrice",
         label: "单价",
         type: "number",

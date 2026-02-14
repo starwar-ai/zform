@@ -793,6 +793,26 @@ export const standardProductAdapter: DocumentTypeAdapter = {
   },
 };
 
+/**
+ * 从基础产品继承 skuType 和 isAgent
+ * 当客户产品/自营产品关联了基础标准产品时，自动继承分类属性
+ */
+async function inheritSkuTypeFromBase(data: any, prisma: any) {
+  if (!data.baseProductId) return data;
+  
+  const baseProduct = await prisma.product.findUnique({
+    where: { id: data.baseProductId },
+    select: { skuType: true, isAgent: true },
+  });
+  if (!baseProduct) return data;
+
+  return {
+    ...data,
+    skuType: data.skuType ?? baseProduct.skuType,
+    isAgent: data.isAgent ?? baseProduct.isAgent,
+  };
+}
+
 /** 客户产品 */
 export const customerProductAdapter: DocumentTypeAdapter = {
   ...standardProductAdapter,
@@ -801,9 +821,12 @@ export const customerProductAdapter: DocumentTypeAdapter = {
   baseWhere: { productType: 'CUSTOMER' },
 
   async onCreate(data, userId, prisma) {
+    // 从基础产品继承 skuType/isAgent
+    const createData = await inheritSkuTypeFromBase(data, prisma);
+    
     const product = await prisma.product.create({
       data: {
-        ...data,
+        ...createData,
         productType: 'CUSTOMER',
         createdBy: userId,
         updatedBy: userId,
@@ -832,9 +855,12 @@ export const selfOwnedProductAdapter: DocumentTypeAdapter = {
   baseWhere: { productType: 'SELF_OWNED' },
 
   async onCreate(data, userId, prisma) {
+    // 从基础产品继承 skuType/isAgent
+    const createData = await inheritSkuTypeFromBase(data, prisma);
+    
     const product = await prisma.product.create({
       data: {
-        ...data,
+        ...createData,
         productType: 'SELF_OWNED',
         createdBy: userId,
         updatedBy: userId,

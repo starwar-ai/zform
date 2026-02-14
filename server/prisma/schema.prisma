@@ -447,6 +447,7 @@ model Product {
   netWeight Decimal? @map("net_weight") @db.Decimal(10, 3)
 
   // 价格与加工
+  currency          String?  @default("USD") // 币种
   unitProcessingFee Decimal? @map("unit_processing_fee") @db.Decimal(10, 2)
   processingNote    String?  @map("processing_note")
   salePrice         Decimal? @map("sale_price") @db.Decimal(10, 2)
