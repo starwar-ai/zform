@@ -138,7 +138,7 @@ export function PriceField({
   return (
     <div
       className={cn(
-        "flex h-9 items-center overflow-hidden rounded-md border border-input bg-transparent shadow-sm transition-colors focus-within:ring-1 focus-within:ring-ring",
+        "flex h-9 items-center overflow-hidden rounded-md border border-input bg-background shadow-sm transition-colors focus-within:ring-1 focus-within:ring-ring",
         disabled && "cursor-not-allowed opacity-50",
         className
       )}

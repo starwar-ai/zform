@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { SkuCodeField } from "@/components/ui/sku-code-field"
 import { PriceField } from "@/components/ui/price-field"
+import { RatioField } from "@/components/ui/ratio-field"
 import { CURRENCY_OPTIONS, DEFAULT_CURRENCY } from "@/lib/currency"
 import {
   Select,
@@ -32,6 +33,8 @@ interface FieldRendererProps {
   disabled?: boolean
   /** 字段是否只读（由 MasterForm 根据 field.readOnly + field.readOnlyModes 计算） */
   fieldReadOnly?: boolean
+  /** 隐藏标签（表格行内编辑时使用，列头已有字段名） */
+  hideLabel?: boolean
 }
 
 export function FieldRenderer({
@@ -42,6 +45,7 @@ export function FieldRenderer({
   onBatchChange,
   disabled,
   fieldReadOnly = false,
+  hideLabel = false,
 }: FieldRendererProps) {
   const isDisabled = disabled || field.readOnly || fieldReadOnly
 
@@ -87,6 +91,8 @@ export function FieldRenderer({
             onChange={(e) => onChange(e.target.value)}
             placeholder={field.placeholder}
             disabled={isDisabled}
+            rows={field.rows}
+            className={field.rows ? "min-h-0 resize-none" : undefined}
           />
         )
 
@@ -189,6 +195,28 @@ export function FieldRenderer({
         )
       }
 
+      case "ratio": {
+        const config = field.ratioConfig
+        if (!config || !onBatchChange || !data) return null
+        const ratioValue = {
+          productRatio: data[config.productRatioField] as number | undefined,
+          accessoryRatio: data[config.accessoryRatioField] as number | undefined,
+        }
+        return (
+          <RatioField
+            value={ratioValue}
+            onChange={(v) => {
+              onBatchChange(config.productRatioField, v.productRatio)
+              onBatchChange(config.accessoryRatioField, v.accessoryRatio)
+            }}
+            productPlaceholder="产品数"
+            accessoryPlaceholder="辅料数"
+            disabled={isDisabled}
+            readOnly={fieldReadOnly}
+          />
+        )
+      }
+
       case "dimensions": {
         const config = field.dimensionConfig
         if (!config) return null
@@ -244,6 +272,10 @@ export function FieldRenderer({
           />
         )
     }
+  }
+
+  if (hideLabel) {
+    return <>{renderField()}</>
   }
 
   return (

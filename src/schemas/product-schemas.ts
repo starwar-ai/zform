@@ -136,6 +136,8 @@ const needsAutoCode = isFullInputMode
 const needsManualCode = (d: FormData) => isAuxiliary(d) || isAgentProduct(d)
 /** 显示辅料清单（普通/组合 + 非代理） */
 const showAccessoryList = (d: FormData) => isGeneralOrMix(d) && !isAgentProduct(d)
+/** 是否自研产品 */
+const isSelfDeveloped = (d: FormData) => Boolean(d.isSelfDeveloped)
 
 // ============================================================
 // 产品编号自动生成 Effect
@@ -232,13 +234,6 @@ export const standardProductSchema: DocumentSchema = {
       visibleWhen: needsAutoCode,
     },
     {
-      id: "barcode",
-      label: "条形码",
-      type: "text",
-      group: "其他信息",
-      visibleWhen: notAuxiliary,
-    },
-    {
       id: "name",
       label: "产品名称",
       type: "text",
@@ -291,6 +286,7 @@ export const standardProductSchema: DocumentSchema = {
       id: "categoryId",
       label: "产品分类",
       type: "combobox",
+      required: true,
       placeholder: "搜索或选择产品分类",
       group: "分类信息",
       comboboxConfig: {
@@ -323,129 +319,31 @@ export const standardProductSchema: DocumentSchema = {
       visibleWhen: isFullInputMode,
     },
 
-    // === 规格尺寸（辅料、代理产品不需要）===
+    // === 描述与备注 ===
     {
-      id: "dimensions",
-      label: "规格尺寸(cm)",
-      type: "dimensions",
-      group: "规格尺寸",
-      dimensionConfig: {
-        lengthId: "length",
-        widthId: "width",
-        heightId: "height",
-        placeholders: {
-          length: "长",
-          width: "宽",
-          height: "高",
-        },
-      },
-      visibleWhen: isFullInputMode,
+      id: "description",
+      label: "产品描述",
+      type: "textarea",
+      span: 2,
+      rows: 6,
+      placeholder: "详细描述产品特性、用途等...",
+      group: "描述信息",
     },
     {
-      id: "netWeight",
-      label: "净重 (kg)",
-      type: "number",
-      placeholder: "0.000",
-      group: "规格尺寸",
-      visibleWhen: isFullInputMode,
-    },
-
-    // === 材料信息（辅料、代理产品不需要）===
-    {
-      id: "source",
-      label: "来源",
-      type: "select",
-      options: [
-        { label: "公司开发", value: "COMPANY_DEV" },
-        { label: "采购开发", value: "PURCHASE_DEV" },
-        { label: "部门开发", value: "DEPARTMENT_DEV" },
-      ],
-      group: "其他信息",
-      visibleWhen: isFullInputMode,
+      id: "descriptionEn",
+      label: "英文描述",
+      type: "textarea",
+      span: 2,
+      rows: 6,
+      placeholder: "English description...",
+      group: "描述信息",
     },
     {
-      id: "material",
-      label: "材质",
-      type: "text",
-      group: "材料信息",
-      visibleWhen: isFullInputMode,
-    },
-    {
-      id: "accessoryMaterial",
-      label: "配件材质",
-      type: "text",
-      group: "材料信息",
-      visibleWhen: isFullInputMode,
-    },
-
-    // === 价格与加工（组合产品才需要）===
-    // 单件加工费币种（隐藏字段，由 price 组件管理）
-    {
-      id: "unitProcessingFeeCurrency",
-      label: "单件加工费币种",
-      type: "text",
-      hidden: true,
-      defaultValue: DEFAULT_CURRENCY,
-      group: "价格信息",
-    },
-    {
-      id: "unitProcessingFee",
-      label: "单件加工费",
-      type: "price",
-      group: "价格信息",
-      visibleWhen: isProductMix,
-      priceConfig: {
-        amountField: "unitProcessingFee",
-        currencyField: "unitProcessingFeeCurrency",
-      },
-    },
-    // 销售价格币种（隐藏字段，由 price 组件管理）
-    {
-      id: "salePriceCurrency",
-      label: "销售价格币种",
-      type: "text",
-      hidden: true,
-      defaultValue: DEFAULT_CURRENCY,
-      group: "价格信息",
-    },
-    {
-      id: "salePrice",
-      label: "销售价格",
-      type: "price",
-      group: "价格信息",
-      visibleWhen: notAuxiliary,
-      priceConfig: {
-        amountField: "salePrice",
-        currencyField: "salePriceCurrency",
-      },
-    },
-    // 公司价格币种（隐藏字段，由 price 组件管理）
-    {
-      id: "companyPriceCurrency",
-      label: "公司价格币种",
-      type: "text",
-      hidden: true,
-      defaultValue: DEFAULT_CURRENCY,
-      group: "价格信息",
-    },
-    {
-      id: "companyPrice",
-      label: "公司价格",
-      type: "price",
-      group: "价格信息",
-      visibleWhen: notAuxiliary,
-      priceConfig: {
-        amountField: "companyPrice",
-        currencyField: "companyPriceCurrency",
-      },
-    },
-    {
-      id: "processingNote",
-      label: "加工说明",
+      id: "remark",
+      label: "备注",
       type: "textarea",
       span: 4,
-      group: "价格信息",
-      visibleWhen: isProductMix,
+      group: "描述信息",
     },
 
     // === 报关信息（辅料不需要）===
@@ -482,21 +380,136 @@ export const standardProductSchema: DocumentSchema = {
       group: "报关信息",
       visibleWhen: notAuxiliary,
     },
-
-    // === 包装信息（辅料、代理产品不需要）===
     {
-      id: "packageMethodId",
-      label: "包装方式",
+      id: "barcode",
+      label: "条形码",
       type: "text",
-      placeholder: "选择包装方式",
-      group: "包装信息",
+      group: "其他信息",
+      visibleWhen: notAuxiliary,
+    },
+
+    // === 规格尺寸（辅料、代理产品不需要）===
+    {
+      id: "dimensions",
+      label: "规格尺寸(cm)",
+      type: "dimensions",
+      group: "其他信息",
+      dimensionConfig: {
+        lengthId: "length",
+        widthId: "width",
+        heightId: "height",
+        placeholders: {
+          length: "长",
+          width: "宽",
+          height: "高",
+        },
+      },
       visibleWhen: isFullInputMode,
+    },
+    {
+      id: "netWeight",
+      label: "净重 (kg)",
+      type: "number",
+      placeholder: "0.000",
+      group: "其他信息",
+      visibleWhen: isFullInputMode,
+    },
+
+    // === 材料信息（辅料、代理产品不需要）===
+    {
+      id: "source",
+      label: "来源",
+      type: "select",
+      options: [
+        { label: "公司开发", value: "COMPANY_DEV" },
+        { label: "采购开发", value: "PURCHASE_DEV" },
+        { label: "部门开发", value: "DEPARTMENT_DEV" },
+      ],
+      group: "其他信息",
+      visibleWhen: isFullInputMode,
+    },
+    {
+      id: "material",
+      label: "材质",
+      type: "text",
+      group: "其他信息",
+      visibleWhen: isFullInputMode,
+    },
+
+    // === 价格与加工（组合产品才需要）===
+    // 单件加工费币种（隐藏字段，由 price 组件管理）
+    {
+      id: "unitProcessingFeeCurrency",
+      label: "单件加工费币种",
+      type: "text",
+      hidden: true,
+      defaultValue: DEFAULT_CURRENCY,
+      group: "其他信息",
+    },
+    {
+      id: "unitProcessingFee",
+      label: "单件加工费",
+      type: "price",
+      group: "其他信息",
+      visibleWhen: isProductMix,
+      priceConfig: {
+        amountField: "unitProcessingFee",
+        currencyField: "unitProcessingFeeCurrency",
+      },
+    },
+    // 公司指导价币种（隐藏字段，由 price 组件管理）
+    {
+      id: "salePriceCurrency",
+      label: "公司指导价币种",
+      type: "text",
+      hidden: true,
+      defaultValue: DEFAULT_CURRENCY,
+      group: "其他信息",
+    },
+    {
+      id: "salePrice",
+      label: "公司指导价",
+      type: "price",
+      group: "其他信息",
+      visibleWhen: notAuxiliary,
+      priceConfig: {
+        amountField: "salePrice",
+        currencyField: "salePriceCurrency",
+      },
+    },
+    // 最低成本价币种（隐藏字段，由 price 组件管理）
+    {
+      id: "companyPriceCurrency",
+      label: "最低成本价币种",
+      type: "text",
+      hidden: true,
+      defaultValue: DEFAULT_CURRENCY,
+      group: "其他信息",
+    },
+    {
+      id: "companyPrice",
+      label: "最低成本价",
+      type: "price",
+      group: "其他信息",
+      visibleWhen: (d) => notAuxiliary(d) && isSelfDeveloped(d),
+      priceConfig: {
+        amountField: "companyPrice",
+        currencyField: "companyPriceCurrency",
+      },
+    },
+    {
+      id: "processingNote",
+      label: "加工说明",
+      type: "textarea",
+      span: 4,
+      group: "其他信息",
+      visibleWhen: isProductMix,
     },
 
     // === 标识字段（辅料、代理产品不需要）===
     {
-      id: "isSelfBrand",
-      label: "是否自有品牌",
+      id: "isSelfDeveloped",
+      label: "是否自研产品",
       type: "checkbox",
       defaultValue: false,
       group: "其他信息",
@@ -517,31 +530,6 @@ export const standardProductSchema: DocumentSchema = {
       defaultValue: false,
       group: "其他信息",
       visibleWhen: isAuxiliary,
-    },
-
-    // === 描述与备注 ===
-    {
-      id: "description",
-      label: "产品描述",
-      type: "textarea",
-      span: 4,
-      placeholder: "详细描述产品特性、用途等...",
-      group: "描述信息",
-    },
-    {
-      id: "descriptionEn",
-      label: "英文描述",
-      type: "textarea",
-      span: 4,
-      placeholder: "English description...",
-      group: "描述信息",
-    },
-    {
-      id: "remark",
-      label: "备注",
-      type: "textarea",
-      span: 4,
-      group: "描述信息",
     },
   ],
   detailTables: [
@@ -596,14 +584,20 @@ export const standardProductSchema: DocumentSchema = {
       label: "辅料清单",
       editable: true,
       visibleWhen: showAccessoryList,
+      addRowSelector: {
+        type: "accessory",
+        multiple: true,
+        buttonLabel: "选择辅料",
+        mapToRowData: (item: Record<string, unknown>) => ({
+          accessoryId: item._id,
+          accessoryCode: item._docNumber,
+          accessoryName: item.name,
+          unit: item.unit,
+          productRatio: 1,
+          accessoryRatio: 1,
+        }),
+      },
       fields: [
-        {
-          id: "accessoryId",
-          label: "辅料",
-          type: "accessorySelector",
-          required: true,
-          width: "300px",
-        },
         {
           id: "accessoryCode",
           label: "辅料编码",
@@ -619,16 +613,21 @@ export const standardProductSchema: DocumentSchema = {
           width: "200px",
         },
         {
-          id: "productRatio",
-          label: "产品比例",
-          type: "number",
-          width: "100px",
+          id: "unit",
+          label: "单位",
+          type: "text",
+          readOnly: true,
+          width: "80px",
         },
         {
-          id: "accessoryRatio",
-          label: "辅料比例",
-          type: "number",
-          width: "100px",
+          id: "ratio",
+          label: "产品:辅料比例",
+          type: "ratio",
+          width: "180px",
+          ratioConfig: {
+            productRatioField: "productRatio",
+            accessoryRatioField: "accessoryRatio",
+          },
         },
         {
           id: "description",
@@ -645,6 +644,7 @@ export const standardProductSchema: DocumentSchema = {
       ],
     },
   ],
+  extraTabKeys: ["product_images"],
 }
 
 // ============================================================
@@ -764,41 +764,42 @@ export const customerProductSchema: DocumentSchema = {
     },
 
     // === 价格信息 ===
-    // 销售价格币种（隐藏字段，由 price 组件管理）
+    // 公司指导价币种（隐藏字段，由 price 组件管理）
     {
       id: "salePriceCurrency",
-      label: "销售价格币种",
+      label: "公司指导价币种",
       type: "text",
       hidden: true,
       defaultValue: DEFAULT_CURRENCY,
-      group: "价格信息",
+      group: "其他信息",
     },
     {
       id: "salePrice",
-      label: "销售价格",
+      label: "公司指导价",
       type: "price",
       required: true,
       placeholder: "针对该客户的销售价格",
-      group: "价格信息",
+      group: "其他信息",
       priceConfig: {
         amountField: "salePrice",
         currencyField: "salePriceCurrency",
       },
     },
-    // 公司价格币种（隐藏字段，由 price 组件管理）
+    // 最低成本价币种（隐藏字段，由 price 组件管理）
     {
       id: "companyPriceCurrency",
-      label: "公司价格币种",
+      label: "最低成本价币种",
       type: "text",
       hidden: true,
       defaultValue: DEFAULT_CURRENCY,
-      group: "价格信息",
+      group: "其他信息",
     },
     {
       id: "companyPrice",
-      label: "公司价格",
+      label: "最低成本价",
       type: "price",
-      group: "价格信息",
+      group: "其他信息",
+      visibleWhen: isSelfDeveloped,
       priceConfig: {
         amountField: "companyPrice",
         currencyField: "companyPriceCurrency",
@@ -811,13 +812,13 @@ export const customerProductSchema: DocumentSchema = {
       type: "text",
       hidden: true,
       defaultValue: DEFAULT_CURRENCY,
-      group: "价格信息",
+      group: "其他信息",
     },
     {
       id: "unitProcessingFee",
       label: "单件加工费",
       type: "price",
-      group: "价格信息",
+      group: "其他信息",
       priceConfig: {
         amountField: "unitProcessingFee",
         currencyField: "unitProcessingFeeCurrency",
@@ -829,7 +830,7 @@ export const customerProductSchema: DocumentSchema = {
       id: "dimensions",
       label: "规格尺寸(cm)",
       type: "dimensions",
-      group: "规格尺寸",
+      group: "其他信息",
       span: 3,
       dimensionConfig: {
         lengthId: "length",
@@ -848,7 +849,7 @@ export const customerProductSchema: DocumentSchema = {
       label: "净重 (kg)",
       type: "number",
       placeholder: "0.000",
-      group: "规格尺寸",
+      group: "其他信息",
       visibleWhen: isFullInputMode,
     },
 
@@ -869,6 +870,13 @@ export const customerProductSchema: DocumentSchema = {
     },
 
     // === 其他信息 ===
+    {
+      id: "isSelfDeveloped",
+      label: "是否自研产品",
+      type: "checkbox",
+      defaultValue: false,
+      group: "其他信息",
+    },
     {
       id: "description",
       label: "产品描述",
@@ -923,12 +931,25 @@ export const customerProductSchema: DocumentSchema = {
       label: "辅料清单",
       editable: true,
       visibleWhen: showAccessoryList,
+      addRowSelector: {
+        type: "accessory",
+        multiple: true,
+        buttonLabel: "选择辅料",
+        mapToRowData: (item: Record<string, unknown>) => ({
+          accessoryId: item._id,
+          accessoryCode: item._docNumber,
+          accessoryName: item.name,
+          unit: item.unit,
+          productRatio: 1,
+          accessoryRatio: 1,
+        }),
+      },
       fields: [
         {
           id: "accessoryCode",
           label: "辅料编码",
           type: "text",
-          required: true,
+          readOnly: true,
         },
         {
           id: "accessoryName",
@@ -937,14 +958,19 @@ export const customerProductSchema: DocumentSchema = {
           readOnly: true,
         },
         {
-          id: "productRatio",
-          label: "产品比例",
-          type: "number",
+          id: "unit",
+          label: "单位",
+          type: "text",
+          readOnly: true,
         },
         {
-          id: "accessoryRatio",
-          label: "辅料比例",
-          type: "number",
+          id: "ratio",
+          label: "产品:辅料比例",
+          type: "ratio",
+          ratioConfig: {
+            productRatioField: "productRatio",
+            accessoryRatioField: "accessoryRatio",
+          },
         },
         {
           id: "description",
@@ -954,6 +980,7 @@ export const customerProductSchema: DocumentSchema = {
       ],
     },
   ],
+  extraTabKeys: ["product_images"],
 }
 
 // ============================================================
@@ -1074,42 +1101,43 @@ export const selfOwnedProductSchema: DocumentSchema = {
     },
 
     // === 价格信息 ===
-    // 销售价格币种（隐藏字段，由 price 组件管理）
+    // 公司指导价币种（隐藏字段，由 price 组件管理）
     {
       id: "salePriceCurrency",
-      label: "销售价格币种",
+      label: "公司指导价币种",
       type: "text",
       hidden: true,
       defaultValue: DEFAULT_CURRENCY,
-      group: "价格信息",
+      group: "其他信息",
     },
     {
       id: "salePrice",
-      label: "建议零售价",
+      label: "公司指导价",
       type: "price",
       required: true,
       placeholder: "市场建议零售价",
-      group: "价格信息",
+      group: "其他信息",
       priceConfig: {
         amountField: "salePrice",
         currencyField: "salePriceCurrency",
       },
     },
-    // 公司价格币种（隐藏字段，由 price 组件管理）
+    // 最低成本价币种（隐藏字段，由 price 组件管理）
     {
       id: "companyPriceCurrency",
-      label: "批发价格币种",
+      label: "最低成本价币种",
       type: "text",
       hidden: true,
       defaultValue: DEFAULT_CURRENCY,
-      group: "价格信息",
+      group: "其他信息",
     },
     {
       id: "companyPrice",
-      label: "批发价格",
+      label: "最低成本价",
       type: "price",
       placeholder: "批发渠道价格",
-      group: "价格信息",
+      group: "其他信息",
+      visibleWhen: isSelfDeveloped,
       priceConfig: {
         amountField: "companyPrice",
         currencyField: "companyPriceCurrency",
@@ -1122,13 +1150,13 @@ export const selfOwnedProductSchema: DocumentSchema = {
       type: "text",
       hidden: true,
       defaultValue: DEFAULT_CURRENCY,
-      group: "价格信息",
+      group: "其他信息",
     },
     {
       id: "unitProcessingFee",
       label: "单件加工费",
       type: "price",
-      group: "价格信息",
+      group: "其他信息",
       priceConfig: {
         amountField: "unitProcessingFee",
         currencyField: "unitProcessingFeeCurrency",
@@ -1140,7 +1168,7 @@ export const selfOwnedProductSchema: DocumentSchema = {
       id: "dimensions",
       label: "规格尺寸(cm)",
       type: "dimensions",
-      group: "规格尺寸",
+      group: "其他信息",
       span: 3,
       dimensionConfig: {
         lengthId: "length",
@@ -1159,17 +1187,7 @@ export const selfOwnedProductSchema: DocumentSchema = {
       label: "净重 (kg)",
       type: "number",
       placeholder: "0.000",
-      group: "规格尺寸",
-      visibleWhen: isFullInputMode,
-    },
-
-    // === 包装信息（辅料、代理不需要）===
-    {
-      id: "packageMethodId",
-      label: "包装方式",
-      type: "text",
-      placeholder: "选择包装方式",
-      group: "包装信息",
+      group: "其他信息",
       visibleWhen: isFullInputMode,
     },
 
@@ -1199,6 +1217,14 @@ export const selfOwnedProductSchema: DocumentSchema = {
 
     // === 优势标识（辅料、代理不需要）===
     {
+      id: "isSelfDeveloped",
+      label: "是否自研产品",
+      type: "checkbox",
+      defaultValue: false,
+      group: "其他信息",
+      visibleWhen: isFullInputMode,
+    },
+    {
       id: "isAdvantage",
       label: "优势产品",
       type: "checkbox",
@@ -1212,7 +1238,8 @@ export const selfOwnedProductSchema: DocumentSchema = {
       id: "description",
       label: "产品描述",
       type: "textarea",
-      span: 4,
+      span: 2,
+      rows: 6,
       placeholder: "面向消费者的产品描述...",
       group: "描述信息",
     },
@@ -1220,7 +1247,8 @@ export const selfOwnedProductSchema: DocumentSchema = {
       id: "descriptionEn",
       label: "英文描述",
       type: "textarea",
-      span: 4,
+      span: 2,
+      rows: 6,
       placeholder: "English description...",
       group: "描述信息",
     },
@@ -1270,12 +1298,25 @@ export const selfOwnedProductSchema: DocumentSchema = {
       label: "辅料清单",
       editable: true,
       visibleWhen: showAccessoryList,
+      addRowSelector: {
+        type: "accessory",
+        multiple: true,
+        buttonLabel: "选择辅料",
+        mapToRowData: (item: Record<string, unknown>) => ({
+          accessoryId: item._id,
+          accessoryCode: item._docNumber,
+          accessoryName: item.name,
+          unit: item.unit,
+          productRatio: 1,
+          accessoryRatio: 1,
+        }),
+      },
       fields: [
         {
           id: "accessoryCode",
           label: "辅料编码",
           type: "text",
-          required: true,
+          readOnly: true,
         },
         {
           id: "accessoryName",
@@ -1284,14 +1325,19 @@ export const selfOwnedProductSchema: DocumentSchema = {
           readOnly: true,
         },
         {
-          id: "productRatio",
-          label: "产品比例",
-          type: "number",
+          id: "unit",
+          label: "单位",
+          type: "text",
+          readOnly: true,
         },
         {
-          id: "accessoryRatio",
-          label: "辅料比例",
-          type: "number",
+          id: "ratio",
+          label: "产品:辅料比例",
+          type: "ratio",
+          ratioConfig: {
+            productRatioField: "productRatio",
+            accessoryRatioField: "accessoryRatio",
+          },
         },
         {
           id: "description",
@@ -1301,6 +1347,7 @@ export const selfOwnedProductSchema: DocumentSchema = {
       ],
     },
   ],
+  extraTabKeys: ["product_images"],
 }
 
 // ============================================================
@@ -1394,7 +1441,6 @@ export const standardToSelfOwnedProductRule: PushDownRule = {
     { sourceField: "master.companyPriceCurrency", targetField: "companyPriceCurrency" },
     { sourceField: "master.unitProcessingFee", targetField: "unitProcessingFee" },
     { sourceField: "master.unitProcessingFeeCurrency", targetField: "unitProcessingFeeCurrency" },
-    { sourceField: "master.packageMethodId", targetField: "packageMethodId" },
     { sourceField: "master.customsNameCn", targetField: "customsNameCn" },
     { sourceField: "master.customsNameEn", targetField: "customsNameEn" },
     { sourceField: "master.hsCodeId", targetField: "hsCodeId" },

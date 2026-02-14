@@ -2,10 +2,13 @@ import { AppLayout } from "@/components/app-layout"
 import { LoginPage } from "@/components/login-page"
 import { useAuthStore } from "@/stores/auth-store"
 import { setupSchemas } from "@/schemas/setup"
-import { registry } from "@/core/registry"
+import { registerRowSelectors } from "@/registrations/row-selectors"
+import { registerExtraTabs } from "@/registrations/extra-tabs"
 
 // 初始化注册
 setupSchemas()
+registerRowSelectors()
+registerExtraTabs()
 
 export default function App() {
   const { isAuthenticated } = useAuthStore()

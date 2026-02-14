@@ -19,7 +19,7 @@ import { registry } from "@/core/registry"
 import { createDocumentApi, updateDocumentApi, fetchDocumentApi } from "@/apis/document-api"
 import { MasterForm } from "./master-form"
 import { DetailTable } from "./detail-table"
-import { ProductImageUpload } from "./product-image-upload"
+import { AddRowSelectorAdapter } from "./add-row-selector-adapter"
 import { TracePanel } from "./trace-panel"
 import { ImpactDialog } from "./impact-dialog"
 import { UnsavedChangesDialog } from "./unsaved-changes-dialog"
@@ -40,6 +40,8 @@ import {
   Check, X, Undo2, Lock, Ban, Trash2,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
+import { statusLabels, statusColors } from "@/lib/document-status"
+import { getExtraTab } from "@/lib/extra-tab-registry"
 
 /** 图标名称 → 组件映射 */
 const iconMap: Record<string, LucideIcon> = {
@@ -60,22 +62,6 @@ interface DocumentFormProps {
   onNavigate?: (docId: string, typeId?: string) => void
 }
 
-const statusLabels: Record<string, string> = {
-  draft: "草稿",
-  submitted: "已提交",
-  approved: "已审批",
-  closed: "已关闭",
-  cancelled: "已取消",
-}
-
-const statusColors: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  draft: "secondary",
-  submitted: "default",
-  approved: "default",
-  closed: "outline",
-  cancelled: "destructive",
-}
-
 export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
   const doc = useDocumentStore((s) => s.documents[docId])
   const {
@@ -83,6 +69,7 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
     addDetailRow,
     updateDetailRow,
     deleteDetailRow,
+    reorderDetailRows,
     saveDocument,
     updateStatus,
     addDocument,
@@ -327,8 +314,17 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
   const isEditable = doc.status === "draft"
   const isNew = Boolean(doc._isNew)
 
-  // 判断是否为产品类型 (需要显示图片 tab)
-  const isProductType = ["standard_product", "customer_product", "self_owned_product"].includes(doc.typeId)
+  // 额外 Tab（由 schema.extraTabKeys 驱动，如产品图片）
+  const extraTabEntries = useMemo(
+    () =>
+      (schema.extraTabKeys ?? [])
+        .map((key) => {
+          const tab = getExtraTab(key)
+          return tab ? { key, label: tab.label, render: tab.render } : null
+        })
+        .filter((e): e is NonNullable<typeof e> => e != null),
+    [schema.extraTabKeys]
+  )
 
   const handleSave = () => {
     // 构建新文档用于影响评估
@@ -598,9 +594,11 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
                           {t.label}
                         </TabsTrigger>
                       ))}
-                    {isProductType && (
-                      <TabsTrigger value="product_images">产品图片</TabsTrigger>
-                    )}
+                    {extraTabEntries.map(({ key, label }) => (
+                      <TabsTrigger key={key} value={key}>
+                        {label}
+                      </TabsTrigger>
+                    ))}
                   </TabsList>
 
                   <TabsContent value="master" className="mt-4">
@@ -628,7 +626,9 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
                         <DetailTable
                           tableDef={tableDef}
                           rows={tableData?.rows ?? []}
-                          onAddRow={() => addDetailRow(docId, tableDef.id)}
+                          onAddRow={(rowData) =>
+                            addDetailRow(docId, tableDef.id, rowData)
+                          }
                           onDeleteRow={(rowId) =>
                             deleteDetailRow(docId, tableDef.id, rowId)
                           }
@@ -641,21 +641,36 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
                               value
                             )
                           }
+                          onReorderRows={(orderedRowIds) =>
+                            reorderDetailRows(docId, tableDef.id, orderedRowIds)
+                          }
                           disabled={!isEditable}
+                          renderAddSelector={
+                            tableDef.addRowSelector
+                              ? (props) => (
+                                  <AddRowSelectorAdapter
+                                    tableDef={tableDef}
+                                    {...props}
+                                  />
+                                )
+                              : undefined
+                          }
                         />
                       </TabsContent>
                     )
                   })}
 
-                  {/* 产品图片 Tab */}
-                  {isProductType && (
-                    <TabsContent value="product_images" className="mt-4">
-                      <ProductImageUpload
-                        productId={isNew ? null : docId}
-                        disabled={!isEditable}
-                      />
+                  {/* 额外 Tab（如产品图片） */}
+                  {extraTabEntries.map(({ key, render }) => (
+                    <TabsContent key={key} value={key} className="mt-4">
+                      {render({
+                        docId,
+                        doc,
+                        isEditable,
+                        isNew,
+                      })}
                     </TabsContent>
-                  )}
+                  ))}
                 </Tabs>
                   )
                 })()}

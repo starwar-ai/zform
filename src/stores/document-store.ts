@@ -41,6 +41,8 @@ interface DocumentStoreState {
   updateDetailRow: (docId: DocumentId, tableId: string, rowId: string, fieldId: string, value: unknown) => void
   /** 删除明细行 */
   deleteDetailRow: (docId: DocumentId, tableId: string, rowId: string) => void
+  /** 重排明细行顺序 */
+  reorderDetailRows: (docId: DocumentId, tableId: string, orderedRowIds: string[]) => void
 
   // TraceableStore 接口方法
   getDocument: (docId: DocumentId) => DocumentData | undefined
@@ -171,6 +173,20 @@ export const useDocumentStore = create<DocumentStoreState>()(
         const table = doc.detailTables.find((t) => t.tableId === tableId)
         if (!table) return
         table.rows = table.rows.filter((r) => r.id !== rowId)
+        doc.updatedAt = new Date().toISOString()
+      })
+    },
+
+    reorderDetailRows: (docId, tableId, orderedRowIds) => {
+      set((state) => {
+        const doc = state.documents[docId]
+        if (!doc) return
+        const table = doc.detailTables.find((t) => t.tableId === tableId)
+        if (!table) return
+        const rowMap = new Map(table.rows.map((r) => [r.id, r]))
+        table.rows = orderedRowIds
+          .map((id) => rowMap.get(id))
+          .filter((r): r is DetailRow => r !== undefined)
         doc.updatedAt = new Date().toISOString()
       })
     },

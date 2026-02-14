@@ -40,6 +40,7 @@ export type FieldType =
   | "dimensions"
   | "skuCode"
   | "price"
+  | "ratio"
 
 /** Combobox 下拉选项 */
 export interface ComboboxOption {
@@ -97,6 +98,14 @@ export interface PriceFieldConfig {
   currencyField: FieldId
 }
 
+/** 配比字段配置：产品数与辅料数映射到独立字段 */
+export interface RatioFieldConfig {
+  /** 产品数（比例分子）字段 ID */
+  productRatioField: FieldId
+  /** 辅料数（比例分母）字段 ID */
+  accessoryRatioField: FieldId
+}
+
 // ============================================================
 // 字段副作用 (Field Effect)
 // ============================================================
@@ -149,6 +158,8 @@ export interface FieldDef {
   compute?: (row: Record<string, unknown>) => unknown
   /** 字段在栅格中占的列数 (1-4, 默认1) */
   span?: number
+  /** textarea 行数（控制高度，与 rows 相同的字段可并排且高度一致） */
+  rows?: number
   /** 占位提示 */
   placeholder?: string
   /** 是否隐藏（不渲染，用于 skuCode 的子字段等） */
@@ -163,6 +174,8 @@ export interface FieldDef {
   skuCodeConfig?: SkuCodeFieldConfig
   /** 价格字段配置 (type=price 时)：金额与币种映射到独立字段 */
   priceConfig?: PriceFieldConfig
+  /** 配比字段配置 (type=ratio 时)：产品数与辅料数映射到独立字段 */
+  ratioConfig?: RatioFieldConfig
   /** 字段副作用：当依赖字段变化时自动触发（如编号生成、价格计算） */
   effect?: FieldEffect
   /** 条件显示：根据当前表单数据决定字段是否显示，返回 false 时隐藏 */
@@ -189,6 +202,22 @@ export interface DetailTableDef {
   maxRows?: number
   /** 条件显示：根据主数据决定明细表是否显示，返回 false 时隐藏该 Tab */
   visibleWhen?: (masterData: Record<string, unknown>) => boolean
+  /**
+   * 添加行选择器配置。
+   * 设置后，点击"添加行"按钮会弹出对应的选择器对话框，
+   * 选择确认后自动将选中项转为行数据并添加。
+   * 不设则直接添加空行。
+   */
+  addRowSelector?: {
+    /** 选择器类型标识（如 "accessory", "product"），用于匹配对应的选择器组件 */
+    type: string
+    /** 将选中的对象转换为明细行数据 */
+    mapToRowData: (item: Record<string, unknown>) => Record<string, unknown>
+    /** 是否允许多选，默认 true */
+    multiple?: boolean
+    /** "添加行"按钮文案（如 "选择辅料"），默认 "添加行" */
+    buttonLabel?: string
+  }
 }
 
 /** 单据 Schema —— 完整描述一种单据的结构 */
@@ -203,6 +232,11 @@ export interface DocumentSchema {
   detailTables: DetailTableDef[]
   /** Zod 校验 schema (可选, 用于整体校验) */
   validationSchema?: z.ZodType
+  /**
+   * 表单额外 Tab 的 key 列表（如 ["product_images"]）。
+   * 渲染逻辑由表单层根据 key 从 extra-tab-registry 获取。
+   */
+  extraTabKeys?: string[]
 }
 
 // ============================================================
