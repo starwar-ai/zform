@@ -13,7 +13,7 @@
  * 普通产品、组合产品下可有「是否代理」属性，代理产品录入内容更少。
  */
 
-import type { DocumentSchema, PushDownRule, ChangeRule, ComboboxOption, FieldEffect } from "@/core/types"
+import type { DocumentSchema, PushDownRule, ChangeRule, ComboboxOption, FieldEffect, DetailTableDef } from "@/core/types"
 import type { HsCode, ProductCategoryTreeNode } from "@/types/category"
 import type { DepartmentTreeNode } from "@/types/department"
 import { fetchCategoryListApi } from "@/apis/category-api"
@@ -167,6 +167,96 @@ const skuCodeGenerationEffect: FieldEffect = {
       console.warn("[SkuCode] 编号生成失败:", err)
     }
   },
+}
+
+// ============================================================
+// 共享明细表：供应商报价列表
+// ============================================================
+
+/** 供应商报价列表明细表定义（标准产品、客户产品、自营产品共用） */
+const supplierQuotationsTable: DetailTableDef = {
+  id: "supplier_quotations",
+  label: "供应商报价列表",
+  editable: true,
+  visibleWhen: notAuxiliary,
+  addRowSelector: {
+    type: "supplier",
+    multiple: false,
+    buttonLabel: "选择供应商",
+    mapToRowData: (item: Record<string, unknown>) => ({
+      supplierId: item._id,
+      supplierCode: item._docNumber,
+      supplierName: item.name,
+      currency: item.currency ?? "CNY",
+      unitPrice: null,
+      moq: null,
+      leadTime: null,
+      quotationDate: new Date().toISOString().slice(0, 10),
+      isActive: true,
+    }),
+  },
+  fields: [
+    {
+      id: "supplierCode",
+      label: "供应商编码",
+      type: "text",
+      readOnly: true,
+    },
+    {
+      id: "supplierName",
+      label: "供应商名称",
+      type: "text",
+      readOnly: true,
+    },
+    {
+      id: "currency",
+      label: "币种",
+      type: "select",
+      options: [
+        { label: "CNY", value: "CNY" },
+        { label: "USD", value: "USD" },
+        { label: "EUR", value: "EUR" },
+        { label: "GBP", value: "GBP" },
+        { label: "JPY", value: "JPY" },
+      ],
+      defaultValue: "CNY",
+    },
+    {
+      id: "unitPrice",
+      label: "单价",
+      type: "number",
+      required: true,
+      placeholder: "0.00",
+    },
+    {
+      id: "moq",
+      label: "最小起订量",
+      type: "number",
+      placeholder: "0",
+    },
+    {
+      id: "leadTime",
+      label: "交货周期(天)",
+      type: "number",
+      placeholder: "0",
+    },
+    {
+      id: "quotationDate",
+      label: "报价日期",
+      type: "date",
+    },
+    {
+      id: "isActive",
+      label: "是否有效",
+      type: "checkbox",
+      defaultValue: true,
+    },
+    {
+      id: "remark",
+      label: "备注",
+      type: "text",
+    },
+  ],
 }
 
 // ============================================================
@@ -635,14 +725,9 @@ export const standardProductSchema: DocumentSchema = {
           type: "text",
           width: "150px",
         },
-        {
-          id: "remark",
-          label: "备注",
-          type: "text",
-          width: "150px",
-        },
       ],
     },
+    supplierQuotationsTable,
   ],
   extraTabKeys: ["product_images"],
 }
@@ -979,6 +1064,7 @@ export const customerProductSchema: DocumentSchema = {
         },
       ],
     },
+    supplierQuotationsTable,
   ],
   extraTabKeys: ["product_images"],
 }
@@ -1346,6 +1432,7 @@ export const selfOwnedProductSchema: DocumentSchema = {
         },
       ],
     },
+    supplierQuotationsTable,
   ],
   extraTabKeys: ["product_images"],
 }
@@ -1399,6 +1486,22 @@ export const standardToCustomerProductRule: PushDownRule = {
         { sourceField: "productRatio", targetField: "productRatio" },
         { sourceField: "accessoryRatio", targetField: "accessoryRatio" },
         { sourceField: "description", targetField: "description" },
+      ],
+    },
+    {
+      sourceTableId: "supplier_quotations",
+      targetTableId: "supplier_quotations",
+      fieldMappings: [
+        { sourceField: "supplierId", targetField: "supplierId" },
+        { sourceField: "supplierCode", targetField: "supplierCode" },
+        { sourceField: "supplierName", targetField: "supplierName" },
+        { sourceField: "currency", targetField: "currency" },
+        { sourceField: "unitPrice", targetField: "unitPrice" },
+        { sourceField: "moq", targetField: "moq" },
+        { sourceField: "leadTime", targetField: "leadTime" },
+        { sourceField: "quotationDate", targetField: "quotationDate" },
+        { sourceField: "isActive", targetField: "isActive" },
+        { sourceField: "remark", targetField: "remark" },
       ],
     },
   ],
@@ -1467,6 +1570,22 @@ export const standardToSelfOwnedProductRule: PushDownRule = {
         { sourceField: "productRatio", targetField: "productRatio" },
         { sourceField: "accessoryRatio", targetField: "accessoryRatio" },
         { sourceField: "description", targetField: "description" },
+      ],
+    },
+    {
+      sourceTableId: "supplier_quotations",
+      targetTableId: "supplier_quotations",
+      fieldMappings: [
+        { sourceField: "supplierId", targetField: "supplierId" },
+        { sourceField: "supplierCode", targetField: "supplierCode" },
+        { sourceField: "supplierName", targetField: "supplierName" },
+        { sourceField: "currency", targetField: "currency" },
+        { sourceField: "unitPrice", targetField: "unitPrice" },
+        { sourceField: "moq", targetField: "moq" },
+        { sourceField: "leadTime", targetField: "leadTime" },
+        { sourceField: "quotationDate", targetField: "quotationDate" },
+        { sourceField: "isActive", targetField: "isActive" },
+        { sourceField: "remark", targetField: "remark" },
       ],
     },
   ],

@@ -1,19 +1,19 @@
 /**
- * Product Selector Dialog
- * 
- * 产品选择对话框，支持：
- * - 搜索产品（编码、名称、条形码）
- * - 产品类型筛选（标准/客户/自营）
- * - 产品分类筛选
- * - 品牌筛选
- * - 分页加载
- * - 多选/单选模式
+ * ProductSelectorDialog
+ *
+ * 通用产品选择对话框。
+ * 通过 ProductSelectorConfig 配置驱动，支持搜索、分类/品牌/状态筛选、分页、单选/多选。
+ * 各业务场景（辅料、配件、标准产品等）只需传入不同 config 即可复用全部 UI 和交互逻辑。
+ *
+ * 注意：config 应为模块级常量，避免每次渲染创建新引用导致不必要的重渲染。
  */
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useCallback, useRef, useMemo } from "react"
+import type { ColumnFilter } from "@/components/list-table/types"
 import { fetchDocumentListApi } from "@/apis/document-api"
 import { fetchCategoryListApi } from "@/apis/category-api"
 import { fetchBrandsApi } from "@/apis/business-config-api"
+import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import {
   Dialog,
   DialogContent,
@@ -26,99 +26,257 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Search, Package, ChevronLeft, ChevronRight, X } from "lucide-react"
+import { FilterSelect } from "@/components/ui/filter-select"
+import { productStatusLabels } from "@/lib/product-status"
+import { Search, Box, ChevronLeft, ChevronRight } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 
-interface Product {
+// ============================================================
+// 配置接口
+// ============================================================
+
+/** 产品选择器对话框的通用配置（应为模块级常量） */
+export interface ProductSelectorConfig {
+  /** 对话框标题（如 "选择辅料"、"选择产品"） */
+  title: string
+  /** 自定义描述文案：(已选数量, 是否多选) → 文案 */
+  description?: (selectedCount: number, multiple: boolean) => string
+  /** 固定筛选条件（如 skuType 过滤），会追加到每次查询中 */
+  fixedFilters?: ColumnFilter[]
+  /** 搜索框 placeholder */
+  searchPlaceholder?: string
+  /** 无数据主提示 */
+  emptyMessage?: string
+  /** 无数据次级提示 */
+  emptyHint?: string
+  /** 卡片上的类型 Badge 文案（如 "辅料"、"配件"），不设则不显示 */
+  typeBadgeLabel?: string
+  /** 标题栏图标，默认 Box */
+  icon?: LucideIcon
+  /** 每页数量，默认 20 */
+  pageSize?: number
+  /** 默认状态筛选值，默认 "ACTIVE" */
+  defaultStatusFilter?: string
+  /** 查询的单据类型，默认 "standard_product" */
+  documentType?: string
+  /** 分页信息 / 描述中的名词（如 "辅料"、"产品"），默认 "产品" */
+  itemLabel?: string
+}
+
+// ============================================================
+// Props
+// ============================================================
+
+export interface ProductSelectorDialogProps {
+  /** 选择器配置 */
+  config: ProductSelectorConfig
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onConfirm: (items: Record<string, unknown>[]) => void
+  /** 是否多选，默认单选 */
+  multiple?: boolean
+  /** 已选 ID 列表（用于回显） */
+  selectedIds?: string[]
+}
+
+// ============================================================
+// 常量
+// ============================================================
+
+const STATUS_OPTIONS: { value: string; label: string }[] = [
+  { value: "ACTIVE", label: "活跃" },
+  { value: "INACTIVE", label: "停用" },
+  { value: "DRAFT", label: "草稿" },
+  { value: "DISCONTINUED", label: "停产" },
+]
+
+// ============================================================
+// 内部类型：产品卡片数据
+// ============================================================
+
+interface ProductItem {
   _id: string
-  _docNumber: string // code
+  _docNumber: string
   name: string
   nameEn?: string
   barcode?: string
-  productType: "STANDARD" | "CUSTOMER" | "SELF_OWNED"
   unit: string
   categoryName?: string
   brandName?: string
   salePrice?: number
-  companyPrice?: number
   status: string
-  thumbnail?: string
 }
 
-interface ProductSelectorDialogProps {
-  /** 是否打开对话框 */
-  open: boolean
-  /** 关闭对话框回调 */
-  onOpenChange: (open: boolean) => void
-  /** 确认选择回调 */
-  onConfirm: (products: Product[]) => void
-  /** 是否多选模式 */
-  multiple?: boolean
-  /** 产品类型过滤 */
-  productType?: "STANDARD" | "CUSTOMER" | "SELF_OWNED"
-  /** 已选产品ID列表（用于回显选中状态） */
-  selectedIds?: string[]
+// ============================================================
+// 子组件：产品卡片
+// ============================================================
+
+function ProductCard({
+  product,
+  selected,
+  onToggle,
+  typeBadgeLabel,
+}: {
+  product: ProductItem
+  selected: boolean
+  onToggle: () => void
+  typeBadgeLabel?: string
+}) {
+  return (
+    <div
+      className={`
+        border rounded-lg p-3 cursor-pointer transition-colors
+        ${selected ? "bg-primary/5 border-primary" : "hover:bg-muted/50"}
+      `}
+      onClick={onToggle}
+    >
+      <div className="flex items-start gap-3">
+        <div className="pt-1">
+          <Checkbox
+            checked={selected}
+            onCheckedChange={onToggle}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-medium">{product.name}</span>
+                {product.nameEn && (
+                  <span className="text-sm text-muted-foreground">
+                    {product.nameEn}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                <span>编码: {product._docNumber}</span>
+                <span>•</span>
+                <span>单位: {product.unit}</span>
+                {product.barcode && (
+                  <>
+                    <span>•</span>
+                    <span>条形码: {product.barcode}</span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col items-end gap-1">
+              {product.salePrice != null && (
+                <span className="text-sm font-medium">
+                  ¥{product.salePrice}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
+            {typeBadgeLabel && (
+              <Badge variant="secondary" className="text-xs">
+                {typeBadgeLabel}
+              </Badge>
+            )}
+            {product.categoryName && (
+              <Badge variant="outline" className="text-xs">
+                {product.categoryName}
+              </Badge>
+            )}
+            {product.brandName && (
+              <Badge variant="outline" className="text-xs">
+                {product.brandName}
+              </Badge>
+            )}
+            <Badge
+              variant={product.status === "ACTIVE" ? "default" : "outline"}
+              className="text-xs"
+            >
+              {productStatusLabels[product.status] ?? product.status}
+            </Badge>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
-const productTypeLabels = {
-  STANDARD: "标准产品",
-  CUSTOMER: "客户产品",
-  SELF_OWNED: "自营产品",
-}
-
-const statusLabels = {
-  ACTIVE: "活跃",
-  INACTIVE: "停用",
-  DRAFT: "草稿",
-  DISCONTINUED: "停产",
-}
+// ============================================================
+// 主组件
+// ============================================================
 
 export function ProductSelectorDialog({
+  config,
   open,
   onOpenChange,
   onConfirm,
-  multiple = true,
-  productType,
+  multiple = false,
   selectedIds = [],
 }: ProductSelectorDialogProps) {
-  const [products, setProducts] = useState<Product[]>([])
+  const {
+    title,
+    description,
+    fixedFilters = [],
+    searchPlaceholder = "搜索编码、名称、条形码...",
+    emptyMessage = "未找到产品",
+    emptyHint,
+    typeBadgeLabel,
+    icon: Icon = Box,
+    pageSize: configPageSize = 20,
+    defaultStatusFilter = "ACTIVE",
+    documentType = "standard_product",
+    itemLabel = "产品",
+  } = config
+
+  const [products, setProducts] = useState<ProductItem[]>([])
   const [loading, setLoading] = useState(false)
   const [searchKeyword, setSearchKeyword] = useState("")
+  const debouncedSearch = useDebouncedValue(searchKeyword, 300)
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(
     new Set(selectedIds)
   )
-  const [categories, setCategories] = useState<any[]>([])
-  const [brands, setBrands] = useState<any[]>([])
-  
-  // 筛选条件
-  const [filterProductType, setFilterProductType] = useState<string>(productType || "")
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([])
+  const [brands, setBrands] = useState<{ id: string; name: string }[]>([])
+
   const [filterCategory, setFilterCategory] = useState<string>("")
   const [filterBrand, setFilterBrand] = useState<string>("")
-  const [filterStatus, setFilterStatus] = useState<string>("ACTIVE")
-  
-  // 分页
+  const [filterStatus, setFilterStatus] = useState<string>(defaultStatusFilter)
+
   const [pageIndex, setPageIndex] = useState(0)
-  const [pageSize] = useState(20)
+  const [pageSize] = useState(configPageSize)
   const [total, setTotal] = useState(0)
 
-  // 加载产品分类和品牌
+  // 稳定化 fixedFilters 引用：序列化对比，仅在内容变化时更新
+  const fixedFiltersJson = JSON.stringify(fixedFilters)
+  const stableFixedFilters = useMemo<ColumnFilter[]>(
+    () => fixedFilters,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [fixedFiltersJson]
+  )
+
+  // 弹窗打开时同步 selectedIds（仅 open 时同步，避免 selectedIds 默认 [] 导致依赖变化引发无限循环）
+  const selectedIdsRef = useRef(selectedIds)
+  selectedIdsRef.current = selectedIds
+  useEffect(() => {
+    if (open) {
+      setSelectedProducts(new Set(selectedIdsRef.current))
+    }
+  }, [open])
+
+  // 加载分类和品牌
   useEffect(() => {
     if (open) {
       Promise.all([
-        fetchCategoryListApi("product"),
+        fetchCategoryListApi<{ id: string; name: string }>("product"),
         fetchBrandsApi(),
-      ]).then(([categoriesData, brandsData]) => {
-        setCategories(categoriesData)
-        setBrands(brandsData)
-      }).catch(err => {
-        console.error("加载分类和品牌失败:", err)
-      })
+      ])
+        .then(([categoriesData, brandsData]) => {
+          setCategories(categoriesData)
+          setBrands(brandsData)
+        })
+        .catch((err) => {
+          console.error("加载分类和品牌失败:", err)
+        })
     }
   }, [open])
 
@@ -127,44 +285,21 @@ export function ProductSelectorDialog({
     if (!open) return
 
     setLoading(true)
-    
-    // 构建筛选条件
-    const filters: any[] = []
-    
-    if (filterProductType) {
-      filters.push({
-        columnId: "productType",
-        operator: "eq",
-        value: filterProductType,
-      })
-    }
-    
+
+    const filters: ColumnFilter[] = [...stableFixedFilters]
+
     if (filterCategory) {
-      filters.push({
-        columnId: "categoryId",
-        operator: "eq",
-        value: filterCategory,
-      })
+      filters.push({ columnId: "categoryId", operator: "eq", value: filterCategory })
     }
-    
     if (filterBrand) {
-      filters.push({
-        columnId: "brandId",
-        operator: "eq",
-        value: filterBrand,
-      })
+      filters.push({ columnId: "brandId", operator: "eq", value: filterBrand })
     }
-    
     if (filterStatus) {
-      filters.push({
-        columnId: "status",
-        operator: "eq",
-        value: filterStatus,
-      })
+      filters.push({ columnId: "status", operator: "eq", value: filterStatus })
     }
 
     fetchDocumentListApi(
-      "standard_product",
+      documentType,
       {
         pagination: { pageIndex, pageSize },
         filters,
@@ -172,205 +307,161 @@ export function ProductSelectorDialog({
       },
       "document",
       undefined,
-      searchKeyword
+      debouncedSearch
     )
       .then((result) => {
-        setProducts(result.data as unknown as Product[])
+        setProducts(result.data as unknown as ProductItem[])
         setTotal(result.total)
       })
       .catch((err) => {
-        console.error("加载产品失败:", err)
+        console.error(`加载${itemLabel}列表失败:`, err)
         setProducts([])
         setTotal(0)
       })
       .finally(() => {
         setLoading(false)
       })
-  }, [open, pageIndex, pageSize, searchKeyword, filterProductType, filterCategory, filterBrand, filterStatus])
+  }, [
+    open,
+    pageIndex,
+    pageSize,
+    debouncedSearch,
+    filterCategory,
+    filterBrand,
+    filterStatus,
+    stableFixedFilters,
+    documentType,
+    itemLabel,
+  ])
 
-  // 处理产品选择
-  const handleToggleProduct = (productId: string) => {
-    const newSelected = new Set(selectedProducts)
-    
-    if (multiple) {
-      if (newSelected.has(productId)) {
-        newSelected.delete(productId)
-      } else {
-        newSelected.add(productId)
-      }
-    } else {
-      newSelected.clear()
-      newSelected.add(productId)
-    }
-    
-    setSelectedProducts(newSelected)
-  }
+  const handleToggleProduct = useCallback(
+    (productId: string) => {
+      setSelectedProducts((prev) => {
+        const next = new Set(prev)
+        if (multiple) {
+          if (next.has(productId)) next.delete(productId)
+          else next.add(productId)
+        } else {
+          next.clear()
+          next.add(productId)
+        }
+        return next
+      })
+    },
+    [multiple]
+  )
 
-  // 确认选择
-  const handleConfirm = () => {
-    const selected = products.filter(p => selectedProducts.has(p._id))
-    onConfirm(selected)
+  const handleConfirm = useCallback(() => {
+    const selected = products.filter((p) => selectedProducts.has(p._id))
+    onConfirm(selected as unknown as Record<string, unknown>[])
     onOpenChange(false)
-  }
+  }, [products, selectedProducts, onConfirm, onOpenChange])
 
-  // 清空选择
-  const handleClearSelection = () => {
+  const handleClearSelection = useCallback(() => {
     setSelectedProducts(new Set())
-  }
+  }, [])
 
-  // 重置筛选
-  const handleResetFilters = () => {
+  const handleResetFilters = useCallback(() => {
     setSearchKeyword("")
-    setFilterProductType(productType || "")
     setFilterCategory("")
     setFilterBrand("")
-    setFilterStatus("ACTIVE")
+    setFilterStatus(defaultStatusFilter)
     setPageIndex(0)
-  }
+  }, [defaultStatusFilter])
 
-  // 总页数
+  const resetPage = useCallback(() => setPageIndex(0), [])
+
   const totalPages = Math.ceil(total / pageSize)
 
-  // 选中的产品信息
-  const selectedProductsList = useMemo(() => {
-    return products.filter(p => selectedProducts.has(p._id))
-  }, [products, selectedProducts])
+  const categoryOptions = categories.map((c) => ({ value: c.id, label: c.name }))
+  const brandOptions = brands.map((b) => ({ value: b.id, label: b.name }))
+
+  const descriptionText = description
+    ? description(selectedProducts.size, multiple)
+    : multiple
+      ? `已选择 ${selectedProducts.size} 个${itemLabel}`
+      : `请选择一个${itemLabel}`
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            选择产品
+            <Icon className="h-5 w-5" />
+            {title}
           </DialogTitle>
-          <DialogDescription>
-            {multiple 
-              ? `已选择 ${selectedProducts.size} 个产品` 
-              : "请选择一个产品"}
-          </DialogDescription>
+          <DialogDescription>{descriptionText}</DialogDescription>
         </DialogHeader>
 
-        {/* 搜索和筛选 */}
         <div className="space-y-3 border-b pb-4">
-          {/* 搜索框 */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="搜索产品编码、名称、条形码..."
-              value={searchKeyword}
-              onChange={(e) => {
-                setSearchKeyword(e.target.value)
-                setPageIndex(0)
-              }}
-              className="pl-10"
-            />
-          </div>
-
-          {/* 筛选条件 */}
-          <div className="grid grid-cols-4 gap-2">
-            {!productType && (
-              <Select
-                value={filterProductType}
-                onValueChange={(value) => {
-                  setFilterProductType(value)
+          {/* 筛选行：搜索 + 分类 / 品牌 / 状态 */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={searchPlaceholder}
+                value={searchKeyword}
+                onChange={(e) => {
+                  setSearchKeyword(e.target.value)
                   setPageIndex(0)
                 }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="产品类型" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">全部类型</SelectItem>
-                  <SelectItem value="STANDARD">标准产品</SelectItem>
-                  <SelectItem value="CUSTOMER">客户产品</SelectItem>
-                  <SelectItem value="SELF_OWNED">自营产品</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
+                className="pl-10"
+              />
+            </div>
 
-            <Select
-              value={filterCategory}
-              onValueChange={(value) => {
-                setFilterCategory(value)
-                setPageIndex(0)
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="产品分类" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">全部分类</SelectItem>
-                {categories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="w-40 shrink-0">
+              <FilterSelect
+                value={filterCategory}
+                onValueChange={(v) => {
+                  setFilterCategory(v)
+                  resetPage()
+                }}
+                options={categoryOptions}
+                placeholder="产品分类"
+                allLabel="全部分类"
+              />
+            </div>
 
-            <Select
-              value={filterBrand}
-              onValueChange={(value) => {
-                setFilterBrand(value)
-                setPageIndex(0)
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="品牌" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">全部品牌</SelectItem>
-                {brands.map((brand) => (
-                  <SelectItem key={brand.id} value={brand.id}>
-                    {brand.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="w-40 shrink-0">
+              <FilterSelect
+                value={filterBrand}
+                onValueChange={(v) => {
+                  setFilterBrand(v)
+                  resetPage()
+                }}
+                options={brandOptions}
+                placeholder="品牌"
+                allLabel="全部品牌"
+              />
+            </div>
 
-            <Select
-              value={filterStatus}
-              onValueChange={(value) => {
-                setFilterStatus(value)
-                setPageIndex(0)
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="状态" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">全部状态</SelectItem>
-                <SelectItem value="ACTIVE">活跃</SelectItem>
-                <SelectItem value="INACTIVE">停用</SelectItem>
-                <SelectItem value="DRAFT">草稿</SelectItem>
-                <SelectItem value="DISCONTINUED">停产</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="w-32 shrink-0">
+              <FilterSelect
+                value={filterStatus}
+                onValueChange={(v) => {
+                  setFilterStatus(v)
+                  resetPage()
+                }}
+                options={STATUS_OPTIONS}
+                placeholder="状态"
+                allLabel="全部状态"
+              />
+            </div>
           </div>
 
-          {/* 操作按钮 */}
+          {/* 操作按钮行 */}
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleResetFilters}
-            >
+            <Button variant="outline" size="sm" onClick={handleResetFilters}>
               重置筛选
             </Button>
             {multiple && selectedProducts.size > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleClearSelection}
-              >
+              <Button variant="outline" size="sm" onClick={handleClearSelection}>
                 清空选择 ({selectedProducts.size})
               </Button>
             )}
           </div>
         </div>
 
-        {/* 产品列表 */}
         <div className="flex-1 overflow-auto">
           {loading ? (
             <div className="flex items-center justify-center h-64">
@@ -379,100 +470,30 @@ export function ProductSelectorDialog({
           ) : products.length === 0 ? (
             <div className="flex items-center justify-center h-64">
               <div className="text-center text-muted-foreground">
-                <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>未找到产品</p>
+                <Icon className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>{emptyMessage}</p>
+                {emptyHint && <p className="text-xs mt-1">{emptyHint}</p>}
               </div>
             </div>
           ) : (
             <div className="space-y-2">
               {products.map((product) => (
-                <div
+                <ProductCard
                   key={product._id}
-                  className={`
-                    border rounded-lg p-3 cursor-pointer transition-colors
-                    ${selectedProducts.has(product._id) 
-                      ? "bg-primary/5 border-primary" 
-                      : "hover:bg-muted/50"}
-                  `}
-                  onClick={() => handleToggleProduct(product._id)}
-                >
-                  <div className="flex items-start gap-3">
-                    {/* 复选框/单选框 */}
-                    <div className="pt-1">
-                      <Checkbox
-                        checked={selectedProducts.has(product._id)}
-                        onCheckedChange={() => handleToggleProduct(product._id)}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </div>
-
-                    {/* 产品信息 */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-medium">{product.name}</span>
-                            {product.nameEn && (
-                              <span className="text-sm text-muted-foreground">
-                                {product.nameEn}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                            <span>编码: {product._docNumber}</span>
-                            {product.barcode && (
-                              <>
-                                <span>•</span>
-                                <span>条形码: {product.barcode}</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col items-end gap-1">
-                          {product.salePrice && (
-                            <span className="text-sm font-medium">
-                              ¥{product.salePrice}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* 标签 */}
-                      <div className="flex items-center gap-2 mt-2 flex-wrap">
-                        <Badge variant="outline" className="text-xs">
-                          {productTypeLabels[product.productType]}
-                        </Badge>
-                        {product.categoryName && (
-                          <Badge variant="secondary" className="text-xs">
-                            {product.categoryName}
-                          </Badge>
-                        )}
-                        {product.brandName && (
-                          <Badge variant="secondary" className="text-xs">
-                            {product.brandName}
-                          </Badge>
-                        )}
-                        <Badge
-                          variant={product.status === "ACTIVE" ? "default" : "outline"}
-                          className="text-xs"
-                        >
-                          {statusLabels[product.status as keyof typeof statusLabels]}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                  product={product}
+                  selected={selectedProducts.has(product._id)}
+                  onToggle={() => handleToggleProduct(product._id)}
+                  typeBadgeLabel={typeBadgeLabel}
+                />
               ))}
             </div>
           )}
         </div>
 
-        {/* 分页 */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between border-t pt-4">
             <div className="text-sm text-muted-foreground">
-              共 {total} 个产品，第 {pageIndex + 1} / {totalPages} 页
+              共 {total} 个{itemLabel}，第 {pageIndex + 1} / {totalPages} 页
             </div>
             <div className="flex gap-2">
               <Button
@@ -487,7 +508,9 @@ export function ProductSelectorDialog({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setPageIndex((p) => Math.min(totalPages - 1, p + 1))}
+                onClick={() =>
+                  setPageIndex((p) => Math.min(totalPages - 1, p + 1))
+                }
                 disabled={pageIndex >= totalPages - 1}
               >
                 下一页
@@ -497,12 +520,11 @@ export function ProductSelectorDialog({
           </div>
         )}
 
-        {/* 底部操作 */}
         <DialogFooter>
           <div className="flex items-center justify-between w-full">
             <div className="text-sm text-muted-foreground">
               {selectedProducts.size > 0 && (
-                <span>已选择 {selectedProducts.size} 个产品</span>
+                <span>已选择 {selectedProducts.size} 个{itemLabel}</span>
               )}
             </div>
             <div className="flex gap-2">
@@ -522,45 +544,3 @@ export function ProductSelectorDialog({
     </Dialog>
   )
 }
-
-/**
- * 使用示例：
- * 
- * ```tsx
- * import { ProductSelectorDialog } from "@/components/product-selector-dialog"
- * 
- * function QuotationForm() {
- *   const [dialogOpen, setDialogOpen] = useState(false)
- * 
- *   const handleSelectProducts = (products: Product[]) => {
- *     console.log("选中的产品:", products)
- *     // 将产品添加到报价单明细
- *     products.forEach(product => {
- *       addDetailRow("items", {
- *         productCode: product._docNumber,
- *         productNameCn: product.name,
- *         productNameEn: product.nameEn,
- *         unitPrice: product.salePrice,
- *         // ... 其他字段
- *       })
- *     })
- *   }
- * 
- *   return (
- *     <>
- *       <Button onClick={() => setDialogOpen(true)}>
- *         选择产品
- *       </Button>
- * 
- *       <ProductSelectorDialog
- *         open={dialogOpen}
- *         onOpenChange={setDialogOpen}
- *         onConfirm={handleSelectProducts}
- *         multiple={true}
- *         productType="STANDARD"
- *       />
- *     </>
- *   )
- * }
- * ```
- */
