@@ -37,8 +37,14 @@ async function main() {
 
   const category = await prisma.productCategory.upsert({
     where: { code: 'CAT001' },
-    update: { name: 'Electronics', level: 1 },
-    create: { code: 'CAT001', name: 'Electronics', level: 1 },
+    update: { name: 'Electronics', level: 1, codePrefix: 'ELEC', serialLength: 3 },
+    create: { code: 'CAT001', name: 'Electronics', level: 1, codePrefix: 'ELEC', serialLength: 3 },
+  });
+
+  const categoryChild = await prisma.productCategory.upsert({
+    where: { code: 'CAT001-01' },
+    update: { name: '手机', level: 2, codePrefix: 'ELEC-PH', serialLength: 4, parentId: category.id },
+    create: { code: 'CAT001-01', name: '手机', level: 2, codePrefix: 'ELEC-PH', serialLength: 4, parentId: category.id },
   });
 
   const hsCode = await prisma.hsCode.upsert({

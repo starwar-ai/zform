@@ -1,7 +1,8 @@
 /**
  * SkuCodeField
  *
- * 产品编号复合控件：前缀 + 序号(3位) + 后缀 = 完整编号
+ * 产品编号复合控件：前缀 + 序号 + 后缀 = 完整编号
+ * 前缀取自 ProductCategory.code_prefix，序号长度取自 serial_length。
  * 前缀只读，序号和后缀可编辑；编辑时自动重算完整编号。
  *
  * 注意：Label 由上层 FieldRenderer 统一渲染，本组件不包含 Label。
@@ -24,13 +25,15 @@ interface SkuCodeFieldProps {
   xhCodeFieldId: string
   afterCodeFieldId: string
   codeFieldId: string
+  /** 序号长度（取自 ProductCategory.serial_length，默认 3） */
+  serialLength?: number
   disabled?: boolean
   /** 编辑模式下编号锁定，仅展示 */
   readOnly?: boolean
   className?: string
 }
 
-const XH_CODE_LENGTH = 3
+const DEFAULT_SERIAL_LENGTH = 3
 
 export function SkuCodeField({
   value,
@@ -38,25 +41,27 @@ export function SkuCodeField({
   xhCodeFieldId,
   afterCodeFieldId,
   codeFieldId,
+  serialLength = DEFAULT_SERIAL_LENGTH,
   disabled,
   readOnly,
   className,
 }: SkuCodeFieldProps) {
   const { preCode = "", xhCode = "", afterCode = "" } = value
   const fullCode = formatSkuCode(preCode, xhCode, afterCode)
+  const xhLen = Math.max(1, Math.min(10, serialLength))
 
   // 输入中暂存原始值，blur 时补 0
   const [xhDraft, setXhDraft] = React.useState<string | null>(null)
   const isEditingXh = xhDraft !== null
 
   const handleXhChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/\D/g, "").slice(0, XH_CODE_LENGTH)
+    const raw = e.target.value.replace(/\D/g, "").slice(0, xhLen)
     setXhDraft(raw)
   }
 
   const handleXhBlur = () => {
     if (xhDraft === null) return
-    const padded = xhDraft.padStart(XH_CODE_LENGTH, "0")
+    const padded = xhDraft.padStart(xhLen, "0")
     setXhDraft(null)
     onChange(xhCodeFieldId, padded)
     onChange(codeFieldId, formatSkuCode(preCode, padded, afterCode))
@@ -88,8 +93,8 @@ export function SkuCodeField({
         onChange={handleXhChange}
         onBlur={handleXhBlur}
         disabled={disabled}
-        placeholder="001"
-        maxLength={XH_CODE_LENGTH}
+        placeholder={"0".repeat(xhLen)}
+        maxLength={xhLen}
         className="w-16 font-mono text-center"
         aria-label="序号"
       />
@@ -100,13 +105,6 @@ export function SkuCodeField({
         placeholder="后缀"
         className="min-w-[80px] flex-1"
         aria-label="后缀"
-      />
-      <span className="text-muted-foreground text-xs shrink-0">=</span>
-      <Input
-        value={fullCode}
-        disabled
-        className="flex-1 min-w-[100px] bg-muted font-mono"
-        aria-label="完整编号"
       />
     </div>
   )

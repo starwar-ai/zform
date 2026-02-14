@@ -20,7 +20,10 @@ router.post('/customer', categoryController.createCustomer);
 router.put('/customer/:id', categoryController.updateCustomer);
 router.delete('/customer/:id', categoryController.deleteCustomer);
 
-// ---- 产品分类 / 海关编码（树形）----
+// ---- 产品分类（树形，用于产品表单 categoryId）----
+router.get('/product-category', categoryController.getProductCategoryTree);
+
+// ---- 海关编码（扁平列表）----
 router.get('/product', categoryController.getProductTree);
 router.post('/product', categoryController.createProduct);
 router.put('/product/:id', categoryController.updateProduct);

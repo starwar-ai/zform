@@ -146,6 +146,9 @@ export function FieldRenderer({
           xhCode: String(data[config.xhCodeField] ?? ""),
           afterCode: String(data[config.afterCodeField] ?? ""),
         }
+        const serialLength = config.serialLengthField
+          ? Number(data[config.serialLengthField] ?? 3)
+          : 3
         return (
           <SkuCodeField
             value={skuValue}
@@ -153,6 +156,7 @@ export function FieldRenderer({
             xhCodeFieldId={config.xhCodeField}
             afterCodeFieldId={config.afterCodeField}
             codeFieldId={config.codeField}
+            serialLength={serialLength}
             disabled={isDisabled}
             readOnly={fieldReadOnly}
           />
@@ -165,15 +169,18 @@ export function FieldRenderer({
         const current = (value as { length?: unknown; width?: unknown; height?: unknown }) ?? {}
         const placeholders = config.placeholders ?? {}
         const placeholder =
-          field.placeholder ??
-          `${placeholders.length ?? "长"}/${placeholders.width ?? "宽"}/${placeholders.height ?? "高"}`
+          field.placeholder ||
+          `${placeholders.length || "长"}/${placeholders.width || "宽"}/${placeholders.height || "高"}`
         const formatPart = (v: unknown) =>
           v === null || v === undefined || v === "" ? "" : String(v)
-        const displayValue = [
+        const parts = [
           formatPart(current.length),
           formatPart(current.width),
           formatPart(current.height),
-        ].join("/")
+        ]
+        const displayValue = parts.every((p) => !p)
+          ? ""
+          : parts.join("/")
         const toNumberOrUndefined = (raw: string | undefined) => {
           const trimmed = (raw ?? "").trim()
           if (trimmed === "") return undefined

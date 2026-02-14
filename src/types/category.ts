@@ -6,7 +6,7 @@
 // ==================== 通用基础类型 ====================
 
 /** 分类类型标识 */
-export type CategoryTypeKey = 'customer' | 'product' | 'exhibition' | 'customer-source' | 'order-route' | 'other-config'
+export type CategoryTypeKey = 'customer' | 'product' | 'product-category' | 'exhibition' | 'customer-source' | 'order-route' | 'other-config'
 
 /** 基础分类字段 */
 interface BaseCategoryFields {
@@ -41,6 +41,23 @@ export interface UpdateCustomerCategoryInput {
   parentId?: string | null
 }
 
+// ==================== 产品分类（树形结构） ====================
+
+/** 产品分类 - 基础结构 */
+export interface ProductCategory extends BaseCategoryFields {
+  code: string              // 分类编码
+  name: string             // 分类名称
+  level?: number           // 层级
+  codePrefix?: string | null  // 产品编码前缀（对应 code_prefix）
+  serialLength?: number    // 流水号长度（对应 serial_length）
+  parentId: string | null  // 父分类ID
+}
+
+/** 产品分类 - 树形节点（递归结构） */
+export interface ProductCategoryTreeNode extends ProductCategory {
+  children: ProductCategoryTreeNode[]  // 子分类列表
+}
+
 // ==================== 海关编码 ====================
 
 export interface HsCode extends BaseCategoryFields {
@@ -55,10 +72,6 @@ export interface HsCode extends BaseCategoryFields {
   levyRate: number | null  // 征收率
   secondUnit: string | null // 第二单位
 }
-
-// 保留旧类型别名以兼容现有代码
-export type ProductCategory = HsCode
-export type ProductCategoryTreeNode = HsCode
 
 export interface CreateHsCodeInput {
   code: string

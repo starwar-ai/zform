@@ -7,12 +7,14 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { CustomerCategoryService } from '../services/customer-category.service';
+import { ProductCategoryService } from '../services/product-category.service';
 import { HsCodeService } from '../services/hs-code.service';
 import { ExhibitionCategoryService } from '../services/exhibition-category.service';
 import { CustomerSourceTagService } from '../services/customer-source-tag.service';
 import { successResponse } from '../utils/response';
 
 const customerCategoryService = new CustomerCategoryService();
+const productCategoryService = new ProductCategoryService();
 const hsCodeService = new HsCodeService();
 const exhibitionCategoryService = new ExhibitionCategoryService();
 const customerSourceTagService = new CustomerSourceTagService();
@@ -65,6 +67,18 @@ export const categoryController = {
     try {
       await customerCategoryService.delete(param(req, 'id'));
       res.json(successResponse(null, '客户分类删除成功'));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // ==================== 产品分类（树形，用于产品表单） ====================
+
+  /** GET /categories/product-category - 获取产品分类树 */
+  async getProductCategoryTree(_req: Request, res: Response, next: NextFunction) {
+    try {
+      const tree = await productCategoryService.getTree();
+      res.json(successResponse(tree));
     } catch (error) {
       next(error);
     }

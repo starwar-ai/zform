@@ -25,6 +25,7 @@ import otherConfigRoutes from './other-configs';
 import documentRoutes from '../documents/document.routes';
 import productImageRoutes from './product-images';
 import codeGeneratorRoutes from './code-generator.routes';
+import pmsRoutes from './pms';
 import exchangeRateRoutes from './exchange-rate.routes';
 import rateSchedulerRoutes from './rate-scheduler.routes';
 
@@ -38,6 +39,9 @@ router.use('/product-images', productImageRoutes);
 
 // ---- 编码生成 API ----
 router.use('/code-generator', codeGeneratorRoutes);
+
+// ---- PMS 产品管理 API ----
+router.use('/pms', pmsRoutes);
 
 // ---- 汇率管理 API ----
 router.use('/rates', exchangeRateRoutes);

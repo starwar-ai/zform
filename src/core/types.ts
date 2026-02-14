@@ -78,12 +78,14 @@ export interface SkuCodeFieldConfig {
   categoryIdField: FieldId
   /** 前缀码字段 ID */
   preCodeField: FieldId
-  /** 序号字段 ID (3位) */
+  /** 序号字段 ID */
   xhCodeField: FieldId
   /** 后缀字段 ID */
   afterCodeField: FieldId
   /** 最终完整编号字段 ID */
   codeField: FieldId
+  /** 序号长度字段 ID（取自 ProductCategory.serial_length，默认 3） */
+  serialLengthField?: FieldId
 }
 
 // ============================================================

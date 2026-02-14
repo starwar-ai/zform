@@ -11,7 +11,7 @@ import type { DepartmentTreeNode } from "@/types/department"
 import { fetchCategoryListApi } from "@/apis/category-api"
 import { fetchBrandsApi } from "@/apis/business-config-api"
 import { fetchDepartmentTreeApi } from "@/apis/department-api"
-import { generateSkuCodeApi, parseSkuCode, formatSkuCode } from "@/apis/sku-api"
+import { generateSkuCodeApi, formatSkuCode } from "@/apis/sku-api"
 
 // ============================================================
 // 工具函数：将树形分类拍平为 ComboboxOption[]
@@ -38,9 +38,9 @@ function flattenCategoryTree(
   return result
 }
 
-/** 获取产品分类选项（供 Combobox 使用） */
+/** 获取产品分类选项（供 Combobox 使用，树形结构，仅叶子可选） */
 async function fetchProductCategoryOptions(): Promise<ComboboxOption[]> {
-  const tree = await fetchCategoryListApi<ProductCategoryTreeNode>("product")
+  const tree = await fetchCategoryListApi<ProductCategoryTreeNode>("product-category")
   return flattenCategoryTree(tree)
 }
 
@@ -103,19 +103,19 @@ const skuCodeGenerationEffect: FieldEffect = {
     const categoryId = String(data.categoryId ?? "").trim()
     if (!categoryId) return
 
-    const autoCode = await generateSkuCodeApi(categoryId)
-    if (!autoCode || autoCode.length < 3) {
-      console.warn("[SkuCode] 自动生成序号异常，长度小于3:", autoCode)
-      return
+    try {
+      const result = await generateSkuCodeApi(categoryId)
+      const { preCode, xhCode } = result
+      const afterCode = String(data.afterCode ?? "").trim()
+      const code = formatSkuCode(preCode, xhCode, afterCode)
+
+      onChange("preCode", preCode)
+      onChange("xhCode", xhCode)
+      onChange("code", code)
+      onChange("serialLength", result.serialLength)
+    } catch (err) {
+      console.warn("[SkuCode] 编号生成失败:", err)
     }
-
-    const { preCode, xhCode } = parseSkuCode(autoCode)
-    const afterCode = String(data.afterCode ?? "").trim()
-    const code = formatSkuCode(preCode, xhCode, afterCode)
-
-    onChange("preCode", preCode)
-    onChange("xhCode", xhCode)
-    onChange("code", code)
   },
 }
 
@@ -133,6 +133,7 @@ export const standardProductSchema: DocumentSchema = {
     { id: "preCode", label: "前缀码", type: "text", hidden: true, group: "基本信息" },
     { id: "xhCode", label: "序号", type: "text", hidden: true, group: "基本信息" },
     { id: "afterCode", label: "后缀", type: "text", hidden: true, group: "基本信息" },
+    { id: "serialLength", label: "序号长度", type: "number", hidden: true, defaultValue: 3, group: "基本信息" },
     { id: "code", label: "产品编码", type: "text", hidden: true, required: true, group: "基本信息" },
     {
       id: "skuCode",
@@ -147,6 +148,7 @@ export const standardProductSchema: DocumentSchema = {
         xhCodeField: "xhCode",
         afterCodeField: "afterCode",
         codeField: "code",
+        serialLengthField: "serialLength",
       },
       effect: skuCodeGenerationEffect,
     },
