@@ -110,6 +110,25 @@ export const customerSchema: DocumentSchema = {
       group: "业务信息",
     },
     {
+      id: "countryId",
+      label: "国家/地区",
+      type: "combobox",
+      placeholder: "请选择国家/地区",
+      span: 2,
+      group: "其他信息",
+      comboboxConfig: {
+        fetchOptions: async () => {
+          const { fetchCountriesApi } = await import("@/apis/business-config-api")
+          const countries = await fetchCountriesApi()
+          return countries.map((country: any) => ({
+            value: country.id,
+            label: country.name
+          }))
+        },
+        isTree: false
+      }
+    },
+    {
       id: "currency",
       label: "币种",
       type: "select",
@@ -229,10 +248,21 @@ export const customerSchema: DocumentSchema = {
     {
       id: "customerSource",
       label: "客户来源",
-      type: "text",
-      placeholder: "展会、网络、老客户介绍等",
+      type: "combobox",
+      placeholder: "请选择客户来源",
       span: 2,
       group: "其他信息",
+      comboboxConfig: {
+        fetchOptions: async () => {
+          const { fetchCategoryListApi } = await import("@/apis/category-api")
+          const sources = await fetchCategoryListApi("customer-source")
+          return sources.map((source: any) => ({
+            value: source.id,
+            label: source.name
+          }))
+        },
+        isTree: false
+      }
     },
     {
       id: "relatedCustomerCode",

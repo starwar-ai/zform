@@ -31,6 +31,24 @@ export const warehouseInboundSchema: DocumentSchema = {
       group: "基本信息",
     },
     {
+      id: "countryId",
+      label: "国家/地区",
+      type: "combobox",
+      placeholder: "请选择国家/地区",
+      group: "基本信息",
+      comboboxConfig: {
+        fetchOptions: async () => {
+          const { fetchCountriesApi } = await import("@/apis/business-config-api")
+          const countries = await fetchCountriesApi()
+          return countries.map((country: any) => ({
+            value: country.id,
+            label: country.name
+          }))
+        },
+        isTree: false
+      }
+    },
+    {
       id: "orderStatus",
       label: "单据状态",
       type: "select",
