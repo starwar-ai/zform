@@ -344,6 +344,9 @@ model CustomerCategory {
   parent   CustomerCategory?  @relation("CustomerCategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
   children CustomerCategory[] @relation("CustomerCategoryTree")
 
+  // 关联客户
+  customers Customer[]
+
   createdBy String?   @map("created_by")
   createdAt DateTime  @default(now()) @map("created_at")
   updatedBy String?   @map("updated_by")
@@ -911,9 +914,10 @@ model Customer {
   email       String? // 电子邮件
 
   // 客户阶段与分类
-  stage     CustomerStage @default(POTENTIAL) // 客户阶段（潜在客户，正式客户，退休客户）
-  isForeign Boolean       @default(false) @map("is_foreign") // 国外客户标志
-  isAgent   Boolean       @default(false) @map("is_agent") // 是否是代理
+  stage              CustomerStage @default(POTENTIAL) // 客户阶段（潜在客户，正式客户，退休客户）
+  customerCategoryId String?       @map("customer_category_id") // 客户分类ID（关联customer_categories表）
+  isForeign          Boolean       @default(false) @map("is_foreign") // 国外客户标志
+  isAgent            Boolean       @default(false) @map("is_agent") // 是否是代理
 
   // 业务信息
   shippingMethod  ShippingMethod? @map("shipping_method") // 运输方式(海运、陆运、空运、供应商送货)
@@ -976,11 +980,13 @@ model Customer {
   deletedAt DateTime? @map("deleted_at")
 
   // 关联关系
-  bankAccounts CustomerBankAccount[]
-  contacts     CustomerContact[]
+  customerCategory CustomerCategory? @relation(fields: [customerCategoryId], references: [id])
+  bankAccounts     CustomerBankAccount[]
+  contacts         CustomerContact[]
 
   @@index([code])
   @@index([stage])
+  @@index([customerCategoryId])
   @@index([approvalStatus])
   @@index([isForeign])
   @@index([isAgent])
@@ -1742,6 +1748,7 @@ model SysUser {
   departmentId String?     @map("department_id") // 部门ID（FK）
   dept         Department? @relation("UserDepartment", fields: [departmentId], references: [id], onDelete: SetNull)
   status       String      @default("active") // 状态：active | inactive
+  isAdmin      Boolean     @default(false) @map("is_admin") // 是否系统管理员：true=管理员,false=普通员工
 
   // 关联关系
   userRoles SysUserRole[]
