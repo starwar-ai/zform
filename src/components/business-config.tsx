@@ -15,6 +15,7 @@ import { PortConfigPanel } from "./business-config/port-panel"
 import { BrandConfigPanel } from "./business-config/brand-panel"
 import { WarehouseConfigPanel } from "./business-config/warehouse-panel"
 import { ExchangeRatePanel } from "./business-config/exchange-rate-panel"
+import { TransportMethodConfigPanel } from "./business-config/transport-method-panel"
 import type { ConfigTypeKey } from "@/types/business-config"
 
 export function BusinessConfig() {
@@ -38,6 +39,7 @@ export function BusinessConfig() {
           <TabsTrigger value="brand">品牌</TabsTrigger>
           <TabsTrigger value="warehouse">仓库</TabsTrigger>
           <TabsTrigger value="exchangeRate">汇率</TabsTrigger>
+          <TabsTrigger value="transportMethod">运输方式</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -49,6 +51,7 @@ export function BusinessConfig() {
       {activeKey === 'brand' && <BrandConfigPanel />}
       {activeKey === 'warehouse' && <WarehouseConfigPanel />}
       {activeKey === 'exchangeRate' && <ExchangeRatePanel />}
+      {activeKey === 'transportMethod' && <TransportMethodConfigPanel />}
     </div>
   )
 }

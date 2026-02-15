@@ -5241,3 +5241,29 @@ model QuotationItem {
   @@index([lineNumber])
   @@map("quotation_items")
 }
+
+// ==================== 运输方式表 ====================
+
+model TransportMethod {
+  id        String   @id @default(cuid())
+  code      String   @unique @map("code") // 编码
+  name      String   @map("name") // 名称
+  nameEn    String?  @map("name_en") // 英文名称
+  isCommon  Boolean  @default(false) @map("is_common") // 是否常用
+  sortOrder Int      @default(0) @map("sort_order") // 排序
+  isEnabled Boolean  @default(true) @map("is_enabled") // 是否启用
+  remark    String?  @map("remark") // 备注
+  
+  // 时间戳
+  createdBy String?  @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedBy String?  @map("updated_by")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([code])
+  @@index([isCommon])
+  @@index([sortOrder])
+  @@index([createdAt])
+  @@map("transport_methods")
+}

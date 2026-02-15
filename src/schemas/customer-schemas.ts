@@ -5,8 +5,41 @@
  * 客户类型: 潜在客户(POTENTIAL) → 正式客户(FORMAL) / 退休客户(RETIRED)
  */
 
-import type { DocumentSchema, ChangeRule } from "@/core/types"
+import type { DocumentSchema, ChangeRule, ComboboxOption } from "@/core/types"
+import type { CustomerCategoryTreeNode } from "@/types/category"
 import { CURRENCY_OPTIONS } from "@/lib/currency"
+
+// ============================================================
+// 客户分类下拉选项获取函数
+// ============================================================
+
+/** 获取客户分类下拉选项（树形结构扁平化） */
+const fetchCustomerCategoryOptions = async (): Promise<ComboboxOption[]> => {
+  const { fetchCategoryListApi } = await import("@/apis/category-api")
+  const categories = await fetchCategoryListApi<CustomerCategoryTreeNode>("customer")
+
+  const flattenTree = (
+    nodes: CustomerCategoryTreeNode[],
+    depth = 0
+  ): ComboboxOption[] => {
+    const result: ComboboxOption[] = []
+    for (const node of nodes) {
+      const hasChildren = node.children && node.children.length > 0
+      result.push({
+        label: node.name,
+        value: node.id,
+        depth,
+        isLeaf: !hasChildren,
+      })
+      if (hasChildren) {
+        result.push(...flattenTree(node.children, depth + 1))
+      }
+    }
+    return result
+  }
+
+  return flattenTree(categories)
+}
 
 // ============================================================
 // 国内客户 (Domestic Customer)
@@ -66,6 +99,17 @@ export const domesticCustomerSchema: DocumentSchema = {
       defaultValue: "POTENTIAL",
       required: true,
       group: "客户分类",
+    },
+    {
+      id: "customerCategoryId",
+      label: "客户类型",
+      type: "combobox",
+      placeholder: "请选择客户类型",
+      group: "客户分类",
+      comboboxConfig: {
+        isTree: true,
+        fetchOptions: fetchCustomerCategoryOptions,
+      },
     },
     {
       id: "isAgent",
@@ -156,6 +200,14 @@ export const domesticCustomerSchema: DocumentSchema = {
       type: "number",
       placeholder: "0.00",
       group: "财务信息",
+      visibleWhen: (data) => data.enableCreditLimit === true,
+    },
+    {
+      id: "isSinosure",
+      label: "中信保客户",
+      type: "checkbox",
+      defaultValue: false,
+      group: "财务信息",
     },
     {
       id: "paymentType",
@@ -185,7 +237,6 @@ export const domesticCustomerSchema: DocumentSchema = {
       label: "客户来源",
       type: "combobox",
       placeholder: "请选择客户来源",
-      span: 2,
       group: "其他信息",
       comboboxConfig: {
         fetchOptions: async () => {
@@ -223,7 +274,7 @@ export const domesticCustomerSchema: DocumentSchema = {
       type: "textarea",
       span: 4,
       placeholder: "其他备注信息...",
-      group: "备注信息",
+      group: "其他信息",
     },
   ],
   detailTables: [
@@ -422,6 +473,17 @@ export const internationalCustomerSchema: DocumentSchema = {
       group: "客户分类",
     },
     {
+      id: "customerCategoryId",
+      label: "客户类型",
+      type: "combobox",
+      placeholder: "请选择客户类型",
+      group: "客户分类",
+      comboboxConfig: {
+        isTree: true,
+        fetchOptions: fetchCustomerCategoryOptions,
+      },
+    },
+    {
       id: "isAgent",
       label: "是否代理",
       type: "checkbox",
@@ -534,6 +596,7 @@ export const internationalCustomerSchema: DocumentSchema = {
       type: "number",
       placeholder: "0.00",
       group: "财务信息",
+      visibleWhen: (data) => data.enableCreditLimit === true,
     },
     {
       id: "isSinosure",
@@ -569,7 +632,6 @@ export const internationalCustomerSchema: DocumentSchema = {
       label: "客户来源",
       type: "combobox",
       placeholder: "请选择客户来源",
-      span: 2,
       group: "其他信息",
       comboboxConfig: {
         fetchOptions: async () => {
@@ -607,7 +669,7 @@ export const internationalCustomerSchema: DocumentSchema = {
       type: "textarea",
       span: 4,
       placeholder: "其他备注信息...",
-      group: "备注信息",
+      group: "其他信息",
     },
   ],
   detailTables: [
@@ -632,11 +694,6 @@ export const internationalCustomerSchema: DocumentSchema = {
           label: "银行账号",
           type: "text",
           required: true,
-        },
-        {
-          id: "swiftCode",
-          label: "SWIFT代码",
-          type: "text",
         },
         {
           id: "branchAddress",
@@ -667,11 +724,6 @@ export const internationalCustomerSchema: DocumentSchema = {
           required: true,
         },
         {
-          id: "nameEn",
-          label: "英文姓名",
-          type: "text",
-        },
-        {
           id: "position",
           label: "职位",
           type: "text",
@@ -694,6 +746,16 @@ export const internationalCustomerSchema: DocumentSchema = {
         {
           id: "address",
           label: "住宅地址",
+          type: "text",
+        },
+        {
+          id: "wechat",
+          label: "微信",
+          type: "text",
+        },
+        {
+          id: "qq",
+          label: "QQ",
           type: "text",
         },
         {
@@ -776,6 +838,17 @@ export const customerSchema: DocumentSchema = {
       defaultValue: "POTENTIAL",
       required: true,
       group: "客户分类",
+    },
+    {
+      id: "customerCategoryId",
+      label: "客户类型",
+      type: "combobox",
+      placeholder: "请选择客户类型",
+      group: "客户分类",
+      comboboxConfig: {
+        isTree: true,
+        fetchOptions: fetchCustomerCategoryOptions,
+      },
     },
     {
       id: "isAgent",
@@ -923,6 +996,7 @@ export const customerSchema: DocumentSchema = {
       type: "number",
       placeholder: "0.00",
       group: "财务信息",
+      visibleWhen: (data) => data.enableCreditLimit === true,
     },
     {
       id: "isSinosure",
@@ -958,7 +1032,6 @@ export const customerSchema: DocumentSchema = {
       label: "客户来源",
       type: "combobox",
       placeholder: "请选择客户来源",
-      span: 2,
       group: "其他信息",
       comboboxConfig: {
         fetchOptions: async () => {
@@ -996,7 +1069,7 @@ export const customerSchema: DocumentSchema = {
       type: "textarea",
       span: 4,
       placeholder: "其他备注信息...",
-      group: "备注信息",
+      group: "其他信息",
     },
   ],
   detailTables: [

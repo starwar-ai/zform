@@ -29,6 +29,7 @@ import codeGeneratorRoutes from './code-generator.routes';
 import pmsRoutes from './pms';
 import exchangeRateRoutes from './exchange-rate.routes';
 import rateSchedulerRoutes from './rate-scheduler.routes';
+import transportMethodRoutes from './transport-methods';
 
 const router = Router();
 
@@ -70,6 +71,7 @@ router.use('/warehouses', warehouseRoutes);
 router.use('/inventory', inventoryRoutes);
 router.use('/order-routes', orderRouteRoutes);
 router.use('/other-configs', otherConfigRoutes);
+router.use('/transport-methods', transportMethodRoutes);
 
 // ---- 旧路由 (保留兼容) ----
 router.use('/products', productRoutes);

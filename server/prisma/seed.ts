@@ -2427,6 +2427,45 @@ async function main() {
   console.log(`Countries: ${countryChina.code}, ${countryUSA.code}, ${countryGermany.code}, ${countryJapan.code}, ${countryUK.code}`);
   console.log(`Ports: ${portShanghai.code}, ${portShenzhen.code}, ${portNingbo.code}, ${portLosAngeles.code}, ${portHamburg.code}`);
   console.log(`Companies: ${mainCompany.name}, ${factoryCompany.name}`);
+
+  // 初始化运输方式数据
+  console.log('Initializing transport methods...');
+  
+  const transportMethods = [
+    { code: 'SUPPLIER_DELIVERY', name: '供应商送货', nameEn: 'Supplier Delivery', isCommon: true, sortOrder: 1 },
+    { code: 'EXPRESS', name: '快递', nameEn: 'Express', isCommon: true, sortOrder: 2 },
+    { code: 'CUSTOMER_PICKUP', name: '客户自提', nameEn: 'Customer Pickup', isCommon: false, sortOrder: 3 },
+    { code: 'BY_EXPRESS', name: 'BY EXPRESS', nameEn: 'BY EXPRESS', isCommon: false, sortOrder: 4 },
+    { code: 'LAND_TRANSPORT', name: '陆运', nameEn: 'Land Transport', isCommon: true, sortOrder: 5 },
+    { code: 'BY_TRAIN', name: 'BY TRAIN', nameEn: 'BY TRAIN', isCommon: false, sortOrder: 6 },
+    { code: 'BY_AIR', name: 'BY AIR', nameEn: 'BY AIR', isCommon: true, sortOrder: 7 },
+    { code: 'BY_TRUCK', name: 'BY TRUCK', nameEn: 'BY TRUCK', isCommon: false, sortOrder: 8 },
+    { code: 'BY_SEA_NO_FEE', name: 'BY SEA(无订舱杂费)', nameEn: 'BY SEA(No Booking Fee)', isCommon: true, sortOrder: 9 },
+    { code: 'BY_SEA_WITH_FEE', name: 'BY SEA(有订舱杂费)', nameEn: 'BY SEA(With Booking Fee)', isCommon: true, sortOrder: 10 },
+  ];
+
+  for (const tm of transportMethods) {
+    await prisma.transportMethod.upsert({
+      where: { code: tm.code },
+      update: {
+        name: tm.name,
+        nameEn: tm.nameEn,
+        isCommon: tm.isCommon,
+        sortOrder: tm.sortOrder,
+      },
+      create: {
+        code: tm.code,
+        name: tm.name,
+        nameEn: tm.nameEn,
+        isCommon: tm.isCommon,
+        sortOrder: tm.sortOrder,
+        isEnabled: true,
+        createdBy: 'system',
+      },
+    });
+  }
+
+  console.log('Transport methods initialized');
 }
 
 main()

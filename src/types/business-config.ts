@@ -4,7 +4,7 @@
 
 // ==================== 通用类型 ====================
 
-export type ConfigTypeKey = 'company' | 'region' | 'country' | 'port' | 'brand' | 'warehouse' | 'exchangeRate';
+export type ConfigTypeKey = 'company' | 'region' | 'country' | 'port' | 'brand' | 'warehouse' | 'exchangeRate' | 'transportMethod';
 
 // ==================== 公司性质枚举 ====================
 
@@ -207,6 +207,24 @@ export interface OrderRoute {
   path: string;
   status: string;
   description?: string | null;
+  createdBy?: string | null;
+  createdAt: string;
+  updatedBy?: string | null;
+  updatedAt: string;
+  deletedAt?: string | null;
+}
+
+// ==================== 运输方式相关 ====================
+
+export interface TransportMethod {
+  id: string;
+  code: string;
+  name: string;
+  nameEn?: string | null;
+  isCommon: boolean;
+  sortOrder: number;
+  isEnabled: boolean;
+  remark?: string | null;
   createdBy?: string | null;
   createdAt: string;
   updatedBy?: string | null;
