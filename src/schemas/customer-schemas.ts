@@ -6,6 +6,7 @@
  */
 
 import type { DocumentSchema, ChangeRule } from "@/core/types"
+import { CURRENCY_OPTIONS } from "@/lib/currency"
 
 // ============================================================
 // 客户 (Customer)
@@ -112,12 +113,7 @@ export const customerSchema: DocumentSchema = {
       id: "currency",
       label: "币种",
       type: "select",
-      options: [
-        { label: "人民币", value: "CNY" },
-        { label: "美元", value: "USD" },
-        { label: "欧元", value: "EUR" },
-        { label: "日元", value: "JPY" },
-      ],
+      options: CURRENCY_OPTIONS,
       defaultValue: "CNY",
       group: "业务信息",
     },

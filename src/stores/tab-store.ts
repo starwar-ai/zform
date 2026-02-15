@@ -16,6 +16,7 @@ export type TabType =
   | "category-management"
   | "business-config"
   | "product-management"
+  | "customer-management"
   | "supplier-management"
   | "sales-management"
   | "purchase-plan-management"

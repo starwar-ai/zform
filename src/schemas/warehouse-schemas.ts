@@ -5,6 +5,7 @@
  */
 
 import type { DocumentSchema } from "@/core/types"
+import { CURRENCY_OPTIONS } from "@/lib/currency"
 
 // ============================================================
 // 入库单 (Warehouse Inbound)
@@ -163,13 +164,7 @@ export const warehouseInboundSchema: DocumentSchema = {
         { id: "actualQuantity", label: "实收数量", type: "number" },
         { id: "expectedBoxes", label: "应收箱数", type: "number" },
         { id: "actualBoxes", label: "实收箱数", type: "number" },
-        { id: "currency", label: "币种", type: "select", options: [
-          { label: "USD", value: "USD" },
-          { label: "CNY", value: "CNY" },
-          { label: "EUR", value: "EUR" },
-          { label: "GBP", value: "GBP" },
-          { label: "JPY", value: "JPY" },
-        ], defaultValue: "CNY" },
+        { id: "currency", label: "币种", type: "select", options: CURRENCY_OPTIONS, defaultValue: "CNY" },
         { id: "price", label: "价格", type: "number" },
         { id: "remark", label: "备注", type: "text" },
       ],
@@ -334,13 +329,7 @@ export const warehouseOutboundSchema: DocumentSchema = {
         { id: "actualQuantity", label: "实出数量", type: "number" },
         { id: "expectedBoxes", label: "应出箱数", type: "number" },
         { id: "actualBoxes", label: "实出箱数", type: "number" },
-        { id: "currency", label: "币种", type: "select", options: [
-          { label: "USD", value: "USD" },
-          { label: "CNY", value: "CNY" },
-          { label: "EUR", value: "EUR" },
-          { label: "GBP", value: "GBP" },
-          { label: "JPY", value: "JPY" },
-        ], defaultValue: "CNY" },
+        { id: "currency", label: "币种", type: "select", options: CURRENCY_OPTIONS, defaultValue: "CNY" },
         { id: "price", label: "价格", type: "number" },
         { id: "remark", label: "备注", type: "text" },
       ],
