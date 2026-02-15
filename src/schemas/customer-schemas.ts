@@ -130,13 +130,22 @@ export const domesticCustomerSchema: DocumentSchema = {
     {
       id: "shippingMethod",
       label: "运输方式",
-      type: "select",
-      options: [
-        { label: "陆运", value: "LAND" },
-        { label: "供应商送货", value: "SUPPLIER" },
-      ],
-      defaultValue: "LAND",
+      type: "combobox",
+      placeholder: "请选择运输方式",
       group: "业务信息",
+      comboboxConfig: {
+        fetchOptions: async () => {
+          const { fetchTransportMethodsApi } = await import("@/apis/business-config-api");
+          const methods = await fetchTransportMethodsApi();
+          return methods
+            .filter(method => method.isEnabled)
+            .map(method => ({
+              value: method.code,
+              label: method.name
+            }));
+        },
+        isTree: false
+      }
     },
     {
       id: "currency",
@@ -201,13 +210,6 @@ export const domesticCustomerSchema: DocumentSchema = {
       placeholder: "0.00",
       group: "财务信息",
       visibleWhen: (data) => data.enableCreditLimit === true,
-    },
-    {
-      id: "isSinosure",
-      label: "中信保客户",
-      type: "checkbox",
-      defaultValue: false,
-      group: "财务信息",
     },
     {
       id: "paymentType",
@@ -495,14 +497,22 @@ export const internationalCustomerSchema: DocumentSchema = {
     {
       id: "shippingMethod",
       label: "运输方式",
-      type: "select",
-      options: [
-        { label: "海运", value: "SEA" },
-        { label: "空运", value: "AIR" },
-        { label: "陆运", value: "LAND" },
-      ],
-      defaultValue: "SEA",
+      type: "combobox",
+      placeholder: "请选择运输方式",
       group: "业务信息",
+      comboboxConfig: {
+        fetchOptions: async () => {
+          const { fetchTransportMethodsApi } = await import("@/apis/business-config-api");
+          const methods = await fetchTransportMethodsApi();
+          return methods
+            .filter(method => method.isEnabled)
+            .map(method => ({
+              value: method.code,
+              label: method.name
+            }));
+        },
+        isTree: false
+      }
     },
     {
       id: "currency",
@@ -597,13 +607,6 @@ export const internationalCustomerSchema: DocumentSchema = {
       placeholder: "0.00",
       group: "财务信息",
       visibleWhen: (data) => data.enableCreditLimit === true,
-    },
-    {
-      id: "isSinosure",
-      label: "中信保客户",
-      type: "checkbox",
-      defaultValue: false,
-      group: "财务信息",
     },
     {
       id: "paymentType",
@@ -876,14 +879,22 @@ export const customerSchema: DocumentSchema = {
     {
       id: "shippingMethod",
       label: "运输方式",
-      type: "select",
-      options: [
-        { label: "海运", value: "SEA" },
-        { label: "陆运", value: "LAND" },
-        { label: "空运", value: "AIR" },
-        { label: "供应商送货", value: "SUPPLIER" },
-      ],
+      type: "combobox",
+      placeholder: "请选择运输方式",
       group: "业务信息",
+      comboboxConfig: {
+        fetchOptions: async () => {
+          const { fetchTransportMethodsApi } = await import("@/apis/business-config-api");
+          const methods = await fetchTransportMethodsApi();
+          return methods
+            .filter(method => method.isEnabled)
+            .map(method => ({
+              value: method.code,
+              label: method.name
+            }));
+        },
+        isTree: false
+      }
     },
     {
       id: "countryId",
@@ -997,13 +1008,6 @@ export const customerSchema: DocumentSchema = {
       placeholder: "0.00",
       group: "财务信息",
       visibleWhen: (data) => data.enableCreditLimit === true,
-    },
-    {
-      id: "isSinosure",
-      label: "中信保客户",
-      type: "checkbox",
-      defaultValue: false,
-      group: "财务信息",
     },
     {
       id: "paymentType",
