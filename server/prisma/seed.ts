@@ -1247,7 +1247,7 @@ async function main() {
     data: {
       title: '客户管理',
       icon: 'Users',
-      path: '/type-list/customer',
+      path: '/customer-management',
       parentId: dataEntryMenu.id,
       orderNum: 2,
       menuType: 'menu',

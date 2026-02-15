@@ -39,6 +39,8 @@ import {
 } from "./purchase-plan-schemas"
 import {
   customerSchema,
+  domesticCustomerSchema,
+  internationalCustomerSchema,
   customerChangeRule,
 } from "./customer-schemas"
 import {
@@ -375,6 +377,46 @@ const selfOwnedProductActionConfig: DocumentListActionConfig = {
   ],
   toolbarActions: [
     { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "self_owned_product:create" },
+  ],
+}
+
+/** 国内客户 - 列表操作 */
+const domesticCustomerActionConfig: DocumentListActionConfig = {
+  typeId: "domestic_customer",
+  rowActions: [
+    { id: "open", label: "打开" },
+    { id: "copy-id", label: "复制ID" },
+    {
+      id: "delete",
+      label: "删除",
+      danger: true,
+      modes: ["document"],
+      visible: (row) => row._status === "draft",
+      permission: "customer:delete",
+    },
+  ],
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "customer:create" },
+  ],
+}
+
+/** 国外客户 - 列表操作 */
+const internationalCustomerActionConfig: DocumentListActionConfig = {
+  typeId: "international_customer",
+  rowActions: [
+    { id: "open", label: "打开" },
+    { id: "copy-id", label: "复制ID" },
+    {
+      id: "delete",
+      label: "删除",
+      danger: true,
+      modes: ["document"],
+      visible: (row) => row._status === "draft",
+      permission: "customer:delete",
+    },
+  ],
+  toolbarActions: [
+    { id: "create", label: "新建", icon: "Plus", variant: "outline", permission: "customer:create" },
   ],
 }
 
@@ -1541,6 +1583,8 @@ export function setupSchemas(): void {
 
   // 注册客户 Schema
   registry.registerSchema(customerSchema)
+  registry.registerSchema(domesticCustomerSchema)
+  registry.registerSchema(internationalCustomerSchema)
 
   // 注册供应商 Schema (三种子类型)
   registry.registerSchema(manufacturerSchema)
@@ -1677,6 +1721,8 @@ export function setupSchemas(): void {
   registry.registerActionConfig(standardProductActionConfig)
   registry.registerActionConfig(customerProductActionConfig)
   registry.registerActionConfig(selfOwnedProductActionConfig)
+  registry.registerActionConfig(domesticCustomerActionConfig)
+  registry.registerActionConfig(internationalCustomerActionConfig)
   registry.registerActionConfig(customerActionConfig)
   registry.registerActionConfig(manufacturerActionConfig)
   registry.registerActionConfig(serviceProviderActionConfig)
