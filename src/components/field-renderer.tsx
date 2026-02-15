@@ -21,6 +21,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Combobox } from "@/components/ui/combobox"
+import { EmployeeSelectorField } from "@/components/employee-selector-field"
+import type { Employee } from "@/types/employee"
 
 interface FieldRendererProps {
   field: FieldDef
@@ -138,6 +140,21 @@ export function FieldRenderer({
             isTree={field.comboboxConfig.isTree}
           />
         ) : null
+
+      case "employeeSelector":
+        const config = field.employeeSelectorConfig
+        return (
+          <EmployeeSelectorField
+            mode={config?.mode === "multiple" ? "multiple" : "single"}
+            value={value as Employee | Employee[] | undefined}
+            onChange={onChange}
+            placeholder={field.placeholder}
+            disabled={isDisabled}
+            required={field.required}
+            columns={config?.columns}
+            statusFilter={config?.statusFilter}
+          />
+        )
 
       case "computed":
         return (

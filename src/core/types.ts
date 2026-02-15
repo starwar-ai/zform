@@ -41,6 +41,7 @@ export type FieldType =
   | "skuCode"
   | "price"
   | "ratio"
+  | "employeeSelector"
 
 /** Combobox 下拉选项 */
 export interface ComboboxOption {
@@ -104,6 +105,16 @@ export interface RatioFieldConfig {
   productRatioField: FieldId
   /** 辅料数（比例分母）字段 ID */
   accessoryRatioField: FieldId
+}
+
+/** 员工选择器字段配置 (type=employeeSelector 时) */
+export interface EmployeeSelectorFieldConfig {
+  /** 选择模式: single(单选) | multiple(多选) */
+  mode?: "single" | "multiple"
+  /** 显示的列 */
+  columns?: Array<"name" | "username" | "email" | "phone" | "department" | "status">
+  /** 状态过滤 */
+  statusFilter?: "active" | "inactive" | "all"
 }
 
 // ============================================================
@@ -176,6 +187,8 @@ export interface FieldDef {
   priceConfig?: PriceFieldConfig
   /** 配比字段配置 (type=ratio 时)：产品数与辅料数映射到独立字段 */
   ratioConfig?: RatioFieldConfig
+  /** 员工选择器配置 (type=employeeSelector 时) */
+  employeeSelectorConfig?: EmployeeSelectorFieldConfig
   /** 字段副作用：当依赖字段变化时自动触发（如编号生成、价格计算） */
   effect?: FieldEffect
   /** 条件显示：根据当前表单数据决定字段是否显示，返回 false 时隐藏 */

@@ -107,9 +107,14 @@ export const domesticCustomerSchema: DocumentSchema = {
     {
       id: "salesRep",
       label: "主业务员",
-      type: "text",
+      type: "employeeSelector",
       placeholder: "选择业务员",
       group: "业务信息",
+      employeeSelectorConfig: {
+        mode: "multiple",
+        columns: ["name", "username", "department"],
+        statusFilter: "active"
+      }
     },
 
     // === 地址与联系信息 ===
@@ -448,9 +453,14 @@ export const internationalCustomerSchema: DocumentSchema = {
     {
       id: "salesRep",
       label: "主业务员",
-      type: "text",
+      type: "employeeSelector",
       placeholder: "选择业务员",
       group: "业务信息",
+      employeeSelectorConfig: {
+        mode: "multiple",
+        columns: ["name", "username", "department"],
+        statusFilter: "active"
+      }
     },
 
     // === 地址与联系信息 ===
@@ -832,9 +842,14 @@ export const customerSchema: DocumentSchema = {
     {
       id: "salesRep",
       label: "主业务员",
-      type: "text",
+      type: "employeeSelector",
       placeholder: "选择业务员",
       group: "业务信息",
+      employeeSelectorConfig: {
+        mode: "multiple",
+        columns: ["name", "username", "department"],
+        statusFilter: "active"
+      }
     },
 
     // === 地址与联系信息 ===
