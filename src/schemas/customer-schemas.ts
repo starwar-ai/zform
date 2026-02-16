@@ -6,7 +6,7 @@
  */
 
 import type { DocumentSchema, ChangeRule, ComboboxOption } from "@/core/types"
-import type { CustomerCategoryTreeNode } from "@/types/category"
+import type { CustomerCategoryTreeNode, TransportMethod } from "@/types/category"
 import { CURRENCY_OPTIONS } from "@/lib/currency"
 
 // ============================================================
@@ -135,8 +135,8 @@ export const domesticCustomerSchema: DocumentSchema = {
       group: "业务信息",
       comboboxConfig: {
         fetchOptions: async () => {
-          const { fetchTransportMethodsApi } = await import("@/apis/business-config-api");
-          const methods = await fetchTransportMethodsApi();
+          const { fetchCategoryListApi } = await import("@/apis/category-api");
+          const methods = await fetchCategoryListApi<TransportMethod>("transport-method");
           return methods
             .filter(method => method.isEnabled)
             .map(method => ({
@@ -502,8 +502,8 @@ export const internationalCustomerSchema: DocumentSchema = {
       group: "业务信息",
       comboboxConfig: {
         fetchOptions: async () => {
-          const { fetchTransportMethodsApi } = await import("@/apis/business-config-api");
-          const methods = await fetchTransportMethodsApi();
+          const { fetchCategoryListApi } = await import("@/apis/category-api");
+          const methods = await fetchCategoryListApi<TransportMethod>("transport-method");
           return methods
             .filter(method => method.isEnabled)
             .map(method => ({
@@ -884,8 +884,8 @@ export const customerSchema: DocumentSchema = {
       group: "业务信息",
       comboboxConfig: {
         fetchOptions: async () => {
-          const { fetchTransportMethodsApi } = await import("@/apis/business-config-api");
-          const methods = await fetchTransportMethodsApi();
+          const { fetchCategoryListApi } = await import("@/apis/category-api");
+          const methods = await fetchCategoryListApi<TransportMethod>("transport-method");
           return methods
             .filter(method => method.isEnabled)
             .map(method => ({

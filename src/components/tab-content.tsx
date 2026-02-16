@@ -11,8 +11,8 @@ import { UserManagement } from "@/components/user-management"
 import { RoleManagement } from "@/components/role-management"
 import { MenuManagement } from "@/components/menu-management"
 import { DepartmentManagement } from "@/components/department-management"
-import { CategoryManagement } from "@/components/category-management"
-import { BusinessConfig } from "@/components/business-config"
+import { BusinessParameters } from "@/components/business-parameters"
+import { BusinessEntitiesConfig } from "@/components/business-entities-config"
 import { ProductManagement } from "@/components/product-management"
 import { CustomerManagement } from "@/components/customer-management"
 import { SupplierManagement } from "@/components/supplier-management"
@@ -106,10 +106,10 @@ export function TabContent() {
         return <DepartmentManagement />
 
       case "category-management":
-        return <CategoryManagement />
+        return <BusinessParameters />
 
       case "business-config":
-        return <BusinessConfig />
+        return <BusinessEntitiesConfig />
 
       case "product-management":
         return <ProductManagement />

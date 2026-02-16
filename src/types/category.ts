@@ -6,7 +6,7 @@
 // ==================== 通用基础类型 ====================
 
 /** 分类类型标识 */
-export type CategoryTypeKey = 'customer' | 'product' | 'product-category' | 'exhibition' | 'customer-source' | 'order-route' | 'other-config'
+export type CategoryTypeKey = 'customer' | 'product' | 'product-category' | 'exhibition' | 'customer-source' | 'order-route' | 'transport-method' | 'other-config'
 
 /** 基础分类字段 */
 interface BaseCategoryFields {
@@ -140,6 +140,38 @@ export interface UpdateCustomerSourceTagInput {
   code?: string
   name?: string
   isCommon?: boolean
+}
+
+// ==================== 运输方式 ====================
+
+export interface TransportMethod extends BaseCategoryFields {
+  code: string
+  name: string
+  nameEn: string | null
+  isCommon: boolean
+  sortOrder: number
+  isEnabled: boolean
+  remark: string | null
+}
+
+export interface CreateTransportMethodInput {
+  code: string
+  name: string
+  nameEn?: string | null
+  isCommon?: boolean
+  sortOrder?: number
+  isEnabled?: boolean
+  remark?: string | null
+}
+
+export interface UpdateTransportMethodInput {
+  code?: string
+  name?: string
+  nameEn?: string | null
+  isCommon?: boolean
+  sortOrder?: number
+  isEnabled?: boolean
+  remark?: string | null
 }
 
 // ==================== 配置驱动类型 ====================

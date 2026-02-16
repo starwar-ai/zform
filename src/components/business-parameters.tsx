@@ -1,9 +1,9 @@
 /**
- * CategoryManagement
+ * BusinessParameters
  *
- * 统一参数配置组件。
- * 通过配置驱动渲染不同分类的 Tab 页，支持树形和扁平列表两种展示模式。
- * 新增分类只需在 CATEGORY_CONFIGS 数组中添加配置即可。
+ * 统一业务配置组件。
+ * 通过配置驱动渲染不同业务参数的 Tab 页，支持树形和扁平列表两种展示模式。
+ * 新增参数类型只需在 CATEGORY_CONFIGS 数组中添加配置即可。
  */
 
 import { useState, useEffect, useCallback, useMemo } from "react"
@@ -187,6 +187,33 @@ export const CATEGORY_CONFIGS: CategoryConfig[] = [
       { key: "path", label: "路径", type: "text", required: true, placeholder: "例如: /orders/domestic" },
       { key: "status", label: "状态", type: "text", required: true, placeholder: "例如: active" },
       { key: "description", label: "描述", type: "text", placeholder: "请输入描述" },
+    ],
+  },
+  {
+    key: "transport-method",
+    label: "运输方式",
+    icon: "Route",
+    apiPath: "/transport-methods",
+    isTree: false,
+    nameField: "name",
+    codeField: "code",
+    columns: [
+      { key: "code", label: "编码", width: "120px" },
+      { key: "name", label: "中文名称", width: "160px" },
+      { key: "nameEn", label: "英文名称", width: "160px" },
+      { key: "isCommon", label: "是否常用", render: "boolean", width: "100px" },
+      { key: "sortOrder", label: "排序", width: "80px" },
+      { key: "isEnabled", label: "是否启用", render: "boolean", width: "100px" },
+      { key: "createdAt", label: "创建时间", render: "date" },
+    ],
+    formFields: [
+      { key: "code", label: "编码", type: "text", required: true, placeholder: "例如: SEA" },
+      { key: "name", label: "中文名称", type: "text", required: true, placeholder: "例如: 海运" },
+      { key: "nameEn", label: "英文名称", type: "text", placeholder: "例如: Sea" },
+      { key: "isCommon", label: "是否常用", type: "boolean", defaultValue: false },
+      { key: "sortOrder", label: "排序", type: "number", defaultValue: 0 },
+      { key: "isEnabled", label: "是否启用", type: "boolean", defaultValue: true },
+      { key: "remark", label: "备注", type: "text", placeholder: "请输入备注" },
     ],
   },
   // 其他配置使用自定义面板
@@ -774,7 +801,7 @@ function CategoryPanel({ config }: { config: CategoryConfig }) {
 
 // ==================== 主组件 ====================
 
-export function CategoryManagement() {
+export function BusinessParameters() {
   const [activeKey, setActiveKey] = useState<CategoryTypeKey>(CATEGORY_CONFIGS[0].key)
 
   const activeConfig = CATEGORY_CONFIGS.find((c) => c.key === activeKey) || CATEGORY_CONFIGS[0]

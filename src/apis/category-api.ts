@@ -49,7 +49,9 @@ async function request<T>(
 
 /** 获取分类列表/树 */
 export async function fetchCategoryListApi<T>(type: CategoryTypeKey): Promise<T[]> {
-  return request<T[]>(`/categories/${type}`)
+  // 特殊处理运输方式，使用独立的API路径
+  const path = type === 'transport-method' ? '/transport-methods' : `/categories/${type}`
+  return request<T[]>(path)
 }
 
 /** 创建分类 */
@@ -57,7 +59,8 @@ export async function createCategoryApi<T>(
   type: CategoryTypeKey,
   data: Record<string, unknown>
 ): Promise<T> {
-  return request<T>(`/categories/${type}`, {
+  const path = type === 'transport-method' ? '/transport-methods' : `/categories/${type}`
+  return request<T>(path, {
     method: "POST",
     body: JSON.stringify(data),
   })
@@ -69,7 +72,8 @@ export async function updateCategoryApi<T>(
   id: string,
   data: Record<string, unknown>
 ): Promise<T> {
-  return request<T>(`/categories/${type}/${id}`, {
+  const basePath = type === 'transport-method' ? '/transport-methods' : `/categories/${type}`
+  return request<T>(`${basePath}/${id}`, {
     method: "PUT",
     body: JSON.stringify(data),
   })
@@ -80,7 +84,8 @@ export async function deleteCategoryApi(
   type: CategoryTypeKey,
   id: string
 ): Promise<void> {
-  await request<null>(`/categories/${type}/${id}`, {
+  const basePath = type === 'transport-method' ? '/transport-methods' : `/categories/${type}`
+  await request<null>(`${basePath}/${id}`, {
     method: "DELETE",
   })
 }

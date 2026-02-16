@@ -1,5 +1,5 @@
 /**
- * BusinessConfig
+ * BusinessEntitiesConfig
  *
  * 实体配置管理组件，包含子公司、国家、港口等配置。
  * 每种配置一个Tab。
@@ -8,17 +8,17 @@
 import { useState } from "react"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Settings } from "lucide-react"
-import { CompanyConfigPanel } from "./business-config/company-panel"
-import { RegionConfigPanel } from "./business-config/region-panel"
-import { CountryConfigPanel } from "./business-config/country-panel"
-import { PortConfigPanel } from "./business-config/port-panel"
-import { BrandConfigPanel } from "./business-config/brand-panel"
-import { WarehouseConfigPanel } from "./business-config/warehouse-panel"
-import { ExchangeRatePanel } from "./business-config/exchange-rate-panel"
-import { TransportMethodConfigPanel } from "./business-config/transport-method-panel"
+import { CompanyConfigPanel } from "./company-panel"
+import { RegionConfigPanel } from "./region-panel"
+import { CountryConfigPanel } from "./country-panel"
+import { PortConfigPanel } from "./port-panel"
+import { BrandConfigPanel } from "./brand-panel"
+import { WarehouseConfigPanel } from "./warehouse-panel"
+import { ExchangeRatePanel } from "./exchange-rate-panel"
+
 import type { ConfigTypeKey } from "@/types/business-config"
 
-export function BusinessConfig() {
+export function BusinessEntitiesConfig() {
   const [activeKey, setActiveKey] = useState<ConfigTypeKey>('company')
 
   return (
@@ -39,7 +39,6 @@ export function BusinessConfig() {
           <TabsTrigger value="brand">品牌</TabsTrigger>
           <TabsTrigger value="warehouse">仓库</TabsTrigger>
           <TabsTrigger value="exchangeRate">汇率</TabsTrigger>
-          <TabsTrigger value="transportMethod">运输方式</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -51,7 +50,6 @@ export function BusinessConfig() {
       {activeKey === 'brand' && <BrandConfigPanel />}
       {activeKey === 'warehouse' && <WarehouseConfigPanel />}
       {activeKey === 'exchangeRate' && <ExchangeRatePanel />}
-      {activeKey === 'transportMethod' && <TransportMethodConfigPanel />}
     </div>
   )
 }
