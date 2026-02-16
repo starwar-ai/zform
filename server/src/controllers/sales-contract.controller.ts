@@ -1,9 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import { SalesContractService } from '../services/sales-contract.service';
+import { CollectionPlanService } from '../services/collection-plan.service';
 import { successResponse, paginatedResponse } from '../utils/response';
 import { ensureString } from '../utils/request';
 
 const salesContractService = new SalesContractService();
+const collectionPlanService = new CollectionPlanService();
 
 export const salesContractController = {
   // 创建销售合同
@@ -226,6 +228,74 @@ export const salesContractController = {
     try {
       const statistics = await salesContractService.getStatistics(req.query);
       res.json(successResponse(statistics));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // ==================== 收款计划 ====================
+
+  async getCollectionPlans(req: Request, res: Response, next: NextFunction) {
+    try {
+      const plans = await collectionPlanService.findBySalesContractId(
+        ensureString(req.params.id)
+      );
+      res.json(successResponse(plans));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async createCollectionPlan(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = (req.headers['x-user-id'] as string) || 'system';
+      const plan = await collectionPlanService.create(
+        { ...req.body, salesContractId: ensureString(req.params.id) },
+        userId
+      );
+      res.status(201).json(successResponse(plan, '收款计划创建成功'));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateCollectionPlan(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = (req.headers['x-user-id'] as string) || 'system';
+      const plan = await collectionPlanService.update(
+        ensureString(req.params.planId),
+        req.body,
+        userId
+      );
+      res.json(successResponse(plan, '收款计划更新成功'));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async deleteCollectionPlan(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = (req.headers['x-user-id'] as string) || 'system';
+      await collectionPlanService.delete(
+        ensureString(req.params.planId),
+        userId
+      );
+      res.json(successResponse(null, '收款计划删除成功'));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async upsertCollectionPlans(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = (req.headers['x-user-id'] as string) || 'system';
+      const { collectionPlans } = req.body;
+      const plans = await collectionPlanService.upsertBySalesContractId(
+        ensureString(req.params.id),
+        Array.isArray(collectionPlans) ? collectionPlans : [],
+        userId
+      );
+      res.json(successResponse(plans, '收款计划保存成功'));
     } catch (error) {
       next(error);
     }

@@ -45,10 +45,4 @@ router.put('/customer-source/reorder', parameterController.reorderCustomerSource
 router.put('/customer-source/:id', parameterController.updateCustomerSource);
 router.delete('/customer-source/:id', parameterController.deleteCustomerSource);
 
-// ---- 客户付款方式（收款方式字典）----
-router.get('/payment-terms', parameterController.getPaymentTermList);
-router.post('/payment-terms', parameterController.createPaymentTerm);
-router.put('/payment-terms/:id', parameterController.updatePaymentTerm);
-router.delete('/payment-terms/:id', parameterController.deletePaymentTerm);
-
 export default router;

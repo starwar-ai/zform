@@ -21,6 +21,7 @@ import brandRoutes from './brands';
 import warehouseRoutes from './warehouses';
 import inventoryRoutes from './inventory';
 import orderRouteRoutes from './order-routes';
+import paymentTermRoutes from './payment-terms';
 import otherConfigRoutes from './other-configs';
 import documentRoutes from '../documents/document.routes';
 import productImageRoutes from './product-images';
@@ -60,9 +61,11 @@ router.use('/departments', departmentRoutes);
 router.use('/data-permissions', dataPermissionRoutes);
 router.use('/document-permissions', docPermissionRoutes);
 // ---- 参数配置 API（统一 /parameters 前缀）----
-router.use('/parameters', categoryRoutes);
+// 注意：更具体的路径需先注册，否则会被 /parameters 吞掉
 router.use('/parameters/order-routes', orderRouteRoutes);
 router.use('/parameters/transport-methods', transportMethodRoutes);
+router.use('/parameters/payment-terms', paymentTermRoutes);
+router.use('/parameters', categoryRoutes);
 
 // ---- 业务实体管理 API ----
 router.use('/companies', companyRoutes);

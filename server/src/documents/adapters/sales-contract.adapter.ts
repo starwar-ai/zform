@@ -89,11 +89,20 @@ export const salesContractAdapter: DocumentTypeAdapter = {
       orderBy: { lineNumber: 'asc' },
       take: 5,
     },
+    collectionPlans: {
+      where: { deletedAt: null },
+      orderBy: { step: 'asc' },
+      take: 5,
+    },
   },
   detailIncludes: {
     items: {
       where: { deletedAt: null },
       orderBy: { lineNumber: 'asc' },
+    },
+    collectionPlans: {
+      where: { deletedAt: null },
+      orderBy: { step: 'asc' },
     },
   },
 

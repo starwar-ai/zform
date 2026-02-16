@@ -77,6 +77,7 @@ import {
   Route,
   Settings,
   GripVertical,
+  Banknote,
 } from "lucide-react"
 import {
   DndContext,
@@ -141,6 +142,30 @@ export const CATEGORY_CONFIGS: ParameterConfig[] = [
       { key: "name", label: "标签名称", type: "text", required: true, placeholder: "例如: 阿里巴巴" },
       { key: "isCommon", label: "是否常用", type: "boolean", defaultValue: false },
       { key: "sortOrder", label: "排序", type: "number", defaultValue: 0 },
+    ],
+  },
+  {
+    key: "payment-terms",
+    label: "客户付款方式",
+    icon: "Banknote",
+    apiPath: "/parameters/payment-terms",
+    isTree: false,
+    nameField: "name",
+    codeField: "code",
+    columns: [
+      { key: "code", label: "编号", width: "120px" },
+      { key: "name", label: "结汇名称", width: "160px" },
+      { key: "nameEng", label: "结汇英文名称", width: "160px" },
+      { key: "dateType", label: "起始日类型", width: "100px" },
+      { key: "duration", label: "天数", width: "80px" },
+      { key: "createdAt", label: "创建时间", render: "date" },
+    ],
+    formFields: [
+      { key: "code", label: "编号", type: "text", required: true, placeholder: "例如: TT" },
+      { key: "name", label: "结汇名称", type: "text", required: true, placeholder: "例如: 电汇" },
+      { key: "nameEng", label: "结汇英文名称", type: "text", required: true, placeholder: "例如: T/T" },
+      { key: "dateType", label: "起始日类型", type: "number", placeholder: "起始日类型" },
+      { key: "duration", label: "天数", type: "number", placeholder: "天数" },
     ],
   },
   {
@@ -271,6 +296,7 @@ const categoryIconMap: Record<string, React.ComponentType<{ className?: string }
   Tags,
   Route,
   Settings,
+  Banknote,
 }
 
 function getCategoryIcon(iconName: string) {

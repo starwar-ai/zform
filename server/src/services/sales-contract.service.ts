@@ -109,7 +109,7 @@ export class SalesContractService {
     return { contracts, total, page: pageNumber, pageSize: pageSizeNumber };
   }
 
-  // 获取销售合同详情（含完整明细）
+  // 获取销售合同详情（含完整明细、收款计划）
   async findById(id: string) {
     const salesContract = await prisma.salesContract.findUnique({
       where: { id },
@@ -117,6 +117,10 @@ export class SalesContractService {
         items: {
           where: { deletedAt: null },
           orderBy: { lineNumber: 'asc' },
+        },
+        collectionPlans: {
+          where: { deletedAt: null },
+          orderBy: { step: 'asc' },
         },
       },
     });
@@ -133,6 +137,10 @@ export class SalesContractService {
         items: {
           where: { deletedAt: null },
           orderBy: { lineNumber: 'asc' },
+        },
+        collectionPlans: {
+          where: { deletedAt: null },
+          orderBy: { step: 'asc' },
         },
       },
     });

@@ -1283,7 +1283,8 @@ model SalesContract {
   deletedAt DateTime? @map("deleted_at")
 
   // 关联关系
-  items SalesContractItem[] @relation("SalesContractItems")
+  items         SalesContractItem[] @relation("SalesContractItems")
+  collectionPlans SmsCollectionPlan[] @relation("SalesContractCollectionPlans")
 
   @@index([code])
   @@index([customerId])
@@ -1292,6 +1293,60 @@ model SalesContract {
   @@index([contractType])
   @@index([createdAt])
   @@map("sales_contracts")
+}
+
+// ==================== 收款计划表 (sms_collection_plan) ====================
+// 基于 zexport CollectionPlan，支持分期付款如 "T/T 20%预付，余款发货后30天"
+
+model SmsCollectionPlan {
+  id String @id @default(cuid())
+
+  // 关联销售合同
+  salesContractId String        @map("sales_contract_id")
+  salesContract   SalesContract  @relation("SalesContractCollectionPlans", fields: [salesContractId], references: [id], onDelete: Cascade)
+
+  // 步骤与支付
+  step          Int     @default(1) // 步骤序号
+  paymentMethod Int?    @map("payment_method") // 支付方式
+  paymentName   String? @map("payment_name") // 支付方式名称
+
+  // 日期计算（起始点、起始日、天数 → 预计收款日）
+  dateType            Int?      @map("date_type") // 起始点：1-合同签订日 2-回签日 3-发货日 4-开票日等
+  startDate           DateTime? @map("start_date") // 起始日
+  days                Int       @default(0) // 天数（从起始日起）
+  expectedReceiptDate DateTime? @map("expected_receipt_date") // 预计收款日
+
+  // 金额
+  collectionRatio     Decimal   @map("collection_ratio") @db.Decimal(19, 6) // 收款比例(%)
+  realCollectionRatio Decimal?   @map("real_collection_ratio") @db.Decimal(19, 6) // 实际收款比例
+  receivableAmount    Decimal   @default(0) @map("receivable_amount") @db.Decimal(15, 2) // 应收金额
+  receivedAmount      Decimal   @default(0) @map("received_amount") @db.Decimal(15, 2) // 实收金额
+
+  // 控制标识
+  controlPurchaseFlag Int @default(0) @map("control_purchase_flag") // 是否控制采购 0-否 1-是
+  controlShipmentFlag Int @default(0) @map("control_shipment_flag") // 是否控制出运 0-否 1-是
+
+  // 执行状态 0-未执行 1-部分执行 2-已执行
+  exeStatus Int @default(0) @map("exe_status")
+
+  // 收款明细（JSON，如认领/水单列表，参考 zexport children）
+  children Json? // CollectionPlanItem[] 收款明细
+
+  // 差异原因（JSON）
+  differenceReason Json? @map("difference_reason")
+
+  // 时间戳
+  createdBy String?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedBy String?   @map("updated_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([salesContractId])
+  @@index([step])
+  @@index([expectedReceiptDate])
+  @@index([exeStatus])
+  @@map("sms_collection_plan")
 }
 
 // ==================== 销售合同明细表 ====================

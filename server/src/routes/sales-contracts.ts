@@ -417,6 +417,42 @@ router.post('/:id/to-purchase-plan', salesContractController.toPurchasePlan);
  *       200:
  *         description: 成功获取明细列表
  */
+/**
+ * @swagger
+ * /sales-contracts/{id}/collection-plans:
+ *   get:
+ *     summary: 获取销售合同收款计划列表
+ *     tags: [SalesContracts]
+ */
+router.get('/:id/collection-plans', salesContractController.getCollectionPlans);
+
+/**
+ * @swagger
+ * /sales-contracts/{id}/collection-plans:
+ *   post:
+ *     summary: 批量保存收款计划（替换模式，body: { collectionPlans: [...] }）
+ *     tags: [SalesContracts]
+ */
+router.post('/:id/collection-plans', salesContractController.upsertCollectionPlans);
+
+/**
+ * @swagger
+ * /sales-contracts/{id}/collection-plans/{planId}:
+ *   put:
+ *     summary: 更新收款计划
+ *     tags: [SalesContracts]
+ */
+router.put('/:id/collection-plans/:planId', salesContractController.updateCollectionPlan);
+
+/**
+ * @swagger
+ * /sales-contracts/{id}/collection-plans/{planId}:
+ *   delete:
+ *     summary: 删除收款计划
+ *     tags: [SalesContracts]
+ */
+router.delete('/:id/collection-plans/:planId', salesContractController.deleteCollectionPlan);
+
 router.get('/:id/items', salesContractController.getItems);
 
 /**
