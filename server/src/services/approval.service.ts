@@ -242,7 +242,7 @@ export class ApprovalService {
     // 更新单据审核状态
     await updateDocApprovalStatus(docType, docId, 'PENDING', user.userId);
 
-    const levels = rule.levels as ApprovalLevel[];
+    const levels = rule.levels as unknown as ApprovalLevel[];
     const firstLevelName = levels[0]?.name ?? '第一级';
 
     return {
@@ -277,7 +277,7 @@ export class ApprovalService {
       );
     }
 
-    const levels = instance.rule.levels as ApprovalLevel[];
+    const levels = instance.rule.levels as unknown as ApprovalLevel[];
     const currentLevelDef = levels[instance.currentLevel - 1];
     if (!currentLevelDef) {
       throw new Error('审核级别配置异常');
@@ -469,7 +469,7 @@ export class ApprovalService {
 
     // 筛选当前用户有权限审批的实例
     return instances.filter((instance) => {
-      const levels = instance.rule.levels as ApprovalLevel[];
+      const levels = instance.rule.levels as unknown as ApprovalLevel[];
       const levelDef = levels[instance.currentLevel - 1];
       if (!levelDef) return false;
 

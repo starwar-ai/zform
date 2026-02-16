@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { PurchasePlanService } from '../services/purchase-plan.service';
-import { success, error } from '../utils/response';
+import { successResponse, errorResponse } from '../utils/response';
+import { ensureString } from '../utils/request';
 
 const purchasePlanService = new PurchasePlanService();
 
@@ -13,9 +14,9 @@ export class PurchasePlanController {
     try {
       const userId = req.headers['x-user-id'] as string || 'system';
       const plan = await purchasePlanService.create(req.body, userId);
-      res.json(success(plan, '采购计划创建成功'));
+      res.json(successResponse(plan, '采购计划创建成功'));
     } catch (err: any) {
-      res.status(400).json(error(err.message));
+      res.status(400).json(errorResponse(err.message));
     }
   }
 
@@ -25,12 +26,12 @@ export class PurchasePlanController {
    */
   async createFromSalesContract(req: Request, res: Response) {
     try {
-      const { salesContractId } = req.params;
+      const salesContractId = ensureString(req.params.salesContractId);
       const userId = req.headers['x-user-id'] as string || 'system';
       const plan = await purchasePlanService.createFromSalesContract(salesContractId, userId);
-      res.json(success(plan, '从销售合同生成采购计划成功'));
+      res.json(successResponse(plan, '从销售合同生成采购计划成功'));
     } catch (err: any) {
-      res.status(400).json(error(err.message));
+      res.status(400).json(errorResponse(err.message));
     }
   }
 
@@ -41,9 +42,9 @@ export class PurchasePlanController {
   async list(req: Request, res: Response) {
     try {
       const result = await purchasePlanService.findMany(req.query);
-      res.json(success(result));
+      res.json(successResponse(result));
     } catch (err: any) {
-      res.status(400).json(error(err.message));
+      res.status(400).json(errorResponse(err.message));
     }
   }
 
@@ -53,11 +54,11 @@ export class PurchasePlanController {
    */
   async getById(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = ensureString(req.params.id);
       const plan = await purchasePlanService.findById(id);
-      res.json(success(plan));
+      res.json(successResponse(plan));
     } catch (err: any) {
-      res.status(404).json(error(err.message));
+      res.status(404).json(errorResponse(err.message));
     }
   }
 
@@ -67,12 +68,12 @@ export class PurchasePlanController {
    */
   async update(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = ensureString(req.params.id);
       const userId = req.headers['x-user-id'] as string || 'system';
       const plan = await purchasePlanService.update(id, req.body, userId);
-      res.json(success(plan, '采购计划更新成功'));
+      res.json(successResponse(plan, '采购计划更新成功'));
     } catch (err: any) {
-      res.status(400).json(error(err.message));
+      res.status(400).json(errorResponse(err.message));
     }
   }
 
@@ -82,12 +83,13 @@ export class PurchasePlanController {
    */
   async updateItem(req: Request, res: Response) {
     try {
-      const { planId, itemId } = req.params;
+      const planId = ensureString(req.params.planId);
+      const itemId = ensureString(req.params.itemId);
       const userId = req.headers['x-user-id'] as string || 'system';
       const item = await purchasePlanService.updateItem(planId, itemId, req.body, userId);
-      res.json(success(item, '采购计划明细更新成功'));
+      res.json(successResponse(item, '采购计划明细更新成功'));
     } catch (err: any) {
-      res.status(400).json(error(err.message));
+      res.status(400).json(errorResponse(err.message));
     }
   }
 
@@ -97,12 +99,12 @@ export class PurchasePlanController {
    */
   async addItem(req: Request, res: Response) {
     try {
-      const { planId } = req.params;
+      const planId = ensureString(req.params.planId);
       const userId = req.headers['x-user-id'] as string || 'system';
       const item = await purchasePlanService.addItem(planId, req.body, userId);
-      res.json(success(item, '采购计划明细添加成功'));
+      res.json(successResponse(item, '采购计划明细添加成功'));
     } catch (err: any) {
-      res.status(400).json(error(err.message));
+      res.status(400).json(errorResponse(err.message));
     }
   }
 
@@ -112,11 +114,11 @@ export class PurchasePlanController {
    */
   async deleteItem(req: Request, res: Response) {
     try {
-      const { itemId } = req.params;
+      const itemId = ensureString(req.params.itemId);
       const result = await purchasePlanService.deleteItem(itemId);
-      res.json(success(result, '采购计划明细删除成功'));
+      res.json(successResponse(result, '采购计划明细删除成功'));
     } catch (err: any) {
-      res.status(400).json(error(err.message));
+      res.status(400).json(errorResponse(err.message));
     }
   }
 
@@ -126,12 +128,12 @@ export class PurchasePlanController {
    */
   async approve(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = ensureString(req.params.id);
       const userId = req.headers['x-user-id'] as string || 'system';
       const plan = await purchasePlanService.approve(id, userId);
-      res.json(success(plan, '采购计划审核通过'));
+      res.json(successResponse(plan, '采购计划审核通过'));
     } catch (err: any) {
-      res.status(400).json(error(err.message));
+      res.status(400).json(errorResponse(err.message));
     }
   }
 
@@ -141,13 +143,13 @@ export class PurchasePlanController {
    */
   async reject(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = ensureString(req.params.id);
       const { reason } = req.body;
       const userId = req.headers['x-user-id'] as string || 'system';
       const plan = await purchasePlanService.reject(id, reason, userId);
-      res.json(success(plan, '采购计划已拒绝'));
+      res.json(successResponse(plan, '采购计划已拒绝'));
     } catch (err: any) {
-      res.status(400).json(error(err.message));
+      res.status(400).json(errorResponse(err.message));
     }
   }
 
@@ -157,12 +159,12 @@ export class PurchasePlanController {
    */
   async cancel(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = ensureString(req.params.id);
       const userId = req.headers['x-user-id'] as string || 'system';
       const plan = await purchasePlanService.cancel(id, userId);
-      res.json(success(plan, '采购计划已取消'));
+      res.json(successResponse(plan, '采购计划已取消'));
     } catch (err: any) {
-      res.status(400).json(error(err.message));
+      res.status(400).json(errorResponse(err.message));
     }
   }
 
@@ -172,12 +174,12 @@ export class PurchasePlanController {
    */
   async delete(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = ensureString(req.params.id);
       const userId = req.headers['x-user-id'] as string || 'system';
       const result = await purchasePlanService.delete(id, userId);
-      res.json(success(result, '采购计划删除成功'));
+      res.json(successResponse(result, '采购计划删除成功'));
     } catch (err: any) {
-      res.status(400).json(error(err.message));
+      res.status(400).json(errorResponse(err.message));
     }
   }
 
@@ -188,9 +190,9 @@ export class PurchasePlanController {
   async getStatistics(req: Request, res: Response) {
     try {
       const stats = await purchasePlanService.getStatistics(req.query);
-      res.json(success(stats));
+      res.json(successResponse(stats));
     } catch (err: any) {
-      res.status(400).json(error(err.message));
+      res.status(400).json(errorResponse(err.message));
     }
   }
 }

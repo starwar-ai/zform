@@ -12,6 +12,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import prisma from '../config/database';
 import { successResponse } from '../utils/response';
+import { ensureString } from '../utils/request';
 import {
   productImageUpload,
   generateThumbnail,
@@ -51,7 +52,7 @@ router.post('/:productId/upload', (req: Request, res: Response, next: NextFuncti
         return;
       }
 
-      const productId = String(req.params.productId);
+      const productId = ensureString(req.params.productId);
       const userId = getUserId(req);
       const files = req.files as Express.Multer.File[];
 
@@ -127,7 +128,7 @@ router.post('/:productId/upload', (req: Request, res: Response, next: NextFuncti
  */
 router.get('/:productId', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const productId = req.params.productId;
+    const productId = ensureString(req.params.productId);
 
     const images = await prisma.productImage.findMany({
       where: { productId, deletedAt: null },
@@ -151,7 +152,7 @@ router.get('/:productId', async (req: Request, res: Response, next: NextFunction
  */
 router.put('/:imageId/primary', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const imageId = req.params.imageId;
+    const imageId = ensureString(req.params.imageId);
     const userId = getUserId(req);
 
     const image = await prisma.productImage.findUnique({ where: { id: imageId } });
@@ -201,7 +202,7 @@ router.put('/:imageId/primary', async (req: Request, res: Response, next: NextFu
  */
 router.put('/:imageId/sort', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const imageId = req.params.imageId;
+    const imageId = ensureString(req.params.imageId);
     const userId = getUserId(req);
     const { sortOrder } = req.body;
 
@@ -228,7 +229,7 @@ router.put('/:imageId/sort', async (req: Request, res: Response, next: NextFunct
  */
 router.delete('/:imageId', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const imageId = req.params.imageId;
+    const imageId = ensureString(req.params.imageId);
     const userId = getUserId(req);
 
     const image = await prisma.productImage.findUnique({ where: { id: imageId } });

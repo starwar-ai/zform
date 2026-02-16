@@ -6,6 +6,7 @@
 
 import { Router, Request, Response } from 'express';
 import { CountryService } from '../services/country.service';
+import { ensureString } from '../utils/request';
 
 const router = Router();
 const countryService = new CountryService();
@@ -23,7 +24,7 @@ router.get('/', async (req: Request, res: Response) => {
 /** GET /api/countries/:id - 获取单个国家 */
 router.get('/:id', async (req: Request, res: Response) => {
   try {
-    const country = await countryService.findById(req.params.id);
+    const country = await countryService.findById(ensureString(req.params.id));
     if (!country) {
       return res.status(404).json({ error: '国家不存在' });
     }
@@ -48,7 +49,7 @@ router.post('/', async (req: Request, res: Response) => {
 router.put('/:id', async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
-    const country = await countryService.update(req.params.id, req.body, userId);
+    const country = await countryService.update(ensureString(req.params.id), req.body, userId);
     res.json(country);
   } catch (error) {
     res.status(400).json({ error: error instanceof Error ? error.message : '更新国家失败' });
@@ -58,7 +59,7 @@ router.put('/:id', async (req: Request, res: Response) => {
 /** DELETE /api/countries/:id - 删除国家 */
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
-    await countryService.delete(req.params.id);
+    await countryService.delete(ensureString(req.params.id));
     res.status(204).send();
   } catch (error) {
     res.status(400).json({ error: error instanceof Error ? error.message : '删除国家失败' });

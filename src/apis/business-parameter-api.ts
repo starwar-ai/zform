@@ -1,8 +1,8 @@
 /**
- * 实体配置 API
+ * 业务参数 API
  */
 
-import type { Company, CompanyBankAccount, Region, Country, Port, Brand, Warehouse, OrderRoute, CurrencyRate, TransportMethod } from '@/types/business-config';
+import type { Company, CompanyBankAccount, Region, Country, Port, Brand, Warehouse, OrderRoute, CurrencyRate } from '@/types/business-config';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 
@@ -544,6 +544,73 @@ export async function fetchRatesFromExternalApi(): Promise<{
   return res.json();
 }
 
+// ==================== 运输方式 API ====================
+
+export interface TransportMethod {
+  id: string;
+  code: string;
+  name: string;
+  nameEn?: string | null;
+  isCommon: boolean;
+  sortOrder: number;
+  isEnabled: boolean;
+  remark?: string | null;
+  createdBy?: string | null;
+  createdAt: string;
+  updatedBy?: string | null;
+  updatedAt: string;
+  deletedAt?: string | null;
+}
+
+export async function fetchTransportMethodsApi(): Promise<TransportMethod[]> {
+  const res = await fetch(`${API_BASE}/transport-methods`, {
+    credentials: 'include',
+  });
+  if (!res.ok) throw new Error('获取运输方式列表失败');
+  return res.json();
+}
+
+export async function createTransportMethodApi(data: Partial<TransportMethod>): Promise<TransportMethod> {
+  const res = await fetch(`${API_BASE}/transport-methods`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || '创建运输方式失败');
+  }
+  return res.json();
+}
+
+export async function updateTransportMethodApi(id: string, data: Partial<TransportMethod>): Promise<TransportMethod> {
+  const res = await fetch(`${API_BASE}/transport-methods/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || '更新运输方式失败');
+  }
+  return res.json();
+}
+
+export async function deleteTransportMethodApi(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/transport-methods/${id}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || '删除运输方式失败');
+  }
+}
+
+// ==================== 货币转换 API ====================
+
 export async function convertCurrencyApi(params: {
   amount: number;
   fromCurrency: string;
@@ -568,5 +635,4 @@ export async function convertCurrencyApi(params: {
   }
   return res.json();
 }
-
 

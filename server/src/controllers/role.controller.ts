@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { RoleService } from '../services/role.service';
 import { successResponse } from '../utils/response';
+import { ensureString } from '../utils/request';
 
 const roleService = new RoleService();
 
@@ -36,7 +37,7 @@ export const roleController = {
   async update(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = getUserId(req);
-      const role = await roleService.update(req.params.id, req.body, userId);
+      const role = await roleService.update(ensureString(req.params.id), req.body, userId);
       res.json(successResponse(role, '角色更新成功'));
     } catch (error) {
       next(error);
@@ -47,7 +48,7 @@ export const roleController = {
   async delete(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = getUserId(req);
-      await roleService.delete(req.params.id, userId);
+      await roleService.delete(ensureString(req.params.id), userId);
       res.json(successResponse(null, '角色删除成功'));
     } catch (error) {
       next(error);
@@ -57,7 +58,7 @@ export const roleController = {
   /** GET /roles/:id/menus - 获取角色菜单 ID 列表 */
   async getMenus(req: Request, res: Response, next: NextFunction) {
     try {
-      const menuIds = await roleService.getRoleMenuIds(req.params.id);
+      const menuIds = await roleService.getRoleMenuIds(ensureString(req.params.id));
       res.json(successResponse(menuIds));
     } catch (error) {
       next(error);
@@ -68,7 +69,7 @@ export const roleController = {
   async assignMenus(req: Request, res: Response, next: NextFunction) {
     try {
       const { menuIds } = req.body; // string[]
-      await roleService.assignMenus(req.params.id, menuIds);
+      await roleService.assignMenus(ensureString(req.params.id), menuIds);
       res.json(successResponse(null, '菜单权限分配成功'));
     } catch (error) {
       next(error);

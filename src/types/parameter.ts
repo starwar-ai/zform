@@ -203,7 +203,7 @@ export interface ParameterConfig {
   apiPath: string             // e.g. '/categories/customer'
   isTree: boolean             // 是否树形结构
   columns: ParameterColumn[]   // 表格列
-  formFields: CategoryFormField[] // 表单字段
+  formFields: ParameterFormField[] // 表单字段
   nameField: string           // 名称字段（用于树形展示）
   codeField?: string          // 编码字段（可选）
 }

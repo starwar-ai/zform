@@ -6,6 +6,7 @@
 
 import { Router, Request, Response } from 'express';
 import { InventoryService } from '../services/inventory.service';
+import { ensureString } from '../utils/request';
 
 const router = Router();
 const inventoryService = new InventoryService();
@@ -52,7 +53,7 @@ router.get('/summary', async (req: Request, res: Response) => {
 /** GET /api/inventory/:id - 获取单条库存明细 */
 router.get('/:id', async (req: Request, res: Response) => {
   try {
-    const inventory = await inventoryService.findById(req.params.id);
+    const inventory = await inventoryService.findById(ensureString(req.params.id));
     if (!inventory) {
       return res.status(404).json({ error: '库存明细不存在' });
     }

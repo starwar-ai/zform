@@ -6,6 +6,7 @@
 
 import { Router, Request, Response } from 'express';
 import { OtherConfigService } from '../services/other-config.service';
+import { ensureString } from '../utils/request';
 
 const router = Router();
 const otherConfigService = new OtherConfigService();
@@ -23,7 +24,7 @@ router.get('/', async (_req: Request, res: Response) => {
 /** GET /api/other-configs/:id - 获取单个配置 */
 router.get('/:id', async (req: Request, res: Response) => {
   try {
-    const config = await otherConfigService.findById(req.params.id);
+    const config = await otherConfigService.findById(ensureString(req.params.id));
     if (!config) {
       return res.status(404).json({ error: '配置不存在' });
     }
@@ -44,7 +45,7 @@ router.put('/:id/parameters', async (req: Request, res: Response) => {
     }
 
     const updated = await otherConfigService.updateParameterValues(
-      req.params.id,
+      ensureString(req.params.id),
       parameters,
       userId
     );
@@ -65,8 +66,8 @@ router.put('/:configId/parameters/:paramId', async (req: Request, res: Response)
     }
 
     const updated = await otherConfigService.updateParameterValue(
-      req.params.configId,
-      req.params.paramId,
+      ensureString(req.params.configId),
+      ensureString(req.params.paramId),
       value,
       userId
     );

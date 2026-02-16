@@ -454,7 +454,7 @@ function buildFlowGraph(
   // Edges
   const getEdgeStyle = (
     sourceStatus: StepStatus | "start",
-    targetStatus: StepStatus | "end"
+    _targetStatus: StepStatus | "end"
   ): Partial<Edge> => {
     // If source is approved/start and has been passed
     if (sourceStatus === "start" && instance) {
@@ -499,13 +499,13 @@ function buildFlowGraph(
   // Level -> Level
   for (let i = 0; i < levels.length - 1; i++) {
     const sourceStatus = getStepStatus(i)
-    const targetStatus = getStepStatus(i + 1)
+    const _targetStatus = getStepStatus(i + 1)
     edges.push({
       id: `level-${i}-to-level-${i + 1}`,
       source: `level-${i}`,
       target: `level-${i + 1}`,
       type: "smoothstep",
-      ...getEdgeStyle(sourceStatus, targetStatus),
+      ...getEdgeStyle(sourceStatus, _targetStatus),
     })
   }
 

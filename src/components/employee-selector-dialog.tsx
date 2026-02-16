@@ -4,7 +4,7 @@
  * 员工选择对话框 - 支持单选和多选模式
  */
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Search, User, Check, X } from "lucide-react"
 import { fetchEmployeesApi } from "@/apis/employee-api"

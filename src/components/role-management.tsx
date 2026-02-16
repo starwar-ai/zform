@@ -7,9 +7,9 @@ import { useState, useEffect, useCallback } from "react"
 import { useRoleStore } from "@/stores/role-store"
 import { useUserStore } from "@/stores/user-store"
 import { useMenuStore } from "@/stores/menu-store"
-import type { Role, CreateRoleInput, UpdateRoleInput } from "@/types/role"
+import type { Role, CreateRoleInput } from "@/types/role"
 import type { MenuTreeNode } from "@/types/menu"
-import type { DataPermission, SaveDataPermissionInput, DataPermissionLevel } from "@/types/data-permission"
+import type { SaveDataPermissionInput, DataPermissionLevel } from "@/types/data-permission"
 import { DATA_PERMISSION_LEVEL_LABELS } from "@/types/data-permission"
 import type { DepartmentTreeNode } from "@/types/department"
 import { fetchRoleDataPermissionsApi, saveRoleDataPermissionsApi } from "@/apis/data-permission-api"
@@ -493,7 +493,7 @@ export function RoleManagement() {
     setSaving(true)
     try {
       // 只保存有设置的行（level 非空）
-      const toSave = dpRows.filter((r) => r.level && r.level !== "")
+      const toSave = dpRows.filter((r) => Boolean(r.level) && String(r.level) !== "")
       await saveRoleDataPermissionsApi(dpRoleId, toSave)
       setDpDialogOpen(false)
     } catch (err) {

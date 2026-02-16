@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { UserService } from '../services/user.service';
 import { successResponse } from '../utils/response';
+import { ensureString } from '../utils/request';
 
 const userService = new UserService();
 
@@ -36,7 +37,7 @@ export const userController = {
   async update(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = getUserId(req);
-      const user = await userService.update(req.params.id, req.body, userId);
+      const user = await userService.update(ensureString(req.params.id), req.body, userId);
       res.json(successResponse(user, '用户更新成功'));
     } catch (error) {
       next(error);
@@ -47,7 +48,7 @@ export const userController = {
   async delete(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = getUserId(req);
-      await userService.delete(req.params.id, userId);
+      await userService.delete(ensureString(req.params.id), userId);
       res.json(successResponse(null, '用户删除成功'));
     } catch (error) {
       next(error);
@@ -58,7 +59,7 @@ export const userController = {
   async assignRoles(req: Request, res: Response, next: NextFunction) {
     try {
       const { roleIds } = req.body; // string[]
-      await userService.assignRoles(req.params.id, roleIds);
+      await userService.assignRoles(ensureString(req.params.id), roleIds);
       res.json(successResponse(null, '角色分配成功'));
     } catch (error) {
       next(error);
@@ -106,7 +107,7 @@ export const userController = {
   async changePassword(req: Request, res: Response, next: NextFunction) {
     try {
       const { oldPassword, newPassword } = req.body;
-      await userService.changePassword(req.params.id, oldPassword, newPassword);
+      await userService.changePassword(ensureString(req.params.id), oldPassword, newPassword);
       res.json(successResponse(null, '密码修改成功'));
     } catch (error) {
       if (error instanceof Error) {

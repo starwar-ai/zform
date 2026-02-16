@@ -341,7 +341,7 @@ export class ExchangeRateService {
         return null;
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as { result?: string; conversion_rates?: Record<string, number> };
       
       if (data.result === 'success' && data.conversion_rates) {
         const cnyRate = data.conversion_rates.CNY;

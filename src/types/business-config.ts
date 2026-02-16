@@ -8,12 +8,14 @@ export type ConfigTypeKey = 'company' | 'region' | 'country' | 'port' | 'brand' 
 
 // ==================== 公司性质枚举 ====================
 
-export enum CompanyNature {
-  FACTORY = 'FACTORY',
-  EXPORT_COMPANY = 'EXPORT_COMPANY',
-  DOMESTIC_COMPANY = 'DOMESTIC_COMPANY',
-  INTERNAL_CUSTOMER = 'INTERNAL_CUSTOMER',
-}
+export const CompanyNature = {
+  FACTORY: 'FACTORY',
+  EXPORT_COMPANY: 'EXPORT_COMPANY',
+  DOMESTIC_COMPANY: 'DOMESTIC_COMPANY',
+  INTERNAL_CUSTOMER: 'INTERNAL_CUSTOMER',
+} as const;
+
+export type CompanyNature = (typeof CompanyNature)[keyof typeof CompanyNature];
 
 export const CompanyNatureLabels: Record<CompanyNature, string> = {
   [CompanyNature.FACTORY]: '内部工厂',
@@ -24,10 +26,12 @@ export const CompanyNatureLabels: Record<CompanyNature, string> = {
 
 // ==================== 港口状态枚举 ====================
 
-export enum PortStatus {
-  NORMAL = 'NORMAL',
-  SUSPENDED = 'SUSPENDED',
-}
+export const PortStatus = {
+  NORMAL: 'NORMAL',
+  SUSPENDED: 'SUSPENDED',
+} as const;
+
+export type PortStatus = (typeof PortStatus)[keyof typeof PortStatus];
 
 export const PortStatusLabels: Record<PortStatus, string> = {
   [PortStatus.NORMAL]: '正常',
@@ -36,10 +40,12 @@ export const PortStatusLabels: Record<PortStatus, string> = {
 
 // ==================== 品牌类型枚举 ====================
 
-export enum BrandType {
-  CUSTOMER = 'CUSTOMER',
-  COMPANY = 'COMPANY',
-}
+export const BrandType = {
+  CUSTOMER: 'CUSTOMER',
+  COMPANY: 'COMPANY',
+} as const;
+
+export type BrandType = (typeof BrandType)[keyof typeof BrandType];
 
 export const BrandTypeLabels: Record<BrandType, string> = {
   [BrandType.CUSTOMER]: '客户品牌',
@@ -146,10 +152,12 @@ export interface Port {
 
 // ==================== 仓库类型枚举 ====================
 
-export enum WarehouseType {
-  COMPANY = 'COMPANY',
-  SUPPLIER = 'SUPPLIER',
-}
+export const WarehouseType = {
+  COMPANY: 'COMPANY',
+  SUPPLIER: 'SUPPLIER',
+} as const;
+
+export type WarehouseType = (typeof WarehouseType)[keyof typeof WarehouseType];
 
 export const WarehouseTypeLabels: Record<WarehouseType, string> = {
   [WarehouseType.COMPANY]: '公司仓库',

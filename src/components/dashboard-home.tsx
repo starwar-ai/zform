@@ -88,7 +88,7 @@ function SortableWidget({
     >
       {/* Pass drag handle props to children via wrapper */}
       <WidgetHandleContext.Provider
-        value={{ ref: setActivatorNodeRef, attributes, listeners }}
+        value={{ ref: setActivatorNodeRef, attributes: asRecord(attributes), listeners: listeners ? asRecord(listeners) : undefined }}
       >
         {children}
       </WidgetHandleContext.Provider>
@@ -102,6 +102,11 @@ const WidgetHandleContext = createContext<{
   attributes: Record<string, unknown>
   listeners: Record<string, unknown> | undefined
 } | null>(null)
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function asRecord(obj: any): Record<string, unknown> {
+  return obj as Record<string, unknown>
+}
 
 function DragHandle() {
   const ctx = useContext(WidgetHandleContext)
@@ -167,14 +172,6 @@ export function DashboardHome({
         .map((typeId) => schemas.find((schema) => schema.typeId === typeId))
         .filter((schema): schema is (typeof schemas)[number] => Boolean(schema)),
     [effectiveFavoriteButtonTypeIds, schemas]
-  )
-
-  const favoriteLists = useMemo(
-    () =>
-      effectiveFavoriteListTypeIds
-        .map((typeId) => schemas.find((schema) => schema.typeId === typeId))
-        .filter((schema): schema is (typeof schemas)[number] => Boolean(schema)),
-    [effectiveFavoriteListTypeIds, schemas]
   )
 
   const docsByType = useMemo(() => {

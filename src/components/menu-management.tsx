@@ -8,7 +8,6 @@ import { useMenuStore } from "@/stores/menu-store"
 import type {
   Menu,
   CreateMenuInput,
-  UpdateMenuInput,
   MenuTreeNode,
 } from "@/types/menu"
 import { Button } from "@/components/ui/button"
@@ -289,10 +288,10 @@ function SortableMenuGroup({
 }
 
 /** 获取节点层级 */
-function getNodeLevel(node: MenuTreeNode, menus?: Menu[]): number {
+function getNodeLevel(node: MenuTreeNode, _menus?: Menu[]): number {
   // 简单实现：通过 parentId 链计算
   let level = 0
-  let current: MenuTreeNode | undefined = node
+  void node
   // 因为 MenuTreeNode 没有 parent 引用，通过自身无法回溯
   // 改为通过全局菜单列表计算
   return level

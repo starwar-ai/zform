@@ -2767,6 +2767,9 @@ model ShippingPlanItem {
   shippingPlanId String       @map("shipping_plan_id")
   shippingPlan   ShippingPlan @relation("ShippingPlanItems", fields: [shippingPlanId], references: [id], onDelete: Cascade)
 
+  // 行号
+  lineNumber Int @default(0) @map("line_number") // 行号
+
   // 产品基本信息
   productId         String? @map("product_id") // 产品主键
   skuCode           String? @map("sku_code") // SKU编号
@@ -2898,6 +2901,7 @@ model ShippingPlanItem {
   deletedAt DateTime? @map("deleted_at")
 
   @@index([shippingPlanId])
+  @@index([lineNumber])
   @@index([productId])
   @@index([supplierId])
   @@index([customerId])

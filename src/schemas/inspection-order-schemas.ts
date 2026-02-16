@@ -519,7 +519,7 @@ export const inspectionOrderChangeRule: ChangeRule = {
     "detail.items.quantity",
     "detail.items.inspectionStatus",
   ],
-  evaluate: (oldDoc, newDoc, downstreamDocs) => {
+  evaluate: (_oldDoc, _newDoc, _downstreamDocs) => {
     // 验货单暂无下推下游单据，变更影响评估为空
     return []
   },

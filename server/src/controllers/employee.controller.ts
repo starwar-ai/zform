@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { EmployeeService } from '../services/employee.service';
 import { successResponse } from '../utils/response';
+import { ensureString } from '../utils/request';
 
 const employeeService = new EmployeeService();
 
@@ -45,7 +46,7 @@ export const employeeController = {
   /** GET /employees/:id - 获取员工详情 */
   async getById(req: Request, res: Response, next: NextFunction) {
     try {
-      const employee = await employeeService.findById(req.params.id);
+      const employee = await employeeService.findById(ensureString(req.params.id));
       if (!employee) {
         return res.status(404).json({
           success: false,
@@ -74,7 +75,7 @@ export const employeeController = {
   async update(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = getUserId(req);
-      const employee = await employeeService.update(req.params.id, req.body, userId);
+      const employee = await employeeService.update(ensureString(req.params.id), req.body, userId);
       res.json(successResponse(employee, '员工更新成功'));
     } catch (error) {
       next(error);
@@ -85,7 +86,7 @@ export const employeeController = {
   async delete(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = getUserId(req);
-      await employeeService.delete(req.params.id, userId);
+      await employeeService.delete(ensureString(req.params.id), userId);
       res.json(successResponse(null, '员工删除成功'));
     } catch (error) {
       next(error);
@@ -96,7 +97,7 @@ export const employeeController = {
   async assignRoles(req: Request, res: Response, next: NextFunction) {
     try {
       const { roleIds } = req.body;
-      await employeeService.assignRoles(req.params.id, roleIds);
+      await employeeService.assignRoles(ensureString(req.params.id), roleIds);
       res.json(successResponse(null, '角色分配成功'));
     } catch (error) {
       next(error);

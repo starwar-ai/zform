@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { SupplierQuotationService } from '../services/supplier-quotation.service';
 import { successResponse, paginatedResponse } from '../utils/response';
+import { ensureString } from '../utils/request';
 
 const quotationService = new SupplierQuotationService();
 
@@ -29,7 +30,7 @@ export const supplierQuotationController = {
   // 获取报价详情
   async getById(req: Request, res: Response, next: NextFunction) {
     try {
-      const quotation = await quotationService.findById(req.params.id);
+      const quotation = await quotationService.findById(ensureString(req.params.id));
       res.json(successResponse(quotation));
     } catch (error) {
       next(error);
@@ -39,7 +40,7 @@ export const supplierQuotationController = {
   // 根据报价单号查询
   async getByQuotationNo(req: Request, res: Response, next: NextFunction) {
     try {
-      const quotation = await quotationService.findByQuotationNo(req.params.quotationNo);
+      const quotation = await quotationService.findByQuotationNo(ensureString(req.params.quotationNo));
       res.json(successResponse(quotation));
     } catch (error) {
       next(error);
@@ -50,7 +51,7 @@ export const supplierQuotationController = {
   async update(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = req.headers['x-user-id'] as string || 'system';
-      const quotation = await quotationService.update(req.params.id, req.body, userId);
+      const quotation = await quotationService.update(ensureString(req.params.id), req.body, userId);
       res.json(successResponse(quotation, '报价更新成功'));
     } catch (error) {
       next(error);
@@ -61,7 +62,7 @@ export const supplierQuotationController = {
   async delete(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = req.headers['x-user-id'] as string || 'system';
-      await quotationService.delete(req.params.id, userId);
+      await quotationService.delete(ensureString(req.params.id), userId);
       res.json(successResponse(null, '报价删除成功'));
     } catch (error) {
       next(error);
@@ -73,7 +74,7 @@ export const supplierQuotationController = {
     try {
       const userId = req.headers['x-user-id'] as string || 'system';
       const { approved } = req.body;
-      const quotation = await quotationService.approve(req.params.id, approved, userId);
+      const quotation = await quotationService.approve(ensureString(req.params.id), approved, userId);
       res.json(successResponse(quotation, `报价${approved ? '审核通过' : '审核拒绝'}`));
     } catch (error) {
       next(error);
@@ -85,7 +86,7 @@ export const supplierQuotationController = {
     try {
       const userId = req.headers['x-user-id'] as string || 'system';
       const { isActive } = req.body;
-      const quotation = await quotationService.setActive(req.params.id, isActive, userId);
+      const quotation = await quotationService.setActive(ensureString(req.params.id), isActive, userId);
       res.json(successResponse(quotation, `报价${isActive ? '已激活' : '已停用'}`));
     } catch (error) {
       next(error);
@@ -95,7 +96,7 @@ export const supplierQuotationController = {
   // 获取供应商的所有报价
   async getBySupplier(req: Request, res: Response, next: NextFunction) {
     try {
-      const quotations = await quotationService.getBySupplier(req.params.supplierId);
+      const quotations = await quotationService.getBySupplier(ensureString(req.params.supplierId));
       res.json(successResponse(quotations));
     } catch (error) {
       next(error);
@@ -107,8 +108,8 @@ export const supplierQuotationController = {
     try {
       const { supplierId, productCode, asOfDate } = req.query;
       const quotations = await quotationService.getValidQuotations({
-        supplierId: supplierId as string,
-        productCode: productCode as string,
+        supplierId: ensureString(supplierId),
+        productCode: ensureString(productCode),
         asOfDate: asOfDate ? new Date(asOfDate as string) : undefined,
       });
       res.json(successResponse(quotations));
@@ -120,7 +121,7 @@ export const supplierQuotationController = {
   // 比价
   async compareQuotations(req: Request, res: Response, next: NextFunction) {
     try {
-      const { productCode } = req.params;
+      const productCode = ensureString(req.params.productCode);
       const { asOfDate } = req.query;
       const quotations = await quotationService.compareQuotations(
         productCode,

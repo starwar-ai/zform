@@ -8,7 +8,6 @@ import { useState } from "react"
 import { ProductSelectorDialog } from "./product-selector-dialog"
 import { Button } from "./ui/button"
 import { Plus, X } from "lucide-react"
-import { Badge } from "./ui/badge"
 
 interface QuotationItem {
   id: string

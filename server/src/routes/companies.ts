@@ -6,6 +6,7 @@
 
 import { Router, Request, Response } from 'express';
 import { CompanyService } from '../services/company.service';
+import { ensureString } from '../utils/request';
 
 const router = Router();
 const companyService = new CompanyService();
@@ -25,7 +26,7 @@ router.get('/', async (req: Request, res: Response) => {
 /** GET /api/companies/:id - 获取单个子公司（含银行账号） */
 router.get('/:id', async (req: Request, res: Response) => {
   try {
-    const company = await companyService.findById(req.params.id);
+    const company = await companyService.findById(ensureString(req.params.id));
     if (!company) {
       return res.status(404).json({ error: '子公司不存在' });
     }
@@ -50,7 +51,7 @@ router.post('/', async (req: Request, res: Response) => {
 router.put('/:id', async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
-    const company = await companyService.update(req.params.id, req.body, userId);
+    const company = await companyService.update(ensureString(req.params.id), req.body, userId);
     res.json(company);
   } catch (error) {
     res.status(400).json({ error: error instanceof Error ? error.message : '更新子公司失败' });
@@ -60,7 +61,7 @@ router.put('/:id', async (req: Request, res: Response) => {
 /** DELETE /api/companies/:id - 删除子公司 */
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
-    await companyService.delete(req.params.id);
+    await companyService.delete(ensureString(req.params.id));
     res.status(204).send();
   } catch (error) {
     res.status(400).json({ error: error instanceof Error ? error.message : '删除子公司失败' });
@@ -74,7 +75,7 @@ router.post('/:companyId/bank-accounts', async (req: Request, res: Response) => 
   try {
     const userId = (req as any).user?.id;
     const bankAccount = await companyService.createBankAccount(
-      req.params.companyId,
+      ensureString(req.params.companyId),
       req.body,
       userId
     );
@@ -89,7 +90,7 @@ router.put('/:companyId/bank-accounts/:id', async (req: Request, res: Response) 
   try {
     const userId = (req as any).user?.id;
     const bankAccount = await companyService.updateBankAccount(
-      req.params.id,
+      ensureString(req.params.id),
       req.body,
       userId
     );
@@ -102,7 +103,7 @@ router.put('/:companyId/bank-accounts/:id', async (req: Request, res: Response) 
 /** DELETE /api/companies/:companyId/bank-accounts/:id - 删除银行账号 */
 router.delete('/:companyId/bank-accounts/:id', async (req: Request, res: Response) => {
   try {
-    await companyService.deleteBankAccount(req.params.id);
+    await companyService.deleteBankAccount(ensureString(req.params.id));
     res.status(204).send();
   } catch (error) {
     res.status(400).json({ error: error instanceof Error ? error.message : '删除银行账号失败' });

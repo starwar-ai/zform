@@ -1,5 +1,5 @@
 import prisma from '../config/database';
-import { Prisma } from '@prisma/client';
+import { Prisma, CustomerStage, ApprovalStatus } from '@prisma/client';
 
 export class CustomerService {
   // 创建客户
@@ -53,8 +53,8 @@ export class CustomerService {
           { shortName: { contains: search, mode: 'insensitive' } },
         ],
       }),
-      ...(stage && { stage }),
-      ...(approvalStatus && { approvalStatus }),
+      ...(stage && { stage: stage as CustomerStage }),
+      ...(approvalStatus && { approvalStatus: approvalStatus as ApprovalStatus }),
       ...(isEnabled !== undefined && { isEnabled }),
       ...(isAgent !== undefined && { isAgent }),
       ...(isForeign !== undefined && { isForeign }),
@@ -113,7 +113,6 @@ export class CustomerService {
       data: {
         ...data,
         updatedBy: userId,
-        version: { increment: 1 },
       },
       include: {
         bankAccounts: true,

@@ -222,7 +222,6 @@ export class PurchasePlanService {
       data: {
         ...data,
         updatedBy: userId,
-        version: { increment: 1 },
       },
       include: {
         items: true,

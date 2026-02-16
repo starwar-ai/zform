@@ -6,6 +6,7 @@
 
 import { Router, Request, Response } from 'express';
 import { RegionService } from '../services/region.service';
+import { ensureString } from '../utils/request';
 
 const router = Router();
 const regionService = new RegionService();
@@ -23,7 +24,7 @@ router.get('/', async (req: Request, res: Response) => {
 /** GET /api/regions/:id - 获取单个区域 */
 router.get('/:id', async (req: Request, res: Response) => {
   try {
-    const region = await regionService.findById(req.params.id);
+    const region = await regionService.findById(ensureString(req.params.id));
     if (!region) {
       return res.status(404).json({ error: '区域不存在' });
     }
@@ -48,7 +49,7 @@ router.post('/', async (req: Request, res: Response) => {
 router.put('/:id', async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
-    const region = await regionService.update(req.params.id, req.body, userId);
+    const region = await regionService.update(ensureString(req.params.id), req.body, userId);
     res.json(region);
   } catch (error) {
     res.status(400).json({ error: error instanceof Error ? error.message : '更新区域失败' });
@@ -58,7 +59,7 @@ router.put('/:id', async (req: Request, res: Response) => {
 /** DELETE /api/regions/:id - 删除区域 */
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
-    await regionService.delete(req.params.id);
+    await regionService.delete(ensureString(req.params.id));
     res.status(204).send();
   } catch (error) {
     res.status(400).json({ error: error instanceof Error ? error.message : '删除区域失败' });

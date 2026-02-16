@@ -6,7 +6,7 @@
 import { useState, useEffect } from "react"
 import { useUserStore } from "@/stores/user-store"
 import { useRoleStore } from "@/stores/role-store"
-import type { User, CreateUserInput, UpdateUserInput } from "@/types/user"
+import type { User, CreateUserInput } from "@/types/user"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -69,7 +69,7 @@ export function UserManagement() {
     assignRoles,
     getAllUsers,
   } = useUserStore()
-  const { roles, fetchRoles, getAllRoles } = useRoleStore()
+  const { fetchRoles, getAllRoles } = useRoleStore()
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)

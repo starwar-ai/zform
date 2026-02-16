@@ -6,6 +6,7 @@
 
 import { Router, Request, Response } from 'express';
 import { BrandService } from '../services/brand.service';
+import { ensureString } from '../utils/request';
 
 const router = Router();
 const brandService = new BrandService();
@@ -23,7 +24,7 @@ router.get('/', async (_req: Request, res: Response) => {
 /** GET /api/brands/:id - 获取单个品牌 */
 router.get('/:id', async (req: Request, res: Response) => {
   try {
-    const brand = await brandService.findById(req.params.id);
+    const brand = await brandService.findById(ensureString(req.params.id));
     if (!brand) {
       return res.status(404).json({ error: '品牌不存在' });
     }
@@ -48,7 +49,7 @@ router.post('/', async (req: Request, res: Response) => {
 router.put('/:id', async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
-    const brand = await brandService.update(req.params.id, req.body, userId);
+    const brand = await brandService.update(ensureString(req.params.id), req.body, userId);
     res.json(brand);
   } catch (error) {
     res.status(400).json({ error: error instanceof Error ? error.message : '更新品牌失败' });
@@ -58,7 +59,7 @@ router.put('/:id', async (req: Request, res: Response) => {
 /** DELETE /api/brands/:id - 删除品牌 */
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
-    await brandService.delete(req.params.id);
+    await brandService.delete(ensureString(req.params.id));
     res.status(204).send();
   } catch (error) {
     res.status(400).json({ error: error instanceof Error ? error.message : '删除品牌失败' });

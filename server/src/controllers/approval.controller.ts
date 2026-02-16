@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ApprovalService } from '../services/approval.service';
 import { successResponse } from '../utils/response';
+import { ensureString } from '../utils/request';
 
 const approvalService = new ApprovalService();
 
@@ -38,7 +39,7 @@ export const approvalController = {
         .split(',')
         .filter(Boolean);
 
-      const { instanceId } = req.params;
+      const instanceId = ensureString(req.params.instanceId);
       const { action, comment } = req.body;
 
       const result = await approvalService.process({
@@ -63,7 +64,7 @@ export const approvalController = {
         .split(',')
         .filter(Boolean);
 
-      const { instanceId } = req.params;
+      const instanceId = ensureString(req.params.instanceId);
 
       const result = await approvalService.withdraw({
         instanceId,
@@ -79,7 +80,8 @@ export const approvalController = {
   // 查询单据审核历史
   async getHistory(req: Request, res: Response, next: NextFunction) {
     try {
-      const { docType, docId } = req.params;
+      const docType = ensureString(req.params.docType);
+      const docId = ensureString(req.params.docId);
       const instances = await approvalService.getHistory(docType, docId);
       res.json(successResponse(instances));
     } catch (error) {
@@ -111,8 +113,8 @@ export const approvalController = {
   // 查询审核规则列表
   async getRules(req: Request, res: Response, next: NextFunction) {
     try {
-      const { docType } = req.query;
-      const rules = await approvalService.getRules(docType as string);
+      const docType = ensureString(req.query.docType);
+      const rules = await approvalService.getRules(docType);
       res.json(successResponse(rules));
     } catch (error) {
       next(error);
@@ -140,7 +142,7 @@ export const approvalController = {
   // 更新审核规则
   async updateRule(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = ensureString(req.params.id);
       const { name, docType, levels, condition, enabled } = req.body;
       const result = await approvalService.updateRule(id, {
         name,
@@ -158,7 +160,7 @@ export const approvalController = {
   // 删除审核规则
   async deleteRule(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = ensureString(req.params.id);
       const result = await approvalService.deleteRule(id);
       res.json(successResponse(result, result.message));
     } catch (error) {
@@ -169,7 +171,8 @@ export const approvalController = {
   // 检查单据是否需要审核
   async checkRequired(req: Request, res: Response, next: NextFunction) {
     try {
-      const { docType, docId } = req.params;
+      const docType = ensureString(req.params.docType);
+      const docId = ensureString(req.params.docId);
       const required = await approvalService.requiresApproval(docType, docId);
       res.json(successResponse({ required }));
     } catch (error) {

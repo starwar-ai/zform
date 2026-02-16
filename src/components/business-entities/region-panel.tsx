@@ -11,7 +11,7 @@ import {
   createRegionApi,
   updateRegionApi,
   deleteRegionApi,
-} from "@/apis/business-config-api"
+} from "@/apis/business-parameter-api"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"

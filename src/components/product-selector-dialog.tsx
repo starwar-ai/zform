@@ -12,7 +12,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import type { ColumnFilter } from "@/components/list-table/types"
 import { fetchDocumentListApi } from "@/apis/document-api"
 import { fetchCategoryListApi } from "@/apis/business-entity-api"
-import { fetchBrandsApi } from "@/apis/business-config-api"
+import { fetchBrandsApi } from "@/apis/business-parameter-api"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import {
   Dialog,
@@ -76,8 +76,8 @@ export interface ProductSelectorConfig {
 // ============================================================
 
 export interface ProductSelectorDialogProps {
-  /** 选择器配置 */
-  config: ProductSelectorConfig
+  /** 选择器配置（与 productType 二选一） */
+  config?: ProductSelectorConfig
   open: boolean
   onOpenChange: (open: boolean) => void
   onConfirm: (items: Record<string, unknown>[]) => void
@@ -85,6 +85,8 @@ export interface ProductSelectorDialogProps {
   multiple?: boolean
   /** 已选 ID 列表（用于回显） */
   selectedIds?: string[]
+  /** 产品类型（简化用法，与 config 二选一） */
+  productType?: "STANDARD" | "CUSTOMER" | "SELF_OWNED"
 }
 
 // ============================================================
@@ -205,14 +207,26 @@ function ProductTableRow({
 // 主组件
 // ============================================================
 
+const PRODUCT_TYPE_TO_DOC: Record<string, string> = {
+  STANDARD: "standard_product",
+  CUSTOMER: "customer_product",
+  SELF_OWNED: "self_owned_product",
+}
+
 export function ProductSelectorDialog({
-  config,
+  config: configProp,
   open,
   onOpenChange,
   onConfirm,
   multiple = false,
   selectedIds = [],
+  productType,
 }: ProductSelectorDialogProps) {
+  const config: ProductSelectorConfig = configProp ?? {
+    title: "选择产品",
+    documentType: productType ? PRODUCT_TYPE_TO_DOC[productType] ?? "standard_product" : "standard_product",
+    itemLabel: "产品",
+  }
   const {
     title,
     description,

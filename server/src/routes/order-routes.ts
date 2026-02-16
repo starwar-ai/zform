@@ -6,6 +6,7 @@
 
 import { Router, Request, Response } from 'express';
 import { OrderRouteService } from '../services/order-route.service';
+import { ensureString } from '../utils/request';
 
 const router = Router();
 const orderRouteService = new OrderRouteService();
@@ -23,7 +24,7 @@ router.get('/', async (_req: Request, res: Response) => {
 /** GET /api/order-routes/:id - 获取单个订单路径 */
 router.get('/:id', async (req: Request, res: Response) => {
   try {
-    const orderRoute = await orderRouteService.findById(req.params.id);
+    const orderRoute = await orderRouteService.findById(ensureString(req.params.id));
     if (!orderRoute) {
       return res.status(404).json({ error: '订单路径不存在' });
     }
@@ -48,7 +49,7 @@ router.post('/', async (req: Request, res: Response) => {
 router.put('/:id', async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
-    const orderRoute = await orderRouteService.update(req.params.id, req.body, userId);
+    const orderRoute = await orderRouteService.update(ensureString(req.params.id), req.body, userId);
     res.json(orderRoute);
   } catch (error) {
     res.status(400).json({ error: error instanceof Error ? error.message : '更新订单路径失败' });
@@ -58,7 +59,7 @@ router.put('/:id', async (req: Request, res: Response) => {
 /** DELETE /api/order-routes/:id - 删除订单路径 */
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
-    await orderRouteService.delete(req.params.id);
+    await orderRouteService.delete(ensureString(req.params.id));
     res.status(204).send();
   } catch (error) {
     res.status(400).json({ error: error instanceof Error ? error.message : '删除订单路径失败' });

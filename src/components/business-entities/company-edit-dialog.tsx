@@ -13,7 +13,7 @@ import {
   createBankAccountApi,
   updateBankAccountApi,
   deleteBankAccountApi,
-} from "@/apis/business-config-api"
+} from "@/apis/business-parameter-api"
 import {
   Dialog,
   DialogContent,
@@ -185,7 +185,7 @@ export function CompanyEditDialog({ company, open, onClose, onSuccess }: Company
   }
 
   // 文件上传（TODO: 实际上传功能）
-  const handleFileUpload = (field: 'businessLicenseImage' | 'officialSealImage') => {
+  const handleFileUpload = (_field: 'businessLicenseImage' | 'officialSealImage') => {
     alert('文件上传功能待实现')
     // TODO: 实现文件上传逻辑
   }

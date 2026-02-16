@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ProductService } from '../services/product.service';
 import { successResponse, paginatedResponse } from '../utils/response';
+import { ensureString } from '../utils/request';
 
 const productService = new ProductService();
 
@@ -29,7 +30,7 @@ export const productController = {
   // 获取产品详情
   async getById(req: Request, res: Response, next: NextFunction) {
     try {
-      const product = await productService.findById(req.params.id);
+      const product = await productService.findById(ensureString(req.params.id));
       res.json(successResponse(product));
     } catch (error) {
       next(error);
@@ -40,7 +41,7 @@ export const productController = {
   async update(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = req.headers['x-user-id'] as string || 'system';
-      const product = await productService.update(req.params.id, req.body, userId);
+      const product = await productService.update(ensureString(req.params.id), req.body, userId);
       res.json(successResponse(product, '产品更新成功'));
     } catch (error) {
       next(error);
@@ -51,7 +52,7 @@ export const productController = {
   async delete(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = req.headers['x-user-id'] as string || 'system';
-      await productService.delete(req.params.id, userId);
+      await productService.delete(ensureString(req.params.id), userId);
       res.json(successResponse(null, '产品删除成功'));
     } catch (error) {
       next(error);
@@ -64,7 +65,7 @@ export const productController = {
       const userId = req.headers['x-user-id'] as string || 'system';
       const { childProductId, quantity } = req.body;
       const bom = await productService.addBomItem(
-        req.params.id,
+        ensureString(req.params.id),
         childProductId,
         quantity,
         userId
@@ -81,7 +82,7 @@ export const productController = {
       const userId = req.headers['x-user-id'] as string || 'system';
       const { accessoryId, productRatio, accessoryRatio } = req.body;
       const accessory = await productService.addAccessory(
-        req.params.id,
+        ensureString(req.params.id),
         accessoryId,
         { productRatio, accessoryRatio },
         userId
@@ -95,7 +96,7 @@ export const productController = {
   // 获取变更历史
   async getChangeLogs(req: Request, res: Response, next: NextFunction) {
     try {
-      const logs = await productService.getChangeLogs(req.params.id);
+      const logs = await productService.getChangeLogs(ensureString(req.params.id));
       res.json(successResponse(logs));
     } catch (error) {
       next(error);

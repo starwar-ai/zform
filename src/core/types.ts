@@ -42,6 +42,7 @@ export type FieldType =
   | "price"
   | "ratio"
   | "employeeSelector"
+  | "productSelector"
 
 /** Combobox 下拉选项 */
 export interface ComboboxOption {
@@ -189,10 +190,14 @@ export interface FieldDef {
   ratioConfig?: RatioFieldConfig
   /** 员工选择器配置 (type=employeeSelector 时) */
   employeeSelectorConfig?: EmployeeSelectorFieldConfig
+  /** 产品选择器配置 (type=productSelector 时) */
+  productSelectorConfig?: { productType?: string }
   /** 字段副作用：当依赖字段变化时自动触发（如编号生成、价格计算） */
   effect?: FieldEffect
   /** 条件显示：根据当前表单数据决定字段是否显示，返回 false 时隐藏 */
   visibleWhen?: (data: Record<string, unknown>) => boolean
+  /** 列宽（用于表格展示） */
+  width?: number | string
 }
 
 // ============================================================
@@ -539,7 +544,7 @@ export interface DocumentActionDef {
   /** 显示文本 */
   label: string
   /** 适用的列表模式: document / detail; 不设则两种模式都显示 */
-  modes?: ("document" | "detail")[]
+  modes?: readonly ("document" | "detail")[]
   /** 是否危险操作 (红色显示) */
   danger?: boolean
   /**

@@ -109,7 +109,6 @@ export class SupplierService {
       data: {
         ...data,
         updatedBy: userId,
-        version: { increment: 1 },
       },
       include: {
         bankAccounts: true,

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { SalesContractService } from '../services/sales-contract.service';
 import { successResponse, paginatedResponse } from '../utils/response';
+import { ensureString } from '../utils/request';
 
 const salesContractService = new SalesContractService();
 
@@ -30,7 +31,7 @@ export const salesContractController = {
   // 获取销售合同详情
   async getById(req: Request, res: Response, next: NextFunction) {
     try {
-      const salesContract = await salesContractService.findById(req.params.id);
+      const salesContract = await salesContractService.findById(ensureString(req.params.id));
       res.json(successResponse(salesContract));
     } catch (error) {
       next(error);
@@ -41,7 +42,7 @@ export const salesContractController = {
   async getByCode(req: Request, res: Response, next: NextFunction) {
     try {
       const salesContract = await salesContractService.findByCode(
-        req.params.code
+        ensureString(req.params.code)
       );
       res.json(successResponse(salesContract));
     } catch (error) {
@@ -54,7 +55,7 @@ export const salesContractController = {
     try {
       const userId = (req.headers['x-user-id'] as string) || 'system';
       const salesContract = await salesContractService.update(
-        req.params.id,
+        ensureString(req.params.id),
         req.body,
         userId
       );
@@ -68,7 +69,7 @@ export const salesContractController = {
   async delete(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = (req.headers['x-user-id'] as string) || 'system';
-      await salesContractService.delete(req.params.id, userId);
+      await salesContractService.delete(ensureString(req.params.id), userId);
       res.json(successResponse(null, '销售合同删除成功'));
     } catch (error) {
       next(error);
@@ -81,7 +82,7 @@ export const salesContractController = {
       const userId = (req.headers['x-user-id'] as string) || 'system';
       const { approved } = req.body;
       const salesContract = await salesContractService.approve(
-        req.params.id,
+        ensureString(req.params.id),
         approved,
         userId
       );
@@ -101,7 +102,7 @@ export const salesContractController = {
     try {
       const userId = (req.headers['x-user-id'] as string) || 'system';
       const salesContract = await salesContractService.confirm(
-        req.params.id,
+        ensureString(req.params.id),
         userId
       );
       res.json(successResponse(salesContract, '销售合同确认成功'));
@@ -116,7 +117,7 @@ export const salesContractController = {
       const userId = (req.headers['x-user-id'] as string) || 'system';
       const { status } = req.body;
       const salesContract = await salesContractService.updateStatus(
-        req.params.id,
+        ensureString(req.params.id),
         status,
         userId
       );
@@ -131,7 +132,7 @@ export const salesContractController = {
     try {
       const userId = (req.headers['x-user-id'] as string) || 'system';
       const salesContract = await salesContractService.signBack(
-        req.params.id,
+        ensureString(req.params.id),
         req.body,
         userId
       );
@@ -146,7 +147,7 @@ export const salesContractController = {
     try {
       const userId = (req.headers['x-user-id'] as string) || 'system';
       const salesContract = await salesContractService.print(
-        req.params.id,
+        ensureString(req.params.id),
         userId
       );
       res.json(successResponse(salesContract, '打印成功'));
@@ -160,7 +161,7 @@ export const salesContractController = {
     try {
       const userId = (req.headers['x-user-id'] as string) || 'system';
       const salesContract = await salesContractService.toPurchasePlan(
-        req.params.id,
+        ensureString(req.params.id),
         userId
       );
       res.json(successResponse(salesContract, '转采购计划成功'));
@@ -174,7 +175,7 @@ export const salesContractController = {
     try {
       const userId = (req.headers['x-user-id'] as string) || 'system';
       const item = await salesContractService.addItem(
-        req.params.id,
+        ensureString(req.params.id),
         req.body,
         userId
       );
@@ -189,7 +190,7 @@ export const salesContractController = {
     try {
       const userId = (req.headers['x-user-id'] as string) || 'system';
       const item = await salesContractService.updateItem(
-        req.params.itemId,
+        ensureString(req.params.itemId),
         req.body,
         userId
       );
@@ -203,7 +204,7 @@ export const salesContractController = {
   async deleteItem(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = (req.headers['x-user-id'] as string) || 'system';
-      await salesContractService.deleteItem(req.params.itemId, userId);
+      await salesContractService.deleteItem(ensureString(req.params.itemId), userId);
       res.json(successResponse(null, '明细行删除成功'));
     } catch (error) {
       next(error);
@@ -213,7 +214,7 @@ export const salesContractController = {
   // 获取明细列表
   async getItems(req: Request, res: Response, next: NextFunction) {
     try {
-      const items = await salesContractService.getItems(req.params.id);
+      const items = await salesContractService.getItems(ensureString(req.params.id));
       res.json(successResponse(items));
     } catch (error) {
       next(error);

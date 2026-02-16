@@ -7,7 +7,6 @@
 import { useState, useEffect, useCallback } from "react"
 import type {
   OtherConfigWithParameters,
-  ConfigParameter,
   ValidationRule,
 } from "@/types/other-config"
 import {
@@ -15,7 +14,7 @@ import {
   updateConfigParametersApi,
 } from "@/apis/other-config-api"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import {
   Table,
   TableBody,
@@ -38,7 +37,7 @@ import { Settings, Loader2, RefreshCw, Plus, X } from "lucide-react"
 
 // ==================== 验证函数 ====================
 
-function parseValue(value: string | null, type: string, elementType?: string | null): string | string[] {
+function parseValue(value: string | null, type: string, _elementType?: string | null): string | string[] {
   if (!value) {
     return type === 'array' ? [] : ''
   }

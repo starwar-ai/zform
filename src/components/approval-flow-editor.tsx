@@ -370,7 +370,7 @@ export function ApprovalFlowEditor({ ruleId }: ApprovalFlowEditorProps) {
   const isEdit = !!ruleId
 
   // Rule data loading
-  const [rule, setRule] = useState<ApprovalRuleResponse | null>(null)
+  const [, setRule] = useState<ApprovalRuleResponse | null>(null)
   const [loadingRule, setLoadingRule] = useState(!!ruleId)
 
   // Form state
@@ -571,7 +571,7 @@ export function ApprovalFlowEditor({ ruleId }: ApprovalFlowEditorProps) {
       </div>
 
       {/* Main content: left-right split */}
-      <ResizablePanelGroup direction="horizontal" className="flex-1">
+      <ResizablePanelGroup orientation="horizontal" className="flex-1">
         {/* Left: Form */}
         <ResizablePanel defaultSize={50} minSize={35}>
           <ScrollArea className="h-full">

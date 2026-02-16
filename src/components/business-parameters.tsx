@@ -21,7 +21,7 @@ import {
 } from "@/apis/business-entity-api"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import {
   Table,
   TableBody,

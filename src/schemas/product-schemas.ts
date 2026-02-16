@@ -17,7 +17,7 @@ import type { DocumentSchema, PushDownRule, ChangeRule, ComboboxOption, FieldEff
 import type { HsCode, ProductCategoryTreeNode } from "@/types/parameter"
 import type { DepartmentTreeNode } from "@/types/department"
 import { fetchCategoryListApi } from "@/apis/business-entity-api"
-import { fetchBrandsApi } from "@/apis/business-config-api"
+import { fetchBrandsApi } from "@/apis/business-parameter-api"
 import { fetchDepartmentTreeApi } from "@/apis/department-api"
 import { generateSkuCodeApi, formatSkuCode } from "@/apis/sku-api"
 import { DEFAULT_CURRENCY } from "@/lib/currency"

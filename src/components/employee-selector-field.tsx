@@ -8,7 +8,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { User, X, Users } from "lucide-react"
+import { User, X,  } from "lucide-react"
 import { EmployeeSelectorDialog } from "@/components/employee-selector-dialog"
 import type { Employee } from "@/types/employee"
 

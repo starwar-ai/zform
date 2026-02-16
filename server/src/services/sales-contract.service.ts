@@ -1,5 +1,5 @@
 import prisma from '../config/database';
-import { Prisma } from '@prisma/client';
+import { Prisma, SalesContractStatus, SalesContractType, ApprovalStatus } from '@prisma/client';
 
 export class SalesContractService {
   // 创建销售合同（包含明细）
@@ -77,9 +77,9 @@ export class SalesContractService {
         ],
       }),
       ...(customerId && { customerId }),
-      ...(status && { status }),
-      ...(approvalStatus && { approvalStatus }),
-      ...(contractType && { contractType }),
+      ...(status && { status: status as SalesContractStatus }),
+      ...(approvalStatus && { approvalStatus: approvalStatus as ApprovalStatus }),
+      ...(contractType && { contractType: contractType as SalesContractType }),
       ...(startDate &&
         endDate && {
           createdAt: {
@@ -169,7 +169,6 @@ export class SalesContractService {
       data: {
         ...contractData,
         updatedBy: userId,
-        version: { increment: 1 },
         ...(items && items.length > 0 && {
           items: {
             create: items.map((item, index) => ({
@@ -209,7 +208,7 @@ export class SalesContractService {
       where: { id },
       data: {
         approvalStatus: approved ? 'APPROVED' : 'REJECTED',
-        status: approved ? 'APPROVED' : 'PENDING',
+        status: (approved ? 'APPROVED' : 'PENDING') as SalesContractStatus,
         updatedBy: userId,
       },
     });
@@ -239,7 +238,7 @@ export class SalesContractService {
     const salesContract = await prisma.salesContract.update({
       where: { id },
       data: {
-        status,
+        status: status as SalesContractStatus,
         updatedBy: userId,
       },
     });

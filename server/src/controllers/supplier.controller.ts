@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { SupplierService } from '../services/supplier.service';
 import { successResponse, paginatedResponse } from '../utils/response';
+import { ensureString } from '../utils/request';
 
 const supplierService = new SupplierService();
 
@@ -29,7 +30,7 @@ export const supplierController = {
   // 获取供应商详情
   async getById(req: Request, res: Response, next: NextFunction) {
     try {
-      const supplier = await supplierService.findById(req.params.id);
+      const supplier = await supplierService.findById(ensureString(req.params.id));
       res.json(successResponse(supplier));
     } catch (error) {
       next(error);
@@ -40,7 +41,7 @@ export const supplierController = {
   async update(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = req.headers['x-user-id'] as string || 'system';
-      const supplier = await supplierService.update(req.params.id, req.body, userId);
+      const supplier = await supplierService.update(ensureString(req.params.id), req.body, userId);
       res.json(successResponse(supplier, '供应商更新成功'));
     } catch (error) {
       next(error);
@@ -51,7 +52,7 @@ export const supplierController = {
   async delete(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = req.headers['x-user-id'] as string || 'system';
-      await supplierService.delete(req.params.id, userId);
+      await supplierService.delete(ensureString(req.params.id), userId);
       res.json(successResponse(null, '供应商删除成功'));
     } catch (error) {
       next(error);
@@ -63,7 +64,7 @@ export const supplierController = {
     try {
       const userId = req.headers['x-user-id'] as string || 'system';
       const { approved } = req.body;
-      const supplier = await supplierService.approve(req.params.id, approved, userId);
+      const supplier = await supplierService.approve(ensureString(req.params.id), approved, userId);
       res.json(successResponse(supplier, `供应商${approved ? '审核通过' : '审核拒绝'}`));
     } catch (error) {
       next(error);
@@ -74,7 +75,7 @@ export const supplierController = {
   async makeFormal(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = req.headers['x-user-id'] as string || 'system';
-      const supplier = await supplierService.makeFormal(req.params.id, userId);
+      const supplier = await supplierService.makeFormal(ensureString(req.params.id), userId);
       res.json(successResponse(supplier, '供应商转正成功'));
     } catch (error) {
       next(error);
@@ -86,7 +87,7 @@ export const supplierController = {
     try {
       const userId = req.headers['x-user-id'] as string || 'system';
       const bankAccount = await supplierService.addBankAccount(
-        req.params.id,
+        ensureString(req.params.id),
         req.body,
         userId
       );
@@ -101,7 +102,7 @@ export const supplierController = {
     try {
       const userId = req.headers['x-user-id'] as string || 'system';
       const bankAccount = await supplierService.updateBankAccount(
-        req.params.bankAccountId,
+        ensureString(req.params.bankAccountId),
         req.body,
         userId
       );
@@ -115,7 +116,7 @@ export const supplierController = {
   async deleteBankAccount(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = req.headers['x-user-id'] as string || 'system';
-      await supplierService.deleteBankAccount(req.params.bankAccountId, userId);
+      await supplierService.deleteBankAccount(ensureString(req.params.bankAccountId), userId);
       res.json(successResponse(null, '银行账户删除成功'));
     } catch (error) {
       next(error);
@@ -125,7 +126,7 @@ export const supplierController = {
   // 获取供应商的银行账户列表
   async getBankAccounts(req: Request, res: Response, next: NextFunction) {
     try {
-      const bankAccounts = await supplierService.getBankAccounts(req.params.id);
+      const bankAccounts = await supplierService.getBankAccounts(ensureString(req.params.id));
       res.json(successResponse(bankAccounts));
     } catch (error) {
       next(error);

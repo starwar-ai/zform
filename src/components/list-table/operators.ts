@@ -28,14 +28,20 @@ const ALL_OPERATORS: Record<FilterOperator, OperatorMeta> = {
 
 /** 按字段类型分组的操作符列表 */
 const OPERATORS_BY_TYPE: Record<FieldType, FilterOperator[]> = {
-  text:     ["eq", "neq", "contains", "startsWith", "endsWith", "isEmpty", "isNotEmpty"],
-  textarea: ["eq", "neq", "contains", "startsWith", "endsWith", "isEmpty", "isNotEmpty"],
-  skuCode:  ["eq", "neq", "contains", "startsWith", "endsWith", "isEmpty", "isNotEmpty"],
-  number:   ["eq", "neq", "gt", "gte", "lt", "lte", "between", "isEmpty", "isNotEmpty"],
-  date:     ["eq", "before", "after", "between", "isEmpty", "isNotEmpty"],
-  select:   ["eq", "neq", "in", "isEmpty", "isNotEmpty"],
-  checkbox: ["eq"],
-  computed: ["eq", "neq", "contains", "isEmpty", "isNotEmpty"],
+  text:           ["eq", "neq", "contains", "startsWith", "endsWith", "isEmpty", "isNotEmpty"],
+  textarea:       ["eq", "neq", "contains", "startsWith", "endsWith", "isEmpty", "isNotEmpty"],
+  skuCode:        ["eq", "neq", "contains", "startsWith", "endsWith", "isEmpty", "isNotEmpty"],
+  number:         ["eq", "neq", "gt", "gte", "lt", "lte", "between", "isEmpty", "isNotEmpty"],
+  date:           ["eq", "before", "after", "between", "isEmpty", "isNotEmpty"],
+  select:         ["eq", "neq", "in", "isEmpty", "isNotEmpty"],
+  checkbox:       ["eq"],
+  computed:       ["eq", "neq", "contains", "isEmpty", "isNotEmpty"],
+  combobox:       ["eq", "neq", "in", "isEmpty", "isNotEmpty"],
+  dimensions:     ["eq", "neq", "contains", "isEmpty", "isNotEmpty"],
+  price:          ["eq", "neq", "gt", "gte", "lt", "lte", "between", "isEmpty", "isNotEmpty"],
+  ratio:          ["eq", "neq", "gt", "gte", "lt", "lte", "isEmpty", "isNotEmpty"],
+  employeeSelector: ["eq", "neq", "in", "isEmpty", "isNotEmpty"],
+  productSelector: ["eq", "neq", "in", "isEmpty", "isNotEmpty"],
 }
 
 /** 按字段类型获取可用操作符元数据列表 */

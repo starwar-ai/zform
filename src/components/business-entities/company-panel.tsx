@@ -6,14 +6,12 @@
 
 import { useState, useEffect, useCallback } from "react"
 import type { Company } from "@/types/business-config"
-import { CompanyNature, CompanyNatureLabels } from "@/types/business-config"
+import { CompanyNatureLabels } from "@/types/business-config"
 import {
   fetchCompaniesApi,
-  createCompanyApi,
-  updateCompanyApi,
   deleteCompanyApi,
   fetchCompanyByIdApi,
-} from "@/apis/business-config-api"
+} from "@/apis/business-parameter-api"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -25,13 +23,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import {
   AlertDialog,
   AlertDialogAction,

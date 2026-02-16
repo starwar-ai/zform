@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { MenuService } from '../services/menu.service';
 import { successResponse } from '../utils/response';
+import { ensureString } from '../utils/request';
 import prisma from '../config/database';
 
 const menuService = new MenuService();
@@ -77,7 +78,7 @@ export const menuController = {
   async update(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = getUserId(req);
-      const menu = await menuService.update(req.params.id, req.body, userId);
+      const menu = await menuService.update(ensureString(req.params.id), req.body, userId);
       res.json(successResponse(menu, '菜单更新成功'));
     } catch (error) {
       next(error);
@@ -88,7 +89,7 @@ export const menuController = {
   async delete(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = getUserId(req);
-      await menuService.delete(req.params.id, userId);
+      await menuService.delete(ensureString(req.params.id), userId);
       res.json(successResponse(null, '菜单删除成功'));
     } catch (error) {
       next(error);

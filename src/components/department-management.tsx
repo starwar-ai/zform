@@ -7,7 +7,6 @@ import { useState, useEffect, useCallback } from "react"
 import type {
   DepartmentTreeNode,
   CreateDepartmentInput,
-  UpdateDepartmentInput,
 } from "@/types/department"
 import {
   fetchDepartmentTreeApi,

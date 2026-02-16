@@ -7,7 +7,7 @@
 
 import { Combobox } from "@/components/ui/combobox"
 import type { ComboboxOption } from "@/core/types"
-import { fetchCountriesApi } from "@/apis/business-config-api"
+import { fetchCountriesApi } from "@/apis/business-parameter-api"
 
 interface CountrySelectorProps {
   /** 当前选中的国家 ID */

@@ -427,7 +427,7 @@ export const internationalCustomerSchema: DocumentSchema = {
       group: "基本信息",
       comboboxConfig: {
         fetchOptions: async () => {
-          const { fetchCountriesApi } = await import("@/apis/business-config-api")
+          const { fetchCountriesApi } = await import("@/apis/business-parameter-api")
           const countries = await fetchCountriesApi()
           return countries.map((country: any) => ({
             value: country.id,
@@ -905,7 +905,7 @@ export const customerSchema: DocumentSchema = {
       group: "其他信息",
       comboboxConfig: {
         fetchOptions: async () => {
-          const { fetchCountriesApi } = await import("@/apis/business-config-api")
+          const { fetchCountriesApi } = await import("@/apis/business-parameter-api")
           const countries = await fetchCountriesApi()
           return countries.map((country: any) => ({
             value: country.id,
