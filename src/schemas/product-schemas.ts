@@ -16,7 +16,7 @@
 import type { DocumentSchema, PushDownRule, ChangeRule, ComboboxOption, FieldEffect, DetailTableDef } from "@/core/types"
 import type { HsCode, ProductCategoryTreeNode } from "@/types/parameter"
 import type { DepartmentTreeNode } from "@/types/department"
-import { fetchCategoryListApi } from "@/apis/business-entity-api"
+import { fetchParameterListApi } from "@/apis/business-entity-api"
 import { fetchBrandsApi } from "@/apis/business-parameter-api"
 import { fetchDepartmentTreeApi } from "@/apis/department-api"
 import { generateSkuCodeApi, formatSkuCode } from "@/apis/sku-api"
@@ -49,13 +49,13 @@ function flattenCategoryTree(
 
 /** 获取产品分类选项（供 Combobox 使用，树形结构，仅叶子可选） */
 async function fetchProductCategoryOptions(): Promise<ComboboxOption[]> {
-  const tree = await fetchCategoryListApi<ProductCategoryTreeNode>("product-category")
+  const tree = await fetchParameterListApi<ProductCategoryTreeNode>("product-category")
   return flattenCategoryTree(tree)
 }
 
 /** 获取海关编码选项（供 Combobox 使用） */
 async function fetchHsCodeOptions(): Promise<ComboboxOption[]> {
-  const hsCodes = await fetchCategoryListApi<HsCode>("product")
+  const hsCodes = await fetchParameterListApi<HsCode>("product")
   return hsCodes.map((item) => ({
     value: item.id,
     label: `${item.hsCode} ${item.name}`,

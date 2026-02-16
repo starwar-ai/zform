@@ -14,10 +14,11 @@ import type {
   ParameterColumn,
 } from "@/types/parameter"
 import {
-  fetchCategoryListApi,
-  createCategoryApi,
-  updateCategoryApi,
-  deleteCategoryApi,
+  fetchParameterListApi,
+  createParameterApi,
+  updateParameterApi,
+  deleteParameterApi,
+  reorderParameterApi,
 } from "@/apis/business-entity-api"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -75,7 +76,25 @@ import {
   Globe,
   Route,
   Settings,
+  GripVertical,
 } from "lucide-react"
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core"
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers"
 
 // ==================== 分类配置注册 ====================
 
@@ -87,13 +106,14 @@ export const CATEGORY_CONFIGS: ParameterConfig[] = [
     key: "customer",
     label: "客户分类",
     icon: "Users",
-    apiPath: "/categories/customer",
+    apiPath: "/parameters/customer",
     isTree: true,
     nameField: "name",
     codeField: "code",
     columns: [
       { key: "name", label: "分类名称", width: "280px" },
       { key: "code", label: "分类编码" },
+      { key: "sortOrder", label: "排序", width: "80px" },
       { key: "createdAt", label: "创建时间", render: "date" },
     ],
     formFields: [
@@ -106,26 +126,28 @@ export const CATEGORY_CONFIGS: ParameterConfig[] = [
     key: "customer-source",
     label: "客户来源",
     icon: "Tags",
-    apiPath: "/categories/customer-source",
+    apiPath: "/parameters/customer-source",
     isTree: false,
     nameField: "name",
     columns: [
       { key: "code", label: "标签编码", width: "160px" },
       { key: "name", label: "标签名称", width: "260px" },
       { key: "isCommon", label: "是否常用", render: "boolean" },
+      { key: "sortOrder", label: "排序", width: "80px" },
       { key: "createdAt", label: "创建时间", render: "date" },
     ],
     formFields: [
       { key: "code", label: "标签编码", type: "text", required: true, placeholder: "例如: CS001" },
       { key: "name", label: "标签名称", type: "text", required: true, placeholder: "例如: 阿里巴巴" },
       { key: "isCommon", label: "是否常用", type: "boolean", defaultValue: false },
+      { key: "sortOrder", label: "排序", type: "number", defaultValue: 0 },
     ],
   },
   {
     key: "product",
     label: "海关编码",
     icon: "Package",
-    apiPath: "/categories/product",
+    apiPath: "/parameters/product",
     isTree: false,
     nameField: "name",
     codeField: "code",
@@ -134,6 +156,8 @@ export const CATEGORY_CONFIGS: ParameterConfig[] = [
       { key: "hsCode", label: "编码", width: "120px" },
       { key: "name", label: "商品名称", width: "200px" },
       { key: "customsUnit", label: "报关单位", width: "100px" },
+      { key: "isCommon", label: "是否常用", render: "boolean", width: "100px" },
+      { key: "sortOrder", label: "排序", width: "80px" },
       { key: "taxRefundRate", label: "退税率(%)" },
       { key: "taxRate", label: "征税率(%)" },
       { key: "levyRate", label: "征收率(%)" },
@@ -145,6 +169,8 @@ export const CATEGORY_CONFIGS: ParameterConfig[] = [
       { key: "hsCode", label: "编码", type: "text", required: true, placeholder: "例如: 6402.99" },
       { key: "name", label: "商品名称", type: "text", required: true, placeholder: "请输入商品名称" },
       { key: "customsUnit", label: "报关单位", type: "text", required: true, placeholder: "例如: 个、把" },
+      { key: "isCommon", label: "是否常用", type: "boolean", defaultValue: false },
+      { key: "sortOrder", label: "排序", type: "number", defaultValue: 0 },
       { key: "taxRefundRate", label: "退税率(%)", type: "number", required: true, placeholder: "例如: 13" },
       { key: "taxRate", label: "征税率(%)", type: "number", placeholder: "例如: 17" },
       { key: "levyRate", label: "征收率(%)", type: "number", placeholder: "例如: 3" },
@@ -157,43 +183,51 @@ export const CATEGORY_CONFIGS: ParameterConfig[] = [
     key: "exhibition",
     label: "展会分类",
     icon: "Globe",
-    apiPath: "/categories/exhibition",
+    apiPath: "/parameters/exhibition",
     isTree: false,
     nameField: "name",
     columns: [
       { key: "name", label: "名称" },
       { key: "isDomestic", label: "是否国内系列", render: "boolean" },
+      { key: "isCommon", label: "是否常用", render: "boolean", width: "100px" },
+      { key: "sortOrder", label: "排序", width: "80px" },
       { key: "createdAt", label: "创建时间", render: "date" },
     ],
     formFields: [
       { key: "name", label: "名称", type: "text", required: true, placeholder: "例如: 广交会" },
       { key: "isDomestic", label: "是否国内系列", type: "boolean", defaultValue: false },
+      { key: "isCommon", label: "是否常用", type: "boolean", defaultValue: false },
+      { key: "sortOrder", label: "排序", type: "number", defaultValue: 0 },
     ],
   },
   {
     key: "order-route",
     label: "订单路径",
     icon: "Route",
-    apiPath: "/order-routes",
+    apiPath: "/parameters/order-routes",
     isTree: false,
     nameField: "path",
     columns: [
       { key: "path", label: "路径", width: "200px" },
       { key: "status", label: "状态", width: "120px" },
       { key: "description", label: "描述" },
+      { key: "isCommon", label: "是否常用", render: "boolean", width: "100px" },
+      { key: "sortOrder", label: "排序", width: "80px" },
       { key: "createdAt", label: "创建时间", render: "date" },
     ],
     formFields: [
       { key: "path", label: "路径", type: "text", required: true, placeholder: "例如: /orders/domestic" },
       { key: "status", label: "状态", type: "text", required: true, placeholder: "例如: active" },
       { key: "description", label: "描述", type: "text", placeholder: "请输入描述" },
+      { key: "isCommon", label: "是否常用", type: "boolean", defaultValue: false },
+      { key: "sortOrder", label: "排序", type: "number", defaultValue: 0 },
     ],
   },
   {
     key: "transport-method",
     label: "运输方式",
     icon: "Route",
-    apiPath: "/transport-methods",
+    apiPath: "/parameters/transport-methods",
     isTree: false,
     nameField: "name",
     codeField: "code",
@@ -211,7 +245,6 @@ export const CATEGORY_CONFIGS: ParameterConfig[] = [
       { key: "name", label: "中文名称", type: "text", required: true, placeholder: "例如: 海运" },
       { key: "nameEn", label: "英文名称", type: "text", placeholder: "例如: Sea" },
       { key: "isCommon", label: "是否常用", type: "boolean", defaultValue: false },
-      { key: "sortOrder", label: "排序", type: "number", defaultValue: 0 },
       { key: "isEnabled", label: "是否启用", type: "boolean", defaultValue: true },
       { key: "remark", label: "备注", type: "text", placeholder: "请输入备注" },
     ],
@@ -299,6 +332,211 @@ function flattenForSelect(nodes: TreeNode[], nameField: string, level = 0): { id
   return result
 }
 
+/** 判断配置是否支持拖拽排序（扁平列表） */
+function supportsFlatReorder(config: ParameterConfig): boolean {
+  return config.columns.some((c) => c.key === "sortOrder")
+}
+
+/** 在树中查找目标节点的兄弟节点列表 */
+function findSiblings(nodes: TreeNode[], targetId: string): TreeNode[] | null {
+  for (const node of nodes) {
+    if (node.id === targetId) return nodes
+    const children = (node.children as TreeNode[]) || []
+    if (children.length > 0) {
+      const found = findSiblings(children, targetId)
+      if (found) return found
+    }
+  }
+  return null
+}
+
+/** 扁平化树节点 ID（用于 SortableContext） */
+function flattenTreeIds(nodes: TreeNode[]): string[] {
+  const result: string[] = []
+  for (const node of nodes) {
+    result.push(node.id)
+    const children = (node.children as TreeNode[]) || []
+    if (children.length > 0) {
+      result.push(...flattenTreeIds(children))
+    }
+  }
+  return result
+}
+
+// 可排序的扁平行
+function SortableFlatRow({
+  item,
+  config,
+  renderCellValue,
+  onEdit,
+  onDelete,
+}: {
+  item: TreeNode
+  config: ParameterConfig
+  renderCellValue: (item: TreeNode, col: ParameterColumn) => React.ReactNode
+  onEdit: (item: TreeNode) => void
+  onDelete: (id: string) => void
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  return (
+    <TableRow ref={setNodeRef} style={style}>
+      <TableCell className="w-8">
+        <div
+          className="cursor-grab active:cursor-grabbing text-muted-foreground"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="h-4 w-4" />
+        </div>
+      </TableCell>
+      {config.columns.map((col) => (
+        <TableCell key={col.key}>
+          <span className="text-sm">{renderCellValue(item, col)}</span>
+        </TableCell>
+      ))}
+      <TableCell>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={() => onEdit(item)}>
+            <Edit className="h-3 w-3 mr-1" />
+            编辑
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => onDelete(item.id)}>
+            <Trash2 className="h-3 w-3 mr-1" />
+            删除
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  )
+}
+
+// 可排序的树形行（同级拖拽）
+function SortableTreeRow({
+  node,
+  config,
+  expandedIds,
+  toggleExpand,
+  renderCellValue,
+  countDescendants,
+  onAddChild,
+  onEdit,
+  onDelete,
+}: {
+  node: FlatNode
+  config: ParameterConfig
+  expandedIds: Set<string>
+  toggleExpand: (id: string) => void
+  renderCellValue: (item: TreeNode, col: ParameterColumn) => React.ReactNode
+  countDescendants: (node: TreeNode) => number
+  onAddChild: (parentId: string) => void
+  onEdit: (item: TreeNode) => void
+  onDelete: (id: string) => void
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: node.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  const hasChildren = node.hasChildren
+  const isExpanded = expandedIds.has(node.id)
+
+  return (
+    <TableRow ref={setNodeRef} style={style}>
+      <TableCell className="w-8">
+        <div
+          className="cursor-grab active:cursor-grabbing text-muted-foreground"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="h-4 w-4" />
+        </div>
+      </TableCell>
+      {config.columns.map((col, colIdx) => (
+        <TableCell key={col.key}>
+          {colIdx === 0 ? (
+            <div
+              className="flex items-center gap-1"
+              style={{ paddingLeft: `${node.level * 24}px` }}
+            >
+              {hasChildren ? (
+                <button
+                  onClick={() => toggleExpand(node.id)}
+                  className="p-0.5 hover:bg-muted rounded shrink-0"
+                >
+                  {isExpanded ? (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </button>
+              ) : (
+                <span className="w-5 shrink-0" />
+              )}
+              <span className="font-medium">{String(node[col.key] || "")}</span>
+            </div>
+          ) : (
+            <span className="text-muted-foreground text-sm">
+              {renderCellValue(node, col)}
+            </span>
+          )}
+        </TableCell>
+      ))}
+      <TableCell>
+        {hasChildren && (
+          <Badge variant="outline" className="text-xs">
+            {countDescendants(node)}
+          </Badge>
+        )}
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onAddChild(node.id)}
+            title="添加子级"
+          >
+            <FolderPlus className="h-3 w-3 mr-1" />
+            子级
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => onEdit(node)}>
+            <Edit className="h-3 w-3 mr-1" />
+            编辑
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => onDelete(node.id)}>
+            <Trash2 className="h-3 w-3 mr-1" />
+            删除
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  )
+}
+
 // ==================== 单个分类 Tab 面板 ====================
 
 function CategoryPanel({ config }: { config: ParameterConfig }) {
@@ -344,7 +582,7 @@ function CategoryPanel({ config }: { config: ParameterConfig }) {
     setLoading(true)
     setError(null)
     try {
-      const result = await fetchCategoryListApi<TreeNode>(config.key)
+      const result = await fetchParameterListApi<TreeNode>(config.key)
       setData(result)
       // 树形时默认展开顶级节点
       if (config.isTree) {
@@ -361,6 +599,80 @@ function CategoryPanel({ config }: { config: ParameterConfig }) {
   useEffect(() => {
     loadData()
   }, [loadData])
+
+  // 扁平列表拖拽结束
+  const handleFlatDragEnd = useCallback(
+    async (event: DragEndEvent) => {
+      const { active, over } = event
+      if (!over || active.id === over.id || !supportsFlatReorder(config)) return
+
+      const oldIndex = data.findIndex((d) => d.id === active.id)
+      const newIndex = data.findIndex((d) => d.id === over.id)
+      if (oldIndex === -1 || newIndex === -1) return
+
+      const reordered = [...data]
+      const [moved] = reordered.splice(oldIndex, 1)
+      reordered.splice(newIndex, 0, moved)
+
+      const items = reordered.map((node, index) => ({
+        id: node.id,
+        sortOrder: index,
+      }))
+
+      try {
+        await reorderParameterApi(config.key, items)
+        await loadData()
+      } catch (err) {
+        console.error("排序失败:", err)
+        alert(err instanceof Error ? err.message : "排序失败")
+      }
+    },
+    [config, data, loadData]
+  )
+
+  const flatSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
+
+  // 树形同级拖拽结束（仅客户分类）
+  const handleTreeDragEnd = useCallback(
+    async (event: DragEndEvent) => {
+      if (config.key !== "customer") return
+      const { active, over } = event
+      if (!over || active.id === over.id) return
+
+      const siblings = findSiblings(data, active.id as string)
+      if (!siblings) return
+
+      const oldIndex = siblings.findIndex((n) => n.id === active.id)
+      const newIndex = siblings.findIndex((n) => n.id === over.id)
+      if (oldIndex === -1 || newIndex === -1) return
+
+      const reordered = [...siblings]
+      const [moved] = reordered.splice(oldIndex, 1)
+      reordered.splice(newIndex, 0, moved)
+
+      const items = reordered.map((node, index) => ({
+        id: node.id,
+        sortOrder: index,
+      }))
+
+      try {
+        await reorderParameterApi("customer", items)
+        await loadData()
+      } catch (err) {
+        console.error("排序失败:", err)
+        alert(err instanceof Error ? err.message : "排序失败")
+      }
+    },
+    [config.key, data, loadData]
+  )
+
+  const treeSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
 
   // 展开/折叠
   const toggleExpand = (id: string) => {
@@ -400,7 +712,7 @@ function CategoryPanel({ config }: { config: ParameterConfig }) {
     if (!deletingItemId) return
     setSaving(true)
     try {
-      await deleteCategoryApi(config.key, deletingItemId)
+      await deleteParameterApi(config.key, deletingItemId)
       await loadData()
     } catch (err) {
       console.error("删除失败:", err)
@@ -424,9 +736,9 @@ function CategoryPanel({ config }: { config: ParameterConfig }) {
       }
 
       if (editingItem) {
-        await updateCategoryApi(config.key, editingItem.id, submitData)
+        await updateParameterApi(config.key, editingItem.id, submitData)
       } else {
-        await createCategoryApi(config.key, submitData)
+        await createParameterApi(config.key, submitData)
       }
       setDialogOpen(false)
       await loadData()
@@ -479,14 +791,17 @@ function CategoryPanel({ config }: { config: ParameterConfig }) {
     }
   }
 
-  // 树形表格渲染
+  // 树形表格渲染（客户分类支持同级拖拽）
   const renderTreeTable = () => {
-    const flatNodes = flattenTree(data, 0, expandedIds)
+    const flatNodes = flattenTree(data, 0, expandedIds) as FlatNode[]
+    const sortableTree = config.key === "customer"
+    const allIds = flattenTreeIds(data)
 
-    return (
+    const tableContent = (
       <Table>
         <TableHeader>
           <TableRow>
+            {sortableTree && <TableHead className="w-8"></TableHead>}
             {config.columns.map((col) => (
               <TableHead key={col.key} style={col.width ? { width: col.width } : undefined}>
                 {col.label}
@@ -497,81 +812,116 @@ function CategoryPanel({ config }: { config: ParameterConfig }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {flatNodes.map((node) => (
-            <TableRow key={node.id}>
-              {config.columns.map((col, colIdx) => (
-                <TableCell key={col.key}>
-                  {colIdx === 0 ? (
-                    <div
-                      className="flex items-center gap-1"
-                      style={{ paddingLeft: `${(node as FlatNode).level * 24}px` }}
-                    >
-                      {(node as FlatNode).hasChildren ? (
-                        <button
-                          onClick={() => toggleExpand(node.id)}
-                          className="p-0.5 hover:bg-muted rounded shrink-0"
-                        >
-                          {expandedIds.has(node.id) ? (
-                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                          )}
-                        </button>
-                      ) : (
-                        <span className="w-5 shrink-0" />
-                      )}
-                      <span className="font-medium">{String(node[col.key] || "")}</span>
-                    </div>
-                  ) : (
-                    <span className="text-muted-foreground text-sm">
-                      {renderCellValue(node, col)}
-                    </span>
+          {flatNodes.map((node) =>
+            sortableTree ? (
+              <SortableTreeRow
+                key={node.id}
+                node={node}
+                config={config}
+                expandedIds={expandedIds}
+                toggleExpand={toggleExpand}
+                renderCellValue={renderCellValue}
+                countDescendants={countDescendants}
+                onAddChild={handleCreate}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
+            ) : (
+              <TableRow key={node.id}>
+                {config.columns.map((col, colIdx) => (
+                  <TableCell key={col.key}>
+                    {colIdx === 0 ? (
+                      <div
+                        className="flex items-center gap-1"
+                        style={{ paddingLeft: `${node.level * 24}px` }}
+                      >
+                        {node.hasChildren ? (
+                          <button
+                            onClick={() => toggleExpand(node.id)}
+                            className="p-0.5 hover:bg-muted rounded shrink-0"
+                          >
+                            {expandedIds.has(node.id) ? (
+                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </button>
+                        ) : (
+                          <span className="w-5 shrink-0" />
+                        )}
+                        <span className="font-medium">{String(node[col.key] || "")}</span>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">
+                        {renderCellValue(node, col)}
+                      </span>
+                    )}
+                  </TableCell>
+                ))}
+                <TableCell>
+                  {node.hasChildren && (
+                    <Badge variant="outline" className="text-xs">
+                      {countDescendants(node)}
+                    </Badge>
                   )}
                 </TableCell>
-              ))}
-              <TableCell>
-                {(node as FlatNode).hasChildren && (
-                  <Badge variant="outline" className="text-xs">
-                    {countDescendants(node)}
-                  </Badge>
-                )}
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-1">
-                  {config.isTree && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleCreate(node.id)}
-                      title="添加子级"
-                    >
-                      <FolderPlus className="h-3 w-3 mr-1" />
-                      子级
+                <TableCell>
+                  <div className="flex items-center gap-1">
+                    {config.isTree && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleCreate(node.id)}
+                        title="添加子级"
+                      >
+                        <FolderPlus className="h-3 w-3 mr-1" />
+                        子级
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="sm" onClick={() => handleEdit(node)}>
+                      <Edit className="h-3 w-3 mr-1" />
+                      编辑
                     </Button>
-                  )}
-                  <Button variant="ghost" size="sm" onClick={() => handleEdit(node)}>
-                    <Edit className="h-3 w-3 mr-1" />
-                    编辑
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => handleDelete(node.id)}>
-                    <Trash2 className="h-3 w-3 mr-1" />
-                    删除
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(node.id)}>
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      删除
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )
+          )}
         </TableBody>
       </Table>
     )
+
+    if (sortableTree) {
+      return (
+        <DndContext
+          sensors={treeSensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleTreeDragEnd}
+          modifiers={[restrictToVerticalAxis]}
+        >
+          <SortableContext items={allIds} strategy={verticalListSortingStrategy}>
+            {tableContent}
+          </SortableContext>
+        </DndContext>
+      )
+    }
+    return tableContent
   }
 
   // 扁平列表表格渲染
   const renderFlatTable = () => {
-    return (
+    const sortable = supportsFlatReorder(config)
+    const ids = data.map((d) => d.id)
+
+    const tableContent = (
       <Table>
         <TableHeader>
           <TableRow>
+            {sortable && <TableHead className="w-8"></TableHead>}
             {config.columns.map((col) => (
               <TableHead key={col.key} style={col.width ? { width: col.width } : undefined}>
                 {col.label}
@@ -581,30 +931,59 @@ function CategoryPanel({ config }: { config: ParameterConfig }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((item) => (
-            <TableRow key={item.id}>
-              {config.columns.map((col) => (
-                <TableCell key={col.key}>
-                  <span className="text-sm">{renderCellValue(item, col)}</span>
+          {sortable ? (
+            data.map((item) => (
+              <SortableFlatRow
+                key={item.id}
+                item={item}
+                config={config}
+                renderCellValue={renderCellValue}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
+            ))
+          ) : (
+            data.map((item) => (
+              <TableRow key={item.id}>
+                {config.columns.map((col) => (
+                  <TableCell key={col.key}>
+                    <span className="text-sm">{renderCellValue(item, col)}</span>
+                  </TableCell>
+                ))}
+                <TableCell>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="sm" onClick={() => handleEdit(item)}>
+                      <Edit className="h-3 w-3 mr-1" />
+                      编辑
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(item.id)}>
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      删除
+                    </Button>
+                  </div>
                 </TableCell>
-              ))}
-              <TableCell>
-                <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="sm" onClick={() => handleEdit(item)}>
-                    <Edit className="h-3 w-3 mr-1" />
-                    编辑
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => handleDelete(item.id)}>
-                    <Trash2 className="h-3 w-3 mr-1" />
-                    删除
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
+              </TableRow>
+            ))
+          )}
         </TableBody>
       </Table>
     )
+
+    if (sortable) {
+      return (
+        <DndContext
+          sensors={flatSensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleFlatDragEnd}
+          modifiers={[restrictToVerticalAxis]}
+        >
+          <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+            {tableContent}
+          </SortableContext>
+        </DndContext>
+      )
+    }
+    return tableContent
   }
 
   // 渲染表单字段

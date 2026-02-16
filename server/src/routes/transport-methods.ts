@@ -7,7 +7,8 @@ import {
   getTransportMethods,
   createTransportMethod,
   updateTransportMethod,
-  deleteTransportMethod
+  deleteTransportMethod,
+  reorderTransportMethods
 } from '../controllers/transport-method.controller';
 
 const router = Router();
@@ -17,6 +18,9 @@ router.get('/', getTransportMethods);
 
 // 创建运输方式
 router.post('/', createTransportMethod);
+
+// 批量更新排序（需在 /:id 之前）
+router.put('/reorder', reorderTransportMethods);
 
 // 更新运输方式
 router.put('/:id', updateTransportMethod);

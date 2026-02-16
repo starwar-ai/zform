@@ -11,12 +11,14 @@ export interface CreateCustomerSourceTagInput {
   code: string;
   name: string;
   isCommon?: boolean;
+  sortOrder?: number;
 }
 
 export interface UpdateCustomerSourceTagInput {
   code?: string;
   name?: string;
   isCommon?: boolean;
+  sortOrder?: number;
 }
 
 export class CustomerSourceTagService {
@@ -24,7 +26,7 @@ export class CustomerSourceTagService {
   async findAll(): Promise<CustomerSourceTag[]> {
     return prisma.customerSourceTag.findMany({
       where: { deletedAt: null },
-      orderBy: [{ createdAt: 'asc' }],
+      orderBy: [{ isCommon: 'desc' }, { sortOrder: 'asc' }, { createdAt: 'asc' }],
     });
   }
 
@@ -56,6 +58,7 @@ export class CustomerSourceTagService {
         code: data.code,
         name: data.name,
         isCommon: data.isCommon ?? false,
+        sortOrder: data.sortOrder ?? 0,
         createdBy: userId || null,
         updatedBy: userId || null,
       },
@@ -88,9 +91,21 @@ export class CustomerSourceTagService {
         ...(data.code !== undefined && { code: data.code }),
         ...(data.name !== undefined && { name: data.name }),
         ...(data.isCommon !== undefined && { isCommon: data.isCommon }),
+        ...(data.sortOrder !== undefined && { sortOrder: data.sortOrder }),
         updatedBy: userId || undefined,
       },
     });
+  }
+
+  /** 批量更新排序 */
+  async reorder(items: { id: string; sortOrder: number }[], userId?: string): Promise<void> {
+    const updates = items.map((item) =>
+      prisma.customerSourceTag.update({
+        where: { id: item.id },
+        data: { sortOrder: item.sortOrder, updatedBy: userId || undefined },
+      })
+    );
+    await prisma.$transaction(updates);
   }
 
   /** 软删除客户来源 */

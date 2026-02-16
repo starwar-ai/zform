@@ -23,6 +23,7 @@ export interface CustomerCategory extends BaseParameterFields {
   code: string
   name: string
   parentId: string | null
+  sortOrder: number
 }
 
 export interface CustomerCategoryTreeNode extends CustomerCategory {
@@ -71,6 +72,8 @@ export interface HsCode extends BaseParameterFields {
   fullName: string | null  // 商品全称
   levyRate: number | null  // 征收率
   secondUnit: string | null // 第二单位
+  isCommon: boolean
+  sortOrder: number
 }
 
 export interface CreateHsCodeInput {
@@ -84,6 +87,8 @@ export interface CreateHsCodeInput {
   fullName?: string | null
   levyRate?: number | null
   secondUnit?: string | null
+  isCommon?: boolean
+  sortOrder?: number
 }
 
 // 保留旧类型别名以兼容现有代码
@@ -100,6 +105,8 @@ export interface UpdateHsCodeInput {
   fullName?: string | null
   levyRate?: number | null
   secondUnit?: string | null
+  isCommon?: boolean
+  sortOrder?: number
 }
 
 // 保留旧类型别名以兼容现有代码
@@ -110,16 +117,22 @@ export type UpdateProductCategoryInput = UpdateHsCodeInput
 export interface ExhibitionCategory extends BaseParameterFields {
   name: string
   isDomestic: boolean
+  isCommon: boolean
+  sortOrder: number
 }
 
 export interface CreateExhibitionCategoryInput {
   name: string
   isDomestic?: boolean
+  isCommon?: boolean
+  sortOrder?: number
 }
 
 export interface UpdateExhibitionCategoryInput {
   name?: string
   isDomestic?: boolean
+  isCommon?: boolean
+  sortOrder?: number
 }
 
 // ==================== 客户来源 ====================
@@ -128,18 +141,21 @@ export interface CustomerSourceTag extends BaseParameterFields {
   code: string
   name: string
   isCommon: boolean
+  sortOrder: number
 }
 
 export interface CreateCustomerSourceTagInput {
   code: string
   name: string
   isCommon?: boolean
+  sortOrder?: number
 }
 
 export interface UpdateCustomerSourceTagInput {
   code?: string
   name?: string
   isCommon?: boolean
+  sortOrder?: number
 }
 
 // ==================== 运输方式 ====================

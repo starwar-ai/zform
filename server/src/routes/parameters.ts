@@ -17,6 +17,7 @@ const router = Router();
 // ---- 客户分类（树形）----
 router.get('/customer', parameterController.getCustomerTree);
 router.post('/customer', parameterController.createCustomer);
+router.put('/customer/reorder', parameterController.reorderCustomer);
 router.put('/customer/:id', parameterController.updateCustomer);
 router.delete('/customer/:id', parameterController.deleteCustomer);
 
@@ -26,18 +27,21 @@ router.get('/product-category', parameterController.getProductCategoryTree);
 // ---- 海关编码（扁平列表）----
 router.get('/product', parameterController.getProductTree);
 router.post('/product', parameterController.createProduct);
+router.put('/product/reorder', parameterController.reorderProduct);
 router.put('/product/:id', parameterController.updateProduct);
 router.delete('/product/:id', parameterController.deleteProduct);
 
 // ---- 展会分类（扁平列表）----
 router.get('/exhibition', parameterController.getExhibitionList);
 router.post('/exhibition', parameterController.createExhibition);
+router.put('/exhibition/reorder', parameterController.reorderExhibition);
 router.put('/exhibition/:id', parameterController.updateExhibition);
 router.delete('/exhibition/:id', parameterController.deleteExhibition);
 
 // ---- 客户来源（扁平列表）----
 router.get('/customer-source', parameterController.getCustomerSourceList);
 router.post('/customer-source', parameterController.createCustomerSource);
+router.put('/customer-source/reorder', parameterController.reorderCustomerSource);
 router.put('/customer-source/:id', parameterController.updateCustomerSource);
 router.delete('/customer-source/:id', parameterController.deleteCustomerSource);
 

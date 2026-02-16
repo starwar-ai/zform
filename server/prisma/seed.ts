@@ -55,6 +55,8 @@ async function main() {
       customsUnit: 'PCS',
       taxRefundRate: 13.0,
       taxRate: 17.0,
+      isCommon: false,
+      sortOrder: 0,
     },
     create: {
       code: 'HS001',
@@ -63,6 +65,8 @@ async function main() {
       customsUnit: 'PCS',
       taxRefundRate: 13.0,
       taxRate: 17.0,
+      isCommon: false,
+      sortOrder: 0,
     },
   });
 
@@ -77,38 +81,38 @@ async function main() {
   // ---- 客户分类（树形结构）----
   const customerCategoryA = await prisma.customerCategory.upsert({
     where: { code: 'CC001' },
-    update: { name: 'A类客户' },
-    create: { code: 'CC001', name: 'A类客户' },
+    update: { name: 'A类客户', sortOrder: 0 },
+    create: { code: 'CC001', name: 'A类客户', sortOrder: 0 },
   });
 
   const customerCategoryA1 = await prisma.customerCategory.upsert({
     where: { code: 'CC001-1' },
-    update: { name: 'A1级客户', parentId: customerCategoryA.id },
-    create: { code: 'CC001-1', name: 'A1级客户', parentId: customerCategoryA.id },
+    update: { name: 'A1级客户', parentId: customerCategoryA.id, sortOrder: 0 },
+    create: { code: 'CC001-1', name: 'A1级客户', parentId: customerCategoryA.id, sortOrder: 0 },
   });
 
   const customerCategoryA2 = await prisma.customerCategory.upsert({
     where: { code: 'CC001-2' },
-    update: { name: 'A2级客户', parentId: customerCategoryA.id },
-    create: { code: 'CC001-2', name: 'A2级客户', parentId: customerCategoryA.id },
+    update: { name: 'A2级客户', parentId: customerCategoryA.id, sortOrder: 1 },
+    create: { code: 'CC001-2', name: 'A2级客户', parentId: customerCategoryA.id, sortOrder: 1 },
   });
 
   const customerCategoryB = await prisma.customerCategory.upsert({
     where: { code: 'CC002' },
-    update: { name: 'B类客户' },
-    create: { code: 'CC002', name: 'B类客户' },
+    update: { name: 'B类客户', sortOrder: 1 },
+    create: { code: 'CC002', name: 'B类客户', sortOrder: 1 },
   });
 
   const customerCategoryB1 = await prisma.customerCategory.upsert({
     where: { code: 'CC002-1' },
-    update: { name: 'B1级客户', parentId: customerCategoryB.id },
-    create: { code: 'CC002-1', name: 'B1级客户', parentId: customerCategoryB.id },
+    update: { name: 'B1级客户', parentId: customerCategoryB.id, sortOrder: 0 },
+    create: { code: 'CC002-1', name: 'B1级客户', parentId: customerCategoryB.id, sortOrder: 0 },
   });
 
   const customerCategoryC = await prisma.customerCategory.upsert({
     where: { code: 'CC003' },
-    update: { name: 'C类客户' },
-    create: { code: 'CC003', name: 'C类客户' },
+    update: { name: 'C类客户', sortOrder: 2 },
+    create: { code: 'CC003', name: 'C类客户', sortOrder: 2 },
   });
 
   // ---- 海关编码 ----
@@ -121,6 +125,8 @@ async function main() {
       taxRefundRate: 13.0,
       taxRate: 17.0,
       fullName: '电子产品（含手机配件等）',
+      isCommon: true,
+      sortOrder: 0,
     },
     create: {
       code: 'HS-ELEC',
@@ -130,6 +136,8 @@ async function main() {
       taxRefundRate: 13.0,
       taxRate: 17.0,
       fullName: '电子产品（含手机配件等）',
+      isCommon: true,
+      sortOrder: 0,
     },
   });
 
@@ -142,6 +150,8 @@ async function main() {
       taxRefundRate: 13.0,
       taxRate: 17.0,
       fullName: '手机配件及零件',
+      isCommon: true,
+      sortOrder: 1,
     },
     create: {
       code: 'HS-PHONE-ACC',
@@ -151,6 +161,8 @@ async function main() {
       taxRefundRate: 13.0,
       taxRate: 17.0,
       fullName: '手机配件及零件',
+      isCommon: true,
+      sortOrder: 1,
     },
   });
 
@@ -164,6 +176,8 @@ async function main() {
       taxRate: 17.0,
       fullName: '手机保护壳',
       secondUnit: 'KG',
+      isCommon: true,
+      sortOrder: 2,
     },
     create: {
       code: 'HS-PHONE-CASE',
@@ -174,6 +188,8 @@ async function main() {
       taxRate: 17.0,
       fullName: '手机保护壳',
       secondUnit: 'KG',
+      isCommon: true,
+      sortOrder: 2,
     },
   });
 
@@ -186,6 +202,8 @@ async function main() {
       taxRefundRate: 13.0,
       taxRate: 17.0,
       fullName: '塑料制品及其制品',
+      isCommon: false,
+      sortOrder: 3,
     },
     create: {
       code: 'HS-PLASTIC',
@@ -195,6 +213,8 @@ async function main() {
       taxRefundRate: 13.0,
       taxRate: 17.0,
       fullName: '塑料制品及其制品',
+      isCommon: false,
+      sortOrder: 3,
     },
   });
 
@@ -208,6 +228,8 @@ async function main() {
       taxRate: 17.0,
       fullName: '塑料包装制品',
       secondUnit: 'PCS',
+      isCommon: false,
+      sortOrder: 4,
     },
     create: {
       code: 'HS-PLASTIC-PKG',
@@ -218,6 +240,8 @@ async function main() {
       taxRate: 17.0,
       fullName: '塑料包装制品',
       secondUnit: 'PCS',
+      isCommon: false,
+      sortOrder: 4,
     },
   });
 
@@ -228,7 +252,7 @@ async function main() {
       where: { name: '广交会', deletedAt: null },
     })) ||
     (await prisma.exhibitionCategory.create({
-      data: { name: '广交会', isDomestic: true },
+      data: { name: '广交会', isDomestic: true, isCommon: true, sortOrder: 0 },
     }));
 
   const exhibitionCategory2 =
@@ -236,7 +260,7 @@ async function main() {
       where: { name: '华交会', deletedAt: null },
     })) ||
     (await prisma.exhibitionCategory.create({
-      data: { name: '华交会', isDomestic: true },
+      data: { name: '华交会', isDomestic: true, isCommon: true, sortOrder: 1 },
     }));
 
   const exhibitionCategory3 =
@@ -244,7 +268,7 @@ async function main() {
       where: { name: '香港电子展', deletedAt: null },
     })) ||
     (await prisma.exhibitionCategory.create({
-      data: { name: '香港电子展', isDomestic: false },
+      data: { name: '香港电子展', isDomestic: false, isCommon: false, sortOrder: 2 },
     }));
 
   const exhibitionCategory4 =
@@ -252,7 +276,7 @@ async function main() {
       where: { name: 'CES国际消费电子展', deletedAt: null },
     })) ||
     (await prisma.exhibitionCategory.create({
-      data: { name: 'CES国际消费电子展', isDomestic: false },
+      data: { name: 'CES国际消费电子展', isDomestic: false, isCommon: false, sortOrder: 3 },
     }));
 
   const exhibitionCategory5 =
@@ -260,18 +284,18 @@ async function main() {
       where: { name: '深圳高交会', deletedAt: null },
     })) ||
     (await prisma.exhibitionCategory.create({
-      data: { name: '深圳高交会', isDomestic: true },
+      data: { name: '深圳高交会', isDomestic: true, isCommon: true, sortOrder: 4 },
     }));
 
   // ---- 客户来源（扁平列表）----
   const customerSourceTagSeeds = [
-    { code: 'CS001', name: '阿里巴巴' },
-    { code: 'CS002', name: '促销活动' },
-    { code: 'CS003', name: '广交会' },
-    { code: 'CS004', name: '国外会展' },
-    { code: 'CS005', name: '合作伙伴' },
-    { code: 'CS006', name: '互联网' },
-    { code: 'CS007', name: '老客户介绍' },
+    { code: 'CS001', name: '阿里巴巴', isCommon: true, sortOrder: 0 },
+    { code: 'CS002', name: '促销活动', isCommon: true, sortOrder: 1 },
+    { code: 'CS003', name: '广交会', isCommon: true, sortOrder: 2 },
+    { code: 'CS004', name: '国外会展', isCommon: false, sortOrder: 3 },
+    { code: 'CS005', name: '合作伙伴', isCommon: false, sortOrder: 4 },
+    { code: 'CS006', name: '互联网', isCommon: true, sortOrder: 5 },
+    { code: 'CS007', name: '老客户介绍', isCommon: true, sortOrder: 6 },
   ];
 
   const customerSourceTags = [];
@@ -281,7 +305,7 @@ async function main() {
         where: { code: seed.code, deletedAt: null },
       })) ||
       (await prisma.customerSourceTag.create({
-        data: { code: seed.code, name: seed.name, isCommon: false },
+        data: { code: seed.code, name: seed.name, isCommon: seed.isCommon, sortOrder: seed.sortOrder },
       }));
     customerSourceTags.push(tag);
   }
@@ -2183,12 +2207,16 @@ async function main() {
       path: '/orders/domestic',
       status: 'active',
       description: '国内订单处理路径',
+      isCommon: true,
+      sortOrder: 0,
     },
     create: {
       id: 'order-route-001',
       path: '/orders/domestic',
       status: 'active',
       description: '国内订单处理路径',
+      isCommon: true,
+      sortOrder: 0,
     },
   });
 
@@ -2198,12 +2226,16 @@ async function main() {
       path: '/orders/international',
       status: 'active',
       description: '国际订单处理路径',
+      isCommon: true,
+      sortOrder: 1,
     },
     create: {
       id: 'order-route-002',
       path: '/orders/international',
       status: 'active',
       description: '国际订单处理路径',
+      isCommon: true,
+      sortOrder: 1,
     },
   });
 
@@ -2213,12 +2245,16 @@ async function main() {
       path: '/orders/emergency',
       status: 'inactive',
       description: '紧急订单处理路径',
+      isCommon: false,
+      sortOrder: 2,
     },
     create: {
       id: 'order-route-003',
       path: '/orders/emergency',
       status: 'inactive',
       description: '紧急订单处理路径',
+      isCommon: false,
+      sortOrder: 2,
     },
   });
 

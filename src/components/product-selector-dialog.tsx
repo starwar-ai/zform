@@ -11,7 +11,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import type { ColumnFilter } from "@/components/list-table/types"
 import { fetchDocumentListApi } from "@/apis/document-api"
-import { fetchCategoryListApi } from "@/apis/business-entity-api"
+import { fetchParameterListApi } from "@/apis/business-entity-api"
 import { fetchBrandsApi } from "@/apis/business-parameter-api"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import {
@@ -281,7 +281,7 @@ export function ProductSelectorDialog({
   useEffect(() => {
     if (open) {
       Promise.all([
-        fetchCategoryListApi<{ id: string; name: string }>("product"),
+        fetchParameterListApi<{ id: string; name: string }>("product"),
         fetchBrandsApi(),
       ])
         .then(([categoriesData, brandsData]) => {

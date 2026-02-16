@@ -14,6 +14,20 @@ interface ApiResponse<T> {
   data: T
 }
 
+/** 根据类型获取 API 路径前缀 */
+function getParameterPath(type: ParameterTypeKey): string {
+  const pathMap: Record<string, string> = {
+    customer: "/parameters/customer",
+    "customer-source": "/parameters/customer-source",
+    product: "/parameters/product",
+    "product-category": "/parameters/product-category",
+    exhibition: "/parameters/exhibition",
+    "order-route": "/parameters/order-routes",
+    "transport-method": "/parameters/transport-methods",
+  }
+  return pathMap[type] ?? `/parameters/${type}`
+}
+
 /** 通用请求函数 */
 async function request<T>(
   path: string,
@@ -47,45 +61,56 @@ async function request<T>(
   return json.data
 }
 
-/** 获取分类列表/树 */
-export async function fetchCategoryListApi<T>(type: ParameterTypeKey): Promise<T[]> {
-  // 特殊处理运输方式，使用独立的API路径
-  const path = type === 'transport-method' ? '/transport-methods' : `/categories/${type}`
+/** 获取参数列表/树 */
+export async function fetchParameterListApi<T>(type: ParameterTypeKey): Promise<T[]> {
+  const path = getParameterPath(type)
   return request<T[]>(path)
 }
 
-/** 创建分类 */
-export async function createCategoryApi<T>(
+/** 创建参数 */
+export async function createParameterApi<T>(
   type: ParameterTypeKey,
   data: Record<string, unknown>
 ): Promise<T> {
-  const path = type === 'transport-method' ? '/transport-methods' : `/categories/${type}`
+  const path = getParameterPath(type)
   return request<T>(path, {
     method: "POST",
     body: JSON.stringify(data),
   })
 }
 
-/** 更新分类 */
-export async function updateCategoryApi<T>(
+/** 更新参数 */
+export async function updateParameterApi<T>(
   type: ParameterTypeKey,
   id: string,
   data: Record<string, unknown>
 ): Promise<T> {
-  const basePath = type === 'transport-method' ? '/transport-methods' : `/categories/${type}`
+  const basePath = getParameterPath(type)
   return request<T>(`${basePath}/${id}`, {
     method: "PUT",
     body: JSON.stringify(data),
   })
 }
 
-/** 删除分类 */
-export async function deleteCategoryApi(
+/** 删除参数 */
+export async function deleteParameterApi(
   type: ParameterTypeKey,
   id: string
 ): Promise<void> {
-  const basePath = type === 'transport-method' ? '/transport-methods' : `/categories/${type}`
+  const basePath = getParameterPath(type)
   await request<null>(`${basePath}/${id}`, {
     method: "DELETE",
+  })
+}
+
+/** 批量更新参数排序 */
+export async function reorderParameterApi(
+  type: ParameterTypeKey,
+  items: { id: string; sortOrder: number }[]
+): Promise<void> {
+  const basePath = getParameterPath(type)
+  await request<null>(`${basePath}/reorder`, {
+    method: "PUT",
+    body: JSON.stringify({ items }),
   })
 }

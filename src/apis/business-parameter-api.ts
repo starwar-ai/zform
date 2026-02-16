@@ -367,15 +367,16 @@ export async function deleteWarehouseApi(id: string): Promise<void> {
 // ==================== 订单路径 API ====================
 
 export async function fetchOrderRoutesApi(): Promise<OrderRoute[]> {
-  const res = await fetch(`${API_BASE}/order-routes`, {
+  const res = await fetch(`${API_BASE}/parameters/order-routes`, {
     credentials: 'include',
   });
   if (!res.ok) throw new Error('获取订单路径列表失败');
-  return res.json();
+  const json = await res.json();
+  return json.data ?? json;
 }
 
 export async function createOrderRouteApi(data: Partial<OrderRoute>): Promise<OrderRoute> {
-  const res = await fetch(`${API_BASE}/order-routes`, {
+  const res = await fetch(`${API_BASE}/parameters/order-routes`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
@@ -383,13 +384,14 @@ export async function createOrderRouteApi(data: Partial<OrderRoute>): Promise<Or
   });
   if (!res.ok) {
     const error = await res.json();
-    throw new Error(error.error || '创建订单路径失败');
+    throw new Error(error.message || error.error || '创建订单路径失败');
   }
-  return res.json();
+  const json = await res.json();
+  return json.data ?? json;
 }
 
 export async function updateOrderRouteApi(id: string, data: Partial<OrderRoute>): Promise<OrderRoute> {
-  const res = await fetch(`${API_BASE}/order-routes/${id}`, {
+  const res = await fetch(`${API_BASE}/parameters/order-routes/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
@@ -397,13 +399,14 @@ export async function updateOrderRouteApi(id: string, data: Partial<OrderRoute>)
   });
   if (!res.ok) {
     const error = await res.json();
-    throw new Error(error.error || '更新订单路径失败');
+    throw new Error(error.message || error.error || '更新订单路径失败');
   }
-  return res.json();
+  const json = await res.json();
+  return json.data ?? json;
 }
 
 export async function deleteOrderRouteApi(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/order-routes/${id}`, {
+  const res = await fetch(`${API_BASE}/parameters/order-routes/${id}`, {
     method: 'DELETE',
     credentials: 'include',
   });
@@ -563,15 +566,16 @@ export interface TransportMethod {
 }
 
 export async function fetchTransportMethodsApi(): Promise<TransportMethod[]> {
-  const res = await fetch(`${API_BASE}/transport-methods`, {
+  const res = await fetch(`${API_BASE}/parameters/transport-methods`, {
     credentials: 'include',
   });
   if (!res.ok) throw new Error('获取运输方式列表失败');
-  return res.json();
+  const json = await res.json();
+  return json.data ?? json;
 }
 
 export async function createTransportMethodApi(data: Partial<TransportMethod>): Promise<TransportMethod> {
-  const res = await fetch(`${API_BASE}/transport-methods`, {
+  const res = await fetch(`${API_BASE}/parameters/transport-methods`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
@@ -579,13 +583,14 @@ export async function createTransportMethodApi(data: Partial<TransportMethod>): 
   });
   if (!res.ok) {
     const error = await res.json();
-    throw new Error(error.error || '创建运输方式失败');
+    throw new Error(error.message || error.error || '创建运输方式失败');
   }
-  return res.json();
+  const json = await res.json();
+  return json.data ?? json;
 }
 
 export async function updateTransportMethodApi(id: string, data: Partial<TransportMethod>): Promise<TransportMethod> {
-  const res = await fetch(`${API_BASE}/transport-methods/${id}`, {
+  const res = await fetch(`${API_BASE}/parameters/transport-methods/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
@@ -593,13 +598,14 @@ export async function updateTransportMethodApi(id: string, data: Partial<Transpo
   });
   if (!res.ok) {
     const error = await res.json();
-    throw new Error(error.error || '更新运输方式失败');
+    throw new Error(error.message || error.error || '更新运输方式失败');
   }
-  return res.json();
+  const json = await res.json();
+  return json.data ?? json;
 }
 
 export async function deleteTransportMethodApi(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/transport-methods/${id}`, {
+  const res = await fetch(`${API_BASE}/parameters/transport-methods/${id}`, {
     method: 'DELETE',
     credentials: 'include',
   });

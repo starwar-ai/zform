@@ -10,11 +10,15 @@ import type { ExhibitionCategory } from '@prisma/client';
 export interface CreateExhibitionCategoryInput {
   name: string;
   isDomestic?: boolean;
+  isCommon?: boolean;
+  sortOrder?: number;
 }
 
 export interface UpdateExhibitionCategoryInput {
   name?: string;
   isDomestic?: boolean;
+  isCommon?: boolean;
+  sortOrder?: number;
 }
 
 export class ExhibitionCategoryService {
@@ -22,7 +26,7 @@ export class ExhibitionCategoryService {
   async findAll(): Promise<ExhibitionCategory[]> {
     return prisma.exhibitionCategory.findMany({
       where: { deletedAt: null },
-      orderBy: [{ createdAt: 'asc' }],
+      orderBy: [{ isCommon: 'desc' }, { sortOrder: 'asc' }, { createdAt: 'asc' }],
     });
   }
 
@@ -47,6 +51,8 @@ export class ExhibitionCategoryService {
       data: {
         name: data.name,
         isDomestic: data.isDomestic ?? false,
+        isCommon: data.isCommon ?? false,
+        sortOrder: data.sortOrder ?? 0,
         createdBy: userId || null,
         updatedBy: userId || null,
       },
@@ -69,9 +75,22 @@ export class ExhibitionCategoryService {
       data: {
         ...(data.name !== undefined && { name: data.name }),
         ...(data.isDomestic !== undefined && { isDomestic: data.isDomestic }),
+        ...(data.isCommon !== undefined && { isCommon: data.isCommon }),
+        ...(data.sortOrder !== undefined && { sortOrder: data.sortOrder }),
         updatedBy: userId || undefined,
       },
     });
+  }
+
+  /** 批量更新排序 */
+  async reorder(items: { id: string; sortOrder: number }[], userId?: string): Promise<void> {
+    const updates = items.map((item) =>
+      prisma.exhibitionCategory.update({
+        where: { id: item.id },
+        data: { sortOrder: item.sortOrder, updatedBy: userId || undefined },
+      })
+    );
+    await prisma.$transaction(updates);
   }
 
   /** 软删除展会分类 */

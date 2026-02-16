@@ -11,12 +11,14 @@ export interface CreateCustomerCategoryInput {
   code: string;
   name: string;
   parentId?: string | null;
+  sortOrder?: number;
 }
 
 export interface UpdateCustomerCategoryInput {
   code?: string;
   name?: string;
   parentId?: string | null;
+  sortOrder?: number;
 }
 
 /** 客户分类树节点 */
@@ -25,6 +27,7 @@ export interface CustomerCategoryTreeNode {
   code: string;
   name: string;
   parentId: string | null;
+  sortOrder: number;
   createdBy: string | null;
   createdAt: Date;
   updatedBy: string | null;
@@ -37,7 +40,7 @@ export class CustomerCategoryService {
   async findAll(): Promise<CustomerCategory[]> {
     return prisma.customerCategory.findMany({
       where: { deletedAt: null },
-      orderBy: [{ createdAt: 'asc' }],
+      orderBy: [{ parentId: 'asc' }, { sortOrder: 'asc' }, { createdAt: 'asc' }],
     });
   }
 
@@ -69,6 +72,7 @@ export class CustomerCategoryService {
         code: data.code,
         name: data.name,
         parentId: data.parentId || null,
+        sortOrder: data.sortOrder ?? 0,
         createdBy: userId || null,
         updatedBy: userId || null,
       },
@@ -106,9 +110,21 @@ export class CustomerCategoryService {
         ...(data.code !== undefined && { code: data.code }),
         ...(data.name !== undefined && { name: data.name }),
         ...(data.parentId !== undefined && { parentId: data.parentId }),
+        ...(data.sortOrder !== undefined && { sortOrder: data.sortOrder }),
         updatedBy: userId || undefined,
       },
     });
+  }
+
+  /** 批量更新排序（同级兄弟节点） */
+  async reorder(items: { id: string; sortOrder: number }[], userId?: string): Promise<void> {
+    const updates = items.map((item) =>
+      prisma.customerCategory.update({
+        where: { id: item.id },
+        data: { sortOrder: item.sortOrder, updatedBy: userId || undefined },
+      })
+    );
+    await prisma.$transaction(updates);
   }
 
   /** 软删除客户分类 */
@@ -147,7 +163,7 @@ export class CustomerCategoryService {
     return result;
   }
 
-  /** 将扁平列表构建为树 */
+  /** 将扁平列表构建为树（同级按 sortOrder 排序） */
   private buildTree(categories: CustomerCategory[]): CustomerCategoryTreeNode[] {
     const map = new Map<string, CustomerCategoryTreeNode>();
 
@@ -157,6 +173,7 @@ export class CustomerCategoryService {
         code: cat.code,
         name: cat.name,
         parentId: cat.parentId,
+        sortOrder: cat.sortOrder,
         createdBy: cat.createdBy,
         createdAt: cat.createdAt,
         updatedBy: cat.updatedBy,
@@ -173,6 +190,13 @@ export class CustomerCategoryService {
         roots.push(node);
       }
     }
+
+    // 同级按 sortOrder 排序
+    const sortByOrder = (nodes: CustomerCategoryTreeNode[]) => {
+      nodes.sort((a, b) => a.sortOrder - b.sortOrder);
+      nodes.forEach((n) => sortByOrder(n.children));
+    };
+    sortByOrder(roots);
 
     return roots;
   }

@@ -215,6 +215,8 @@ export interface OrderRoute {
   path: string;
   status: string;
   description?: string | null;
+  isCommon: boolean;
+  sortOrder: number;
   createdBy?: string | null;
   createdAt: string;
   updatedBy?: string | null;

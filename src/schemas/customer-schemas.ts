@@ -15,8 +15,8 @@ import { CURRENCY_OPTIONS } from "@/lib/currency"
 
 /** 获取客户分类下拉选项（树形结构扁平化） */
 const fetchCustomerCategoryOptions = async (): Promise<ComboboxOption[]> => {
-  const { fetchCategoryListApi } = await import("@/apis/business-entity-api")
-  const categories = await fetchCategoryListApi<CustomerCategoryTreeNode>("customer")
+  const { fetchParameterListApi } = await import("@/apis/business-entity-api")
+  const categories = await fetchParameterListApi<CustomerCategoryTreeNode>("customer")
 
   const flattenTree = (
     nodes: CustomerCategoryTreeNode[],
@@ -135,8 +135,8 @@ export const domesticCustomerSchema: DocumentSchema = {
       group: "业务信息",
       comboboxConfig: {
         fetchOptions: async () => {
-          const { fetchCategoryListApi } = await import("@/apis/business-entity-api");
-          const methods = await fetchCategoryListApi<TransportMethod>("transport-method");
+          const { fetchParameterListApi } = await import("@/apis/business-entity-api");
+          const methods = await fetchParameterListApi<TransportMethod>("transport-method");
           return methods
             .filter(method => method.isEnabled)
             .map(method => ({
@@ -242,8 +242,8 @@ export const domesticCustomerSchema: DocumentSchema = {
       group: "其他信息",
       comboboxConfig: {
         fetchOptions: async () => {
-          const { fetchCategoryListApi } = await import("@/apis/business-entity-api")
-          const sources = await fetchCategoryListApi("customer-source")
+  const { fetchParameterListApi } = await import("@/apis/business-entity-api")
+  const sources = await fetchParameterListApi("customer-source")
           return sources.map((source: any) => ({
             value: source.id,
             label: source.name
@@ -502,8 +502,8 @@ export const internationalCustomerSchema: DocumentSchema = {
       group: "业务信息",
       comboboxConfig: {
         fetchOptions: async () => {
-          const { fetchCategoryListApi } = await import("@/apis/business-entity-api");
-          const methods = await fetchCategoryListApi<TransportMethod>("transport-method");
+          const { fetchParameterListApi } = await import("@/apis/business-entity-api");
+          const methods = await fetchParameterListApi<TransportMethod>("transport-method");
           return methods
             .filter(method => method.isEnabled)
             .map(method => ({
@@ -638,8 +638,8 @@ export const internationalCustomerSchema: DocumentSchema = {
       group: "其他信息",
       comboboxConfig: {
         fetchOptions: async () => {
-          const { fetchCategoryListApi } = await import("@/apis/business-entity-api")
-          const sources = await fetchCategoryListApi("customer-source")
+  const { fetchParameterListApi } = await import("@/apis/business-entity-api")
+  const sources = await fetchParameterListApi("customer-source")
           return sources.map((source: any) => ({
             value: source.id,
             label: source.name
@@ -884,8 +884,8 @@ export const customerSchema: DocumentSchema = {
       group: "业务信息",
       comboboxConfig: {
         fetchOptions: async () => {
-          const { fetchCategoryListApi } = await import("@/apis/business-entity-api");
-          const methods = await fetchCategoryListApi<TransportMethod>("transport-method");
+          const { fetchParameterListApi } = await import("@/apis/business-entity-api");
+          const methods = await fetchParameterListApi<TransportMethod>("transport-method");
           return methods
             .filter(method => method.isEnabled)
             .map(method => ({
@@ -1039,8 +1039,8 @@ export const customerSchema: DocumentSchema = {
       group: "其他信息",
       comboboxConfig: {
         fetchOptions: async () => {
-          const { fetchCategoryListApi } = await import("@/apis/business-entity-api")
-          const sources = await fetchCategoryListApi("customer-source")
+  const { fetchParameterListApi } = await import("@/apis/business-entity-api")
+  const sources = await fetchParameterListApi("customer-source")
           return sources.map((source: any) => ({
             value: source.id,
             label: source.name

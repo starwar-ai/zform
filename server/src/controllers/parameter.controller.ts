@@ -72,6 +72,17 @@ export const parameterController = {
     }
   },
 
+  /** PUT /parameters/customer/reorder - 批量更新客户分类排序 */
+  async reorderCustomer(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { items } = req.body;
+      await customerCategoryService.reorder(items, getUserId(req));
+      res.json(successResponse(null, '排序更新成功'));
+    } catch (error) {
+      next(error);
+    }
+  },
+
   // ==================== 产品分类（树形，用于产品表单） ====================
 
   /** GET /categories/product-category - 获取产品分类树 */
@@ -126,6 +137,17 @@ export const parameterController = {
     }
   },
 
+  /** PUT /parameters/product/reorder - 批量更新海关编码排序 */
+  async reorderProduct(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { items } = req.body;
+      await hsCodeService.reorder(items, getUserId(req));
+      res.json(successResponse(null, '排序更新成功'));
+    } catch (error) {
+      next(error);
+    }
+  },
+
   // ==================== 展会分类 ====================
 
   /** GET /categories/exhibition - 获取展会分类列表 */
@@ -168,6 +190,17 @@ export const parameterController = {
     }
   },
 
+  /** PUT /parameters/exhibition/reorder - 批量更新展会分类排序 */
+  async reorderExhibition(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { items } = req.body;
+      await exhibitionCategoryService.reorder(items, getUserId(req));
+      res.json(successResponse(null, '排序更新成功'));
+    } catch (error) {
+      next(error);
+    }
+  },
+
   // ==================== 客户来源 ====================
 
   /** GET /categories/customer-source - 获取客户来源列表 */
@@ -205,6 +238,17 @@ export const parameterController = {
     try {
       await customerSourceTagService.delete(param(req, 'id'));
       res.json(successResponse(null, '客户来源删除成功'));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** PUT /parameters/customer-source/reorder - 批量更新客户来源排序 */
+  async reorderCustomerSource(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { items } = req.body;
+      await customerSourceTagService.reorder(items, getUserId(req));
+      res.json(successResponse(null, '排序更新成功'));
     } catch (error) {
       next(error);
     }

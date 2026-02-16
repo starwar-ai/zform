@@ -59,7 +59,10 @@ router.use('/employees', employeeRoutes);
 router.use('/departments', departmentRoutes);
 router.use('/data-permissions', dataPermissionRoutes);
 router.use('/document-permissions', docPermissionRoutes);
-router.use('/categories', categoryRoutes);
+// ---- 参数配置 API（统一 /parameters 前缀）----
+router.use('/parameters', categoryRoutes);
+router.use('/parameters/order-routes', orderRouteRoutes);
+router.use('/parameters/transport-methods', transportMethodRoutes);
 
 // ---- 业务实体管理 API ----
 router.use('/companies', companyRoutes);
@@ -69,9 +72,7 @@ router.use('/ports', portRoutes);
 router.use('/brands', brandRoutes);
 router.use('/warehouses', warehouseRoutes);
 router.use('/inventory', inventoryRoutes);
-router.use('/order-routes', orderRouteRoutes);
 router.use('/other-configs', otherConfigRoutes);
-router.use('/transport-methods', transportMethodRoutes);
 
 // ---- 旧路由 (保留兼容) ----
 router.use('/products', productRoutes);

@@ -18,6 +18,8 @@ export interface CreateHsCodeInput {
   fullName?: string | null;
   levyRate?: number | null;
   secondUnit?: string | null;
+  isCommon?: boolean;
+  sortOrder?: number;
 }
 
 export interface UpdateHsCodeInput {
@@ -31,6 +33,8 @@ export interface UpdateHsCodeInput {
   fullName?: string | null;
   levyRate?: number | null;
   secondUnit?: string | null;
+  isCommon?: boolean;
+  sortOrder?: number;
 }
 
 export class HsCodeService {
@@ -38,7 +42,7 @@ export class HsCodeService {
   async findAll(): Promise<HsCode[]> {
     return prisma.hsCode.findMany({
       where: { deletedAt: null },
-      orderBy: [{ code: 'asc' }],
+      orderBy: [{ isCommon: 'desc' }, { sortOrder: 'asc' }, { code: 'asc' }],
     });
   }
 
@@ -71,6 +75,8 @@ export class HsCodeService {
         fullName: data.fullName ?? null,
         levyRate: data.levyRate ?? null,
         secondUnit: data.secondUnit ?? null,
+        isCommon: data.isCommon ?? false,
+        sortOrder: data.sortOrder ?? 0,
         createdBy: userId || null,
         updatedBy: userId || null,
       },
@@ -101,9 +107,22 @@ export class HsCodeService {
         ...(data.fullName !== undefined && { fullName: data.fullName }),
         ...(data.levyRate !== undefined && { levyRate: data.levyRate }),
         ...(data.secondUnit !== undefined && { secondUnit: data.secondUnit }),
+        ...(data.isCommon !== undefined && { isCommon: data.isCommon }),
+        ...(data.sortOrder !== undefined && { sortOrder: data.sortOrder }),
         updatedBy: userId || undefined,
       },
     });
+  }
+
+  /** 批量更新排序 */
+  async reorder(items: { id: string; sortOrder: number }[], userId?: string): Promise<void> {
+    const updates = items.map((item) =>
+      prisma.hsCode.update({
+        where: { id: item.id },
+        data: { sortOrder: item.sortOrder, updatedBy: userId || undefined },
+      })
+    );
+    await prisma.$transaction(updates);
   }
 
   /** 软删除海关编码 */

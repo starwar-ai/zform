@@ -215,7 +215,9 @@ model OrderRoute {
   id          String     @id @default(cuid())
   path        String     // 路径
   status      String     // 状态
-  description String?    // 描述
+  description String?   // 描述
+  isCommon    Boolean    @default(false) @map("is_common") // 是否常用
+  sortOrder   Int        @default(0) @map("sort_order") // 排序
   createdBy   String?    @map("created_by")
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedBy   String?    @map("updated_by")
@@ -322,6 +324,8 @@ model HsCode {
   fullName      String?  @map("full_name") // 商品全称
   levyRate      Decimal? @map("levy_rate") @db.Decimal(5, 2) // 征收率
   secondUnit    String?  @map("second_unit") // 第二单位
+  isCommon      Boolean  @default(false) @map("is_common") // 是否常用
+  sortOrder     Int      @default(0) @map("sort_order") // 排序
 
   createdBy String?   @map("created_by")
   createdAt DateTime  @default(now()) @map("created_at")
@@ -337,10 +341,11 @@ model HsCode {
 // ==================== 客户分类表（支持多级）====================
 
 model CustomerCategory {
-  id       String             @id @default(cuid())
-  code     String             @unique // 分类编号
-  name     String // 名称
-  parentId String?            @map("parent_id")
+  id        String             @id @default(cuid())
+  code      String             @unique // 分类编号
+  name      String // 名称
+  sortOrder Int                @default(0) @map("sort_order") // 同级排序
+  parentId  String?            @map("parent_id")
   parent   CustomerCategory?  @relation("CustomerCategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
   children CustomerCategory[] @relation("CustomerCategoryTree")
 
@@ -363,6 +368,8 @@ model ExhibitionCategory {
   id         String  @id @default(cuid())
   name       String // 名称
   isDomestic Boolean @default(false) @map("is_domestic") // 是否国内系列（false：否 true：是）
+  isCommon   Boolean @default(false) @map("is_common") // 是否常用
+  sortOrder  Int     @default(0) @map("sort_order") // 排序
 
   createdBy String?   @map("created_by")
   createdAt DateTime  @default(now()) @map("created_at")
@@ -376,10 +383,11 @@ model ExhibitionCategory {
 // ==================== 客户来源表 ====================
 
 model CustomerSourceTag {
-  id       String  @id @default(cuid())
-  code     String  @unique // 标签编码
-  name     String // 标签名称
-  isCommon Boolean @default(false) @map("is_common") // 是否常用
+  id        String  @id @default(cuid())
+  code      String  @unique // 标签编码
+  name      String // 标签名称
+  isCommon  Boolean @default(false) @map("is_common") // 是否常用
+  sortOrder Int     @default(0) @map("sort_order") // 排序
 
   createdBy String?   @map("created_by")
   createdAt DateTime  @default(now()) @map("created_at")
