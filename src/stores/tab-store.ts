@@ -28,6 +28,8 @@ export type TabType =
   | "shipping-document-management" // 出运单证管理
   | "approval-flow-management" // 审批流程配置
   | "approval-flow-editor" // 审批规则编辑
+  | "collection-workbench" // 收款工作台
+  | "overdue-report" // 逾期报表
 
 // 标签数据结构
 export interface Tab {

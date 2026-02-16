@@ -36,6 +36,8 @@ import {
   Lock,
   KeyRound,
   GitBranch,
+  Wallet,
+  AlertTriangle,
   type LucideIcon,
 } from "lucide-react"
 
@@ -64,6 +66,8 @@ const iconMap: Record<string, LucideIcon> = {
   GitBranch,
   ChevronLeft,
   ChevronRight,
+  Wallet,
+  AlertTriangle,
 }
 
 /** 根据图标名获取对应的 lucide-react 组件 */
@@ -117,6 +121,8 @@ function parseMenuPath(path?: string | null): {
     "/warehouse-outbound": "warehouse-outbound",
     "/shipping-document-management": "shipping-document-management",
     "/approval-flow-management": "approval-flow-management",
+    "/collection-workbench": "collection-workbench",
+    "/overdue-report": "overdue-report",
   }
 
   const tabType = pathToTabType[path]

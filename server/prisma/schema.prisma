@@ -1306,34 +1306,45 @@ model SmsCollectionPlan {
   salesContract   SalesContract  @relation("SalesContractCollectionPlans", fields: [salesContractId], references: [id], onDelete: Cascade)
 
   // 步骤与支付
-  step          Int     @default(1) // 步骤序号
-  paymentMethod Int?    @map("payment_method") // 支付方式
-  paymentName   String? @map("payment_name") // 支付方式名称
+  periodIndex       Int     @default(1) @map("step") // 期序号
+  receiptMethodType Int?    @map("payment_method") // 收款方式类型
+  receiptDescription String?  @map("payment_name") // 本期收款说明
 
-  // 日期计算（起始点、起始日、天数 → 预计收款日）
-  dateType            Int?      @map("date_type") // 起始点：1-合同签订日 2-回签日 3-发货日 4-开票日等
-  startDate           DateTime? @map("start_date") // 起始日
-  days                Int       @default(0) // 天数（从起始日起）
+  // 日期计算（收款日基准、基准日期、延后天数 → 预计收款日）
+  receiptDateBase     Int?      @map("date_type") // 收款日基准：1-合同签订日 2-回签日 3-发货日 4-开票日等
+  baseDate            DateTime? @map("start_date") // 基准日期
+  daysOffset          Int       @default(0) @map("days") // 延后天数
   expectedReceiptDate DateTime? @map("expected_receipt_date") // 预计收款日
 
   // 金额
-  collectionRatio     Decimal   @map("collection_ratio") @db.Decimal(19, 6) // 收款比例(%)
-  realCollectionRatio Decimal?   @map("real_collection_ratio") @db.Decimal(19, 6) // 实际收款比例
-  receivableAmount    Decimal   @default(0) @map("receivable_amount") @db.Decimal(15, 2) // 应收金额
-  receivedAmount      Decimal   @default(0) @map("received_amount") @db.Decimal(15, 2) // 实收金额
+  receiptRatio        Decimal   @map("collection_ratio") @db.Decimal(19, 6) // 本期比例(%)
+  realCollectionRatio Decimal?  @map("real_collection_ratio") @db.Decimal(19, 6) // 实际收款比例
+  periodReceivable    Decimal   @default(0) @map("receivable_amount") @db.Decimal(15, 2) // 本期应收
+  periodReceived      Decimal   @default(0) @map("received_amount") @db.Decimal(15, 2) // 本期已收
 
   // 控制标识
-  controlPurchaseFlag Int @default(0) @map("control_purchase_flag") // 是否控制采购 0-否 1-是
-  controlShipmentFlag Int @default(0) @map("control_shipment_flag") // 是否控制出运 0-否 1-是
+  blockPurchaseUntilPaid  Int @default(0) @map("control_purchase_flag") // 收齐前禁采购 0-否 1-是
+  blockShipmentUntilPaid  Int @default(0) @map("control_shipment_flag") // 收齐前禁出运 0-否 1-是
 
   // 执行状态 0-未执行 1-部分执行 2-已执行
   exeStatus Int @default(0) @map("exe_status")
+
+  // 逾期管理字段
+  overdueStatus     Int       @default(0) @map("overdue_status")     // 0-正常 1-即将到期 2-已逾期
+  overdueDays       Int       @default(0) @map("overdue_days")       // 逾期天数
+  reminderStatus    Int       @default(0) @map("reminder_status")    // 0-未提醒 1-已提醒
+  lastReminderAt    DateTime? @map("last_reminder_at")               // 最后提醒时间
+  reminderCount     Int       @default(0) @map("reminder_count")     // 提醒次数
+  actualReceiptDate DateTime? @map("actual_receipt_date")            // 实际收款日
 
   // 收款明细（JSON，如认领/水单列表，参考 zexport children）
   children Json? // CollectionPlanItem[] 收款明细
 
   // 差异原因（JSON）
   differenceReason Json? @map("difference_reason")
+
+  // 关联提醒
+  reminders CollectionReminder[] @relation("CollectionPlanReminders")
 
   // 时间戳
   createdBy String?   @map("created_by")
@@ -1343,10 +1354,69 @@ model SmsCollectionPlan {
   deletedAt DateTime? @map("deleted_at")
 
   @@index([salesContractId])
-  @@index([step])
+  @@index([periodIndex])
   @@index([expectedReceiptDate])
   @@index([exeStatus])
+  @@index([overdueStatus])
   @@map("sms_collection_plan")
+}
+
+// ==================== 收款提醒表 (collection_reminders) ====================
+// 记录收款计划的到期提醒和逾期提醒
+
+model CollectionReminder {
+  id String @id @default(cuid())
+
+  // 关联收款计划
+  collectionPlanId String            @map("collection_plan_id")
+  collectionPlan   SmsCollectionPlan @relation("CollectionPlanReminders", fields: [collectionPlanId], references: [id], onDelete: Cascade)
+
+  // 关联销售合同（冗余便于查询）
+  salesContractId   String  @map("sales_contract_id")
+  salesContractCode String? @map("sales_contract_code")
+
+  // 客户信息（冗余便于查询）
+  customerId   String? @map("customer_id")
+  customerCode String? @map("customer_code")
+  customerName String? @map("customer_name")
+
+  // 提醒类型 1-即将到期 2-已逾期
+  reminderType Int @map("reminder_type")
+
+  // 日期信息
+  reminderDate DateTime @map("reminder_date") // 提醒生成日期
+  expectedDate DateTime @map("expected_date") // 预计收款日
+
+  // 金额
+  receivableAmt Decimal @map("receivable_amt") @db.Decimal(15, 2) // 应收金额
+  receivedAmt   Decimal @default(0) @map("received_amt") @db.Decimal(15, 2) // 已收金额
+
+  // 逾期天数（仅逾期提醒有值）
+  overdueDays Int @default(0) @map("overdue_days")
+
+  // 期序号
+  periodIndex Int @default(1) @map("period_index")
+
+  // 目标用户（业务员/跟单员）
+  targetUserId String? @map("target_user_id")
+
+  // 状态
+  readStatus   Int @default(0) @map("read_status")   // 0-未读 1-已读
+  handleStatus Int @default(0) @map("handle_status") // 0-未处理 1-已处理
+
+  // 时间戳
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@index([collectionPlanId])
+  @@index([salesContractId])
+  @@index([customerId])
+  @@index([targetUserId])
+  @@index([reminderType])
+  @@index([readStatus])
+  @@index([reminderDate])
+  @@map("collection_reminders")
 }
 
 // ==================== 销售合同明细表 ====================

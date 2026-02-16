@@ -9,6 +9,7 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './config/swagger';
 import { registerAllAdapters } from './documents';
 import { exchangeRateSchedulerService } from './services/exchange-rate-scheduler.service';
+import { collectionReminderSchedulerService } from './services/collection-reminder-scheduler.service';
 
 dotenv.config();
 
@@ -47,9 +48,14 @@ app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
-  
+
   // 启动汇率调度器
   exchangeRateSchedulerService.start().catch(err => {
     console.error('Failed to start exchange rate scheduler:', err);
+  });
+
+  // 启动收款提醒调度器
+  collectionReminderSchedulerService.start().catch(err => {
+    console.error('Failed to start collection reminder scheduler:', err);
   });
 });

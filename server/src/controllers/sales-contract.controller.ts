@@ -289,10 +289,11 @@ export const salesContractController = {
   async upsertCollectionPlans(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = (req.headers['x-user-id'] as string) || 'system';
-      const { collectionPlans } = req.body;
+      const { receiptPlanItems } = req.body;
+      const rawPlans = Array.isArray(receiptPlanItems) ? receiptPlanItems : [];
       const plans = await collectionPlanService.upsertBySalesContractId(
         ensureString(req.params.id),
-        Array.isArray(collectionPlans) ? collectionPlans : [],
+        rawPlans.map((p: any) => ({ ...(p.data ?? p), id: p.id })),
         userId
       );
       res.json(successResponse(plans, '收款计划保存成功'));

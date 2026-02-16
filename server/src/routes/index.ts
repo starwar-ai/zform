@@ -31,6 +31,7 @@ import pmsRoutes from './pms';
 import exchangeRateRoutes from './exchange-rate.routes';
 import rateSchedulerRoutes from './rate-scheduler.routes';
 import transportMethodRoutes from './transport-methods';
+import collectionWorkbenchRoutes from './collection-workbench';
 
 const router = Router();
 
@@ -76,6 +77,9 @@ router.use('/brands', brandRoutes);
 router.use('/warehouses', warehouseRoutes);
 router.use('/inventory', inventoryRoutes);
 router.use('/other-configs', otherConfigRoutes);
+
+// ---- 收款工作台 API ----
+router.use('/collection-workbench', collectionWorkbenchRoutes);
 
 // ---- 旧路由 (保留兼容) ----
 router.use('/products', productRoutes);

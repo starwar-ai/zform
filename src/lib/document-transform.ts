@@ -45,19 +45,28 @@ export function normalizeDocumentData(
   }
   const customerTypes = ['domestic_customer', 'international_customer', 'customer']
 
+  // 收款计划：前端 receiptPlanItems 对应后端 collectionPlans（表名映射，字段名已统一）
+  const receiptPlanBackendKey = 'collectionPlans'
+
   // 提取明细表数据（根据 schema.detailTables 配置）
   const detailTables: DetailTableData[] = schema.detailTables.map((tableDef) => {
-    const itemsKey = customerTypes.includes(typeId)
+    let itemsKey = customerTypes.includes(typeId)
       ? (customerDetailKeyMap[tableDef.id] ?? tableDef.id)
       : tableDef.id
+    if (tableDef.id === 'receiptPlanItems') {
+      itemsKey = receiptPlanBackendKey
+    }
     const rawItems = rawDoc[itemsKey] || []
-    
+    const isReceiptPlan = tableDef.id === 'receiptPlanItems'
+
     return {
       tableId: tableDef.id,
       rows: rawItems.map((item: any) => ({
         id: item.id || nanoid(),
-        data: extractDetailRowData(tableDef.fields, item),
-        sourceRef: item.sourceRef, // 如果有追溯信息
+        data: isReceiptPlan
+          ? extractReceiptPlanRowData(tableDef.fields, item)
+          : extractDetailRowData(tableDef.fields, item),
+        sourceRef: item.sourceRef,
       })),
     }
   })
@@ -70,6 +79,8 @@ export function normalizeDocumentData(
     ...(customerTypes.includes(typeId)
       ? ['bankAccounts', 'contacts', 'customerPaymentTerms']
       : []),
+    // 收款计划：前端 receiptPlanItems 对应后端 collectionPlans
+    ...(schema.detailTables.some(t => t.id === 'receiptPlanItems') ? [receiptPlanBackendKey] : []),
   ])
   
   const masterData: Record<string, unknown> = {}
@@ -109,6 +120,20 @@ function extractDetailRowData(fields: FieldDef[], item: any): Record<string, unk
     if (field.id in item) {
       data[field.id] = item[field.id]
     }
+  }
+  return data
+}
+
+/**
+ * 收款计划：从后端 collectionPlans 行数据提取（字段名已统一，仅做 checkbox 0/1→boolean）
+ */
+function extractReceiptPlanRowData(fields: FieldDef[], item: any): Record<string, unknown> {
+  const data = extractDetailRowData(fields, item)
+  if (item.blockPurchaseUntilPaid !== undefined) {
+    data.blockPurchaseUntilPaid = Boolean(item.blockPurchaseUntilPaid)
+  }
+  if (item.blockShipmentUntilPaid !== undefined) {
+    data.blockShipmentUntilPaid = Boolean(item.blockShipmentUntilPaid)
   }
   return data
 }

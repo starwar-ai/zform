@@ -26,6 +26,8 @@ import { WarehouseOutbound } from "@/components/warehouse-outbound"
 import { ShippingDocumentManagement } from "@/components/shipping-document-management"
 import { ApprovalFlowManagement } from "@/components/approval-flow-management"
 import { ApprovalFlowEditor } from "@/components/approval-flow-editor"
+import { CollectionWorkbench } from "@/components/collection-workbench"
+import { OverdueReport } from "@/components/overdue-report"
 
 import { DashboardHome } from "@/components/dashboard-home"
 
@@ -151,6 +153,24 @@ export function TabContent() {
         return (
           <ApprovalFlowEditor
             ruleId={activeTab.params?.ruleId as string | undefined}
+          />
+        )
+
+      case "collection-workbench":
+        return (
+          <CollectionWorkbench
+            onOpenContract={(contractId) =>
+              openTab("document-form", { docId: contractId, typeId: "sales_contract" }, "销售合同")
+            }
+          />
+        )
+
+      case "overdue-report":
+        return (
+          <OverdueReport
+            onOpenContract={(contractId) =>
+              openTab("document-form", { docId: contractId, typeId: "sales_contract" }, "销售合同")
+            }
           />
         )
 

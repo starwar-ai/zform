@@ -12,6 +12,9 @@ import {
   calculateSummary,
   executeBatchOperation,
 } from '../../utils/business-utils';
+import { CollectionPlanService } from '../../services/collection-plan.service';
+
+const collectionPlanService = new CollectionPlanService();
 
 /**
  * 计算合同明细总金额和汇总数据
@@ -91,7 +94,7 @@ export const salesContractAdapter: DocumentTypeAdapter = {
     },
     collectionPlans: {
       where: { deletedAt: null },
-      orderBy: { step: 'asc' },
+      orderBy: { periodIndex: 'asc' },
       take: 5,
     },
   },
@@ -102,7 +105,7 @@ export const salesContractAdapter: DocumentTypeAdapter = {
     },
     collectionPlans: {
       where: { deletedAt: null },
-      orderBy: { step: 'asc' },
+      orderBy: { periodIndex: 'asc' },
     },
   },
 
@@ -227,38 +230,61 @@ export const salesContractAdapter: DocumentTypeAdapter = {
   async onUpdate(id, data, userId, prismaClient) {
     // 重新计算总金额
     const summary = await calculateContractSummary(id, prismaClient);
-    
-    Object.assign(data, {
+
+    const masterData = data.masterData || data;
+    const detailTables = data.detailTables || [];
+
+    // 收款计划：从 receiptPlanItems 保存
+    const receiptPlanTable = detailTables.find((t: any) => t.tableId === 'receiptPlanItems');
+    if (receiptPlanTable?.rows?.length) {
+      const plans = receiptPlanTable.rows.map((r: any) => ({ ...(r.data ?? r), id: r.id }));
+      await collectionPlanService.upsertBySalesContractId(id, plans, userId);
+    }
+
+    // 构建主表更新数据
+    const updateData: Record<string, any> = {
+      ...masterData,
       totalAmount: summary.totalAmount,
       totalQuantity: summary.totalQuantity,
       totalBoxes: summary.totalBoxes,
       totalGrossWeight: summary.totalGrossWeight,
       totalNetWeight: summary.totalNetWeight,
       totalVolume: summary.totalVolume,
-    });
+      updatedBy: userId,
+    };
 
-    // 自动计算柜型（如果有总体积）
     if (summary.totalVolume > 0) {
-      const cabinets = calculateContainers(summary.totalVolume);
-      Object.assign(data, cabinets);
+      Object.assign(updateData, calculateContainers(summary.totalVolume));
     }
 
     // 验证状态流转
-    if (data.status) {
+    if (updateData.status) {
       const current = await prismaClient.salesContract.findUnique({
         where: { id },
         select: { status: true, approvalStatus: true },
       });
-      
-      if (current && current.status !== data.status) {
+      if (current && current.status !== updateData.status) {
         validateStatusTransition(
           current.status,
-          data.status,
+          updateData.status,
           SALES_CONTRACT_STATUS_CONFIG,
           { approvalStatus: current.approvalStatus }
         );
       }
     }
+
+    // 排除非 Prisma 字段
+    const exclude = ['masterData', 'detailTables', 'docNumber', 'typeId'];
+    for (const k of exclude) delete updateData[k];
+
+    return prismaClient.salesContract.update({
+      where: { id },
+      data: updateData,
+      include: {
+        items: { where: { deletedAt: null }, orderBy: { lineNumber: 'asc' } },
+        collectionPlans: { where: { deletedAt: null }, orderBy: { periodIndex: 'asc' } },
+      },
+    });
   },
 
   async beforeDelete(id: string, prismaClient: any) {

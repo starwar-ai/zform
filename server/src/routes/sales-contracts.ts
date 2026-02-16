@@ -430,7 +430,7 @@ router.get('/:id/collection-plans', salesContractController.getCollectionPlans);
  * @swagger
  * /sales-contracts/{id}/collection-plans:
  *   post:
- *     summary: 批量保存收款计划（替换模式，body: { collectionPlans: [...] }）
+ *     summary: 批量保存收款计划（替换模式，body: { receiptPlanItems: [...] }）
  *     tags: [SalesContracts]
  */
 router.post('/:id/collection-plans', salesContractController.upsertCollectionPlans);

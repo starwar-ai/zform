@@ -120,7 +120,7 @@ export class SalesContractService {
         },
         collectionPlans: {
           where: { deletedAt: null },
-          orderBy: { step: 'asc' },
+          orderBy: { periodIndex: 'asc' },
         },
       },
     });
@@ -140,7 +140,7 @@ export class SalesContractService {
         },
         collectionPlans: {
           where: { deletedAt: null },
-          orderBy: { step: 'asc' },
+          orderBy: { periodIndex: 'asc' },
         },
       },
     });

@@ -1224,6 +1224,32 @@ async function main() {
     },
   });
 
+  // 收款工作台菜单 - 财务入口子菜单
+  const collectionWorkbenchMenu = await prisma.sysMenu.create({
+    data: {
+      title: '收款工作台',
+      icon: 'Wallet',
+      path: '/collection-workbench',
+      parentId: financeEntryMenu.id,
+      orderNum: 8,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  // 逾期报表菜单 - 财务入口子菜单
+  const overdueReportMenu = await prisma.sysMenu.create({
+    data: {
+      title: '逾期报表',
+      icon: 'AlertTriangle',
+      path: '/overdue-report',
+      parentId: financeEntryMenu.id,
+      orderNum: 9,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
   // ---- 单证入口（一级菜单） ----
   const documentEntryMenu = await prisma.sysMenu.create({
     data: {
@@ -1737,6 +1763,8 @@ async function main() {
     receiptRegistrationMenu.id,
     paymentClaimMenu.id,
     invoiceRegistrationMenu.id,
+    collectionWorkbenchMenu.id,
+    overdueReportMenu.id,
     dataEntryMenu.id,
     productManagementMenu.id,
     customerMenu.id,
@@ -1785,6 +1813,8 @@ async function main() {
     receiptRegistrationMenu.id,
     paymentClaimMenu.id,
     invoiceRegistrationMenu.id,
+    collectionWorkbenchMenu.id,
+    overdueReportMenu.id,
     dataEntryMenu.id,
     productManagementMenu.id,
     customerMenu.id,
@@ -1849,6 +1879,8 @@ async function main() {
     receiptRegistrationMenu.id,
     paymentClaimMenu.id,
     invoiceRegistrationMenu.id,
+    collectionWorkbenchMenu.id,
+    overdueReportMenu.id,
     dataEntryMenu.id,
     productManagementMenu.id,
     customerMenu.id,
