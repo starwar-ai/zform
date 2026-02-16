@@ -1613,11 +1613,11 @@ async function main() {
     },
   });
 
-  const categoryMgmtMenu = await prisma.sysMenu.create({
+  const businessParametersMenu = await prisma.sysMenu.create({
     data: {
       title: '参数配置',
       icon: 'Tags',
-      path: '/category-management',
+      path: '/business-parameters',
       parentId: businessParentMenu.id,
       orderNum: 1,
       menuType: 'menu',
@@ -1707,7 +1707,7 @@ async function main() {
     menuMgmtMenu.id,
     deptMgmtMenu.id,
     businessParentMenu.id,
-    categoryMgmtMenu.id,
+    businessParametersMenu.id,
     businessConfigMenu.id,
     approvalFlowMenu.id,
     oaEntryMenu.id,
@@ -1834,7 +1834,7 @@ async function main() {
   console.log(`Roles: ${adminRole.code}, ${managerRole.code}, ${userRole.code}`);
   console.log(`Users: admin (password: admin123, dept: ${techDept.code}), demo (password: 123456, dept: ${salesDept.code})`);
   console.log(`Menus: ${allMenuIds.length} menus (incl. ${allBtnIds.length} button permissions)`);
-  console.log(`System management menus: ${userMgmtMenu.title}, ${roleMgmtMenu.title}, ${menuMgmtMenu.title}, ${deptMgmtMenu.title}, ${categoryMgmtMenu.title}, ${businessConfigMenu.title}`);
+  console.log(`System management menus: ${userMgmtMenu.title}, ${roleMgmtMenu.title}, ${menuMgmtMenu.title}, ${deptMgmtMenu.title}, ${businessParametersMenu.title}, ${businessConfigMenu.title}`);
   console.log(`Data Entry menus: ${dataEntryMenu.title} (${productManagementMenu.title}, ${customerMenu.title}, ${supplierMenu.title})`);
   console.log(`Warehouse & Quality menus: ${warehouseEntryMenu.title} (${warehouseInventoryMenu.title}, ${warehouseInboundMenu.title}, ${warehouseOutboundMenu.title})`);
   console.log(`Data permissions: admin=all, manager=department, user=personal`);

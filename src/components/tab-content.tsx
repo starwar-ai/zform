@@ -106,6 +106,7 @@ export function TabContent() {
         return <DepartmentManagement />
 
       case "category-management":
+      case "business-parameters":
         return <BusinessParameters />
 
       case "business-config":
