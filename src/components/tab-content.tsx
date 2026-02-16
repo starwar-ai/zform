@@ -12,7 +12,7 @@ import { RoleManagement } from "@/components/role-management"
 import { MenuManagement } from "@/components/menu-management"
 import { DepartmentManagement } from "@/components/department-management"
 import { BusinessParameters } from "@/components/business-parameters"
-import { BusinessEntitiesConfig } from "@/components/business-entities-config"
+import { BusinessEntities } from "@/components/business-entities";
 import { ProductManagement } from "@/components/product-management"
 import { CustomerManagement } from "@/components/customer-management"
 import { SupplierManagement } from "@/components/supplier-management"
@@ -109,7 +109,7 @@ export function TabContent() {
         return <BusinessParameters />
 
       case "business-config":
-        return <BusinessEntitiesConfig />
+        return <BusinessEntities />
 
       case "product-management":
         return <ProductManagement />

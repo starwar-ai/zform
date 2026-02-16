@@ -15,7 +15,7 @@ import { CURRENCY_OPTIONS } from "@/lib/currency"
 
 /** 获取客户分类下拉选项（树形结构扁平化） */
 const fetchCustomerCategoryOptions = async (): Promise<ComboboxOption[]> => {
-  const { fetchCategoryListApi } = await import("@/apis/category-api")
+  const { fetchCategoryListApi } = await import("@/apis/business-entity-api")
   const categories = await fetchCategoryListApi<CustomerCategoryTreeNode>("customer")
 
   const flattenTree = (
@@ -135,7 +135,7 @@ export const domesticCustomerSchema: DocumentSchema = {
       group: "业务信息",
       comboboxConfig: {
         fetchOptions: async () => {
-          const { fetchCategoryListApi } = await import("@/apis/category-api");
+          const { fetchCategoryListApi } = await import("@/apis/business-entity-api");
           const methods = await fetchCategoryListApi<TransportMethod>("transport-method");
           return methods
             .filter(method => method.isEnabled)
@@ -242,7 +242,7 @@ export const domesticCustomerSchema: DocumentSchema = {
       group: "其他信息",
       comboboxConfig: {
         fetchOptions: async () => {
-          const { fetchCategoryListApi } = await import("@/apis/category-api")
+          const { fetchCategoryListApi } = await import("@/apis/business-entity-api")
           const sources = await fetchCategoryListApi("customer-source")
           return sources.map((source: any) => ({
             value: source.id,
@@ -502,7 +502,7 @@ export const internationalCustomerSchema: DocumentSchema = {
       group: "业务信息",
       comboboxConfig: {
         fetchOptions: async () => {
-          const { fetchCategoryListApi } = await import("@/apis/category-api");
+          const { fetchCategoryListApi } = await import("@/apis/business-entity-api");
           const methods = await fetchCategoryListApi<TransportMethod>("transport-method");
           return methods
             .filter(method => method.isEnabled)
@@ -638,7 +638,7 @@ export const internationalCustomerSchema: DocumentSchema = {
       group: "其他信息",
       comboboxConfig: {
         fetchOptions: async () => {
-          const { fetchCategoryListApi } = await import("@/apis/category-api")
+          const { fetchCategoryListApi } = await import("@/apis/business-entity-api")
           const sources = await fetchCategoryListApi("customer-source")
           return sources.map((source: any) => ({
             value: source.id,
@@ -884,7 +884,7 @@ export const customerSchema: DocumentSchema = {
       group: "业务信息",
       comboboxConfig: {
         fetchOptions: async () => {
-          const { fetchCategoryListApi } = await import("@/apis/category-api");
+          const { fetchCategoryListApi } = await import("@/apis/business-entity-api");
           const methods = await fetchCategoryListApi<TransportMethod>("transport-method");
           return methods
             .filter(method => method.isEnabled)
@@ -1039,7 +1039,7 @@ export const customerSchema: DocumentSchema = {
       group: "其他信息",
       comboboxConfig: {
         fetchOptions: async () => {
-          const { fetchCategoryListApi } = await import("@/apis/category-api")
+          const { fetchCategoryListApi } = await import("@/apis/business-entity-api")
           const sources = await fetchCategoryListApi("customer-source")
           return sources.map((source: any) => ({
             value: source.id,

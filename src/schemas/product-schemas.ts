@@ -16,7 +16,7 @@
 import type { DocumentSchema, PushDownRule, ChangeRule, ComboboxOption, FieldEffect, DetailTableDef } from "@/core/types"
 import type { HsCode, ProductCategoryTreeNode } from "@/types/category"
 import type { DepartmentTreeNode } from "@/types/department"
-import { fetchCategoryListApi } from "@/apis/category-api"
+import { fetchCategoryListApi } from "@/apis/business-entity-api"
 import { fetchBrandsApi } from "@/apis/business-config-api"
 import { fetchDepartmentTreeApi } from "@/apis/department-api"
 import { generateSkuCodeApi, formatSkuCode } from "@/apis/sku-api"

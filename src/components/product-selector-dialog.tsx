@@ -11,7 +11,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import type { ColumnFilter } from "@/components/list-table/types"
 import { fetchDocumentListApi } from "@/apis/document-api"
-import { fetchCategoryListApi } from "@/apis/category-api"
+import { fetchCategoryListApi } from "@/apis/business-entity-api"
 import { fetchBrandsApi } from "@/apis/business-config-api"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import {

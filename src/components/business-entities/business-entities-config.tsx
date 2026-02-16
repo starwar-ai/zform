@@ -1,5 +1,5 @@
 /**
- * BusinessEntitiesConfig
+ * BusinessEntities
  *
  * 实体配置管理组件，包含子公司、国家、港口等配置。
  * 每种配置一个Tab。
@@ -18,7 +18,7 @@ import { ExchangeRatePanel } from "./exchange-rate-panel"
 
 import type { ConfigTypeKey } from "@/types/business-config"
 
-export function BusinessEntitiesConfig() {
+export function BusinessEntities() {
   const [activeKey, setActiveKey] = useState<ConfigTypeKey>('company')
 
   return (
