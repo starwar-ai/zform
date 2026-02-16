@@ -1,15 +1,15 @@
 /**
- * Category types
+ * Parameter types
  * 统一参数配置相关类型定义
  */
 
 // ==================== 通用基础类型 ====================
 
 /** 分类类型标识 */
-export type CategoryTypeKey = 'customer' | 'product' | 'product-category' | 'exhibition' | 'customer-source' | 'order-route' | 'transport-method' | 'other-config'
+export type ParameterTypeKey = 'customer' | 'product' | 'product-category' | 'exhibition' | 'customer-source' | 'order-route' | 'transport-method' | 'other-config'
 
 /** 基础分类字段 */
-interface BaseCategoryFields {
+interface BaseParameterFields {
   id: string
   createdBy: string | null
   createdAt: string
@@ -19,7 +19,7 @@ interface BaseCategoryFields {
 
 // ==================== 客户分类 ====================
 
-export interface CustomerCategory extends BaseCategoryFields {
+export interface CustomerCategory extends BaseParameterFields {
   code: string
   name: string
   parentId: string | null
@@ -44,7 +44,7 @@ export interface UpdateCustomerCategoryInput {
 // ==================== 产品分类（树形结构） ====================
 
 /** 产品分类 - 基础结构 */
-export interface ProductCategory extends BaseCategoryFields {
+export interface ProductCategory extends BaseParameterFields {
   code: string              // 分类编码
   name: string             // 分类名称
   level?: number           // 层级
@@ -60,7 +60,7 @@ export interface ProductCategoryTreeNode extends ProductCategory {
 
 // ==================== 海关编码 ====================
 
-export interface HsCode extends BaseCategoryFields {
+export interface HsCode extends BaseParameterFields {
   code: string              // 编号（必填）
   hsCode: string           // 编码（必填）
   name: string             // 商品名称（必填）
@@ -107,7 +107,7 @@ export type UpdateProductCategoryInput = UpdateHsCodeInput
 
 // ==================== 展会分类 ====================
 
-export interface ExhibitionCategory extends BaseCategoryFields {
+export interface ExhibitionCategory extends BaseParameterFields {
   name: string
   isDomestic: boolean
 }
@@ -124,7 +124,7 @@ export interface UpdateExhibitionCategoryInput {
 
 // ==================== 客户来源 ====================
 
-export interface CustomerSourceTag extends BaseCategoryFields {
+export interface CustomerSourceTag extends BaseParameterFields {
   code: string
   name: string
   isCommon: boolean
@@ -144,7 +144,7 @@ export interface UpdateCustomerSourceTagInput {
 
 // ==================== 运输方式 ====================
 
-export interface TransportMethod extends BaseCategoryFields {
+export interface TransportMethod extends BaseParameterFields {
   code: string
   name: string
   nameEn: string | null
@@ -197,7 +197,7 @@ export interface CategoryColumn {
 
 /** 分类配置 */
 export interface CategoryConfig {
-  key: CategoryTypeKey
+  key: ParameterTypeKey
   label: string
   icon: string               // lucide-react icon name
   apiPath: string             // e.g. '/categories/customer'

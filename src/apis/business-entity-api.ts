@@ -4,7 +4,7 @@
  * 统一实体配置 API 前端封装。
  */
 
-import type { CategoryTypeKey } from "@/types/category"
+import type { CategoryTypeKey } from "@/types/parameter"
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3001/api"
 

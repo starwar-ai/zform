@@ -1,5 +1,5 @@
 /**
- * CategoryController
+ * ParameterController
  *
  * 统一业务属性配置 REST API 控制器。
  * 通过 :type 路径参数分发到不同的 Service。
@@ -29,7 +29,7 @@ function param(req: Request, name: string): string {
   return String(req.params[name] || '');
 }
 
-export const categoryController = {
+export const parameterController = {
   // ==================== 客户分类 ====================
 
   /** GET /categories/customer - 获取客户分类树 */

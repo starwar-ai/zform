@@ -12,7 +12,7 @@ import userRoutes from './users';
 import departmentRoutes from './departments';
 import dataPermissionRoutes from './data-permissions';
 import docPermissionRoutes from './document-permissions';
-import categoryRoutes from './categories';
+import categoryRoutes from './parameters';
 import companyRoutes from './companies';
 import regionRoutes from './regions';
 import countryRoutes from './countries';

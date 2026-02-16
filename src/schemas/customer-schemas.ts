@@ -6,7 +6,7 @@
  */
 
 import type { DocumentSchema, ChangeRule, ComboboxOption } from "@/core/types"
-import type { CustomerCategoryTreeNode, TransportMethod } from "@/types/category"
+import type { CustomerCategoryTreeNode, TransportMethod } from "@/types/parameter"
 import { CURRENCY_OPTIONS } from "@/lib/currency"
 
 // ============================================================

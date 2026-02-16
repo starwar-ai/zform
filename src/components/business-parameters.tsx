@@ -12,7 +12,7 @@ import type {
   CategoryTypeKey,
   CategoryFormField,
   CategoryColumn,
-} from "@/types/category"
+} from "@/types/parameter"
 import {
   fetchCategoryListApi,
   createCategoryApi,
