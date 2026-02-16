@@ -37,9 +37,19 @@ export function normalizeDocumentData(
   const schema = registry.getSchema(typeId)
   if (!schema) throw new Error(`Schema not found: ${typeId}`)
 
+  // 客户类型：后端 Prisma 字段名与前端 detailTable id 的映射
+  const customerDetailKeyMap: Record<string, string> = {
+    bank_accounts: 'bankAccounts',
+    contacts: 'contacts',
+    payment_terms: 'customerPaymentTerms',
+  }
+  const customerTypes = ['domestic_customer', 'international_customer', 'customer']
+
   // 提取明细表数据（根据 schema.detailTables 配置）
   const detailTables: DetailTableData[] = schema.detailTables.map((tableDef) => {
-    const itemsKey = tableDef.id // 假设后端返回的 key 与 tableId 一致
+    const itemsKey = customerTypes.includes(typeId)
+      ? (customerDetailKeyMap[tableDef.id] ?? tableDef.id)
+      : tableDef.id
     const rawItems = rawDoc[itemsKey] || []
     
     return {
@@ -56,6 +66,10 @@ export function normalizeDocumentData(
   const excludeKeys = new Set([
     'id', 'status', 'createdAt', 'updatedAt', 'createdBy', 'updatedBy', 'deletedAt',
     ...schema.detailTables.map(t => t.id),
+    // 客户类型：同时排除后端 Prisma 的关联字段名
+    ...(customerTypes.includes(typeId)
+      ? ['bankAccounts', 'contacts', 'customerPaymentTerms']
+      : []),
   ])
   
   const masterData: Record<string, unknown> = {}

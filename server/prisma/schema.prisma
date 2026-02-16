@@ -988,9 +988,10 @@ model Customer {
   deletedAt DateTime? @map("deleted_at")
 
   // 关联关系
-  customerCategory CustomerCategory? @relation(fields: [customerCategoryId], references: [id])
-  bankAccounts     CustomerBankAccount[]
-  contacts         CustomerContact[]
+  customerCategory      CustomerCategory?       @relation(fields: [customerCategoryId], references: [id])
+  bankAccounts          CustomerBankAccount[]
+  contacts              CustomerContact[]
+  customerPaymentTerms  CustomerPaymentTerm[]
 
   @@index([code])
   @@index([stage])
@@ -1062,6 +1063,45 @@ model CustomerContact {
   @@index([customerId])
   @@index([isDefault])
   @@map("customer_contacts")
+}
+
+// ==================== 客户付款方式字典表 ====================
+
+model PaymentTerm {
+  id       String  @id @default(cuid())
+  code     String  @unique // 编号
+  name     String // 结汇名称
+  nameEng  String  @map("name_eng") // 结汇英文名称
+  dateType Int?    @map("date_type") // 起始日类型
+  duration Int?    // 天数
+
+  createdBy String?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedBy String?   @map("updated_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deleted   Int       @default(0) // 0：有效 1：删除
+
+  customerPaymentTerms CustomerPaymentTerm[]
+
+  @@map("payment_terms")
+}
+
+// ==================== 客户-付款方式关联表 ====================
+
+model CustomerPaymentTerm {
+  id            String      @id @default(cuid())
+  customerId    String      @map("customer_id")
+  customer      Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  paymentTermId String      @map("payment_term_id")
+  paymentTerm   PaymentTerm @relation(fields: [paymentTermId], references: [id], onDelete: Cascade)
+  isDefault     Boolean     @default(false) @map("is_default")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([customerId, paymentTermId])
+  @@index([customerId])
+  @@map("customer_payment_terms")
 }
 
 // ==================== 销售合同相关枚举 ====================

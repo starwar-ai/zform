@@ -480,4 +480,23 @@ router.put('/:id/contacts/:contactId', customerController.updateContact);
  */
 router.delete('/:id/contacts/:contactId', customerController.deleteContact);
 
+/**
+ * @swagger
+ * /customers/{id}/payment-terms:
+ *   get:
+ *     summary: 获取客户的付款方式列表
+ *     tags: [Customers]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 客户ID
+ *     responses:
+ *       200:
+ *         description: 成功获取付款方式列表
+ */
+router.get('/:id/payment-terms', customerController.getPaymentTerms);
+
 export default router;

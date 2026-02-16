@@ -310,6 +310,29 @@ async function main() {
     customerSourceTags.push(tag);
   }
 
+  // ---- 客户付款方式（收款方式字典）----
+  const paymentTermSeeds = [
+    { code: 'TT', name: '电汇', nameEng: 'T/T' },
+    { code: 'LC', name: '信用证', nameEng: 'L/C' },
+    { code: 'DP', name: '付款交单', nameEng: 'D/P' },
+    { code: 'DA', name: '承兑交单', nameEng: 'D/A' },
+    { code: 'OA', name: '赊账', nameEng: 'O/A' },
+    { code: 'CASH', name: '现金', nameEng: 'Cash' },
+    { code: 'OTHER', name: '其他', nameEng: 'Other' },
+  ];
+
+  const paymentTerms = [];
+  for (const seed of paymentTermSeeds) {
+    const term =
+      (await prisma.paymentTerm.findFirst({
+        where: { code: seed.code, deleted: 0 },
+      })) ||
+      (await prisma.paymentTerm.create({
+        data: { code: seed.code, name: seed.name, nameEng: seed.nameEng },
+      }));
+    paymentTerms.push(term);
+  }
+
   // ==================== 分类管理 Seed 结束 ====================
 
   const standardProduct = await prisma.product.upsert({
@@ -1866,6 +1889,7 @@ async function main() {
   console.log(`Product categories (HsCode): ${hsCodeElectronics.code} -> ${hsCodePhoneAccessories.code} -> ${hsCodePhoneCase.code}, ${hsCodePlastic.code} -> ${hsCodePlasticPackaging.code}`);
   console.log(`Exhibition categories: ${exhibitionCategory1.name}, ${exhibitionCategory2.name}, ${exhibitionCategory3.name}, ${exhibitionCategory4.name}, ${exhibitionCategory5.name}`);
   console.log(`Customer source tags: ${customerSourceTags.map((tag: {name: string}) => tag.name).join(', ')}`);
+  console.log(`Payment terms: ${paymentTerms.map((t: {name: string}) => t.name).join(', ')}`);
 
   // ==================== 业务实体管理 Seed ====================
 

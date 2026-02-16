@@ -183,4 +183,14 @@ export const customerController = {
       next(error);
     }
   },
+
+  // 获取客户的付款方式列表
+  async getPaymentTerms(req: Request, res: Response, next: NextFunction) {
+    try {
+      const paymentTerms = await customerService.getPaymentTerms(ensureString(req.params.id));
+      res.json(successResponse(paymentTerms));
+    } catch (error) {
+      next(error);
+    }
+  },
 };

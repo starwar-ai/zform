@@ -33,6 +33,7 @@ import { paymentApplyAdapter } from './payment-apply.adapter';
 import { processingOrderAdapter } from './processing-order.adapter';
 import { quotationAdapter } from './quotation.adapter';
 import { inspectionOrderAdapter } from './inspection-order.adapter';
+import { domesticCustomerAdapter, internationalCustomerAdapter } from './customer.adapter';
 
 export function registerAllAdapters(): void {
   // 销售合同
@@ -92,6 +93,10 @@ export function registerAllAdapters(): void {
 
   // 验货单
   documentTypeRegistry.register(inspectionOrderAdapter);
+
+  // 客户（国内/国外）
+  documentTypeRegistry.register(domesticCustomerAdapter);
+  documentTypeRegistry.register(internationalCustomerAdapter);
 
   console.log(
     `[DocumentTypeRegistry] Registered ${documentTypeRegistry.getAllTypeIds().length} adapters:`,

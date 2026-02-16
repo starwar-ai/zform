@@ -11,6 +11,7 @@ import { ProductCategoryService } from '../services/product-category.service';
 import { HsCodeService } from '../services/hs-code.service';
 import { ExhibitionCategoryService } from '../services/exhibition-category.service';
 import { CustomerSourceTagService } from '../services/customer-source-tag.service';
+import { PaymentTermService } from '../services/payment-term.service';
 import { successResponse } from '../utils/response';
 
 const customerCategoryService = new CustomerCategoryService();
@@ -18,6 +19,7 @@ const productCategoryService = new ProductCategoryService();
 const hsCodeService = new HsCodeService();
 const exhibitionCategoryService = new ExhibitionCategoryService();
 const customerSourceTagService = new CustomerSourceTagService();
+const paymentTermService = new PaymentTermService();
 
 /** 获取请求中的用户 ID */
 function getUserId(req: Request): string | undefined {
@@ -249,6 +251,48 @@ export const parameterController = {
       const { items } = req.body;
       await customerSourceTagService.reorder(items, getUserId(req));
       res.json(successResponse(null, '排序更新成功'));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // ==================== 客户付款方式（收款方式） ====================
+
+  /** GET /parameters/payment-terms - 获取付款方式列表 */
+  async getPaymentTermList(_req: Request, res: Response, next: NextFunction) {
+    try {
+      const list = await paymentTermService.findAll();
+      res.json(successResponse(list));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** POST /parameters/payment-terms - 创建付款方式 */
+  async createPaymentTerm(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await paymentTermService.create(req.body, getUserId(req));
+      res.status(201).json(successResponse(result, '付款方式创建成功'));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** PUT /parameters/payment-terms/:id - 更新付款方式 */
+  async updatePaymentTerm(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await paymentTermService.update(param(req, 'id'), req.body, getUserId(req));
+      res.json(successResponse(result, '付款方式更新成功'));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** DELETE /parameters/payment-terms/:id - 删除付款方式 */
+  async deletePaymentTerm(req: Request, res: Response, next: NextFunction) {
+    try {
+      await paymentTermService.delete(param(req, 'id'));
+      res.json(successResponse(null, '付款方式删除成功'));
     } catch (error) {
       next(error);
     }
