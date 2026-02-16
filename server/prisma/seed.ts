@@ -1629,7 +1629,7 @@ async function main() {
     data: {
       title: '实体配置',
       icon: 'Database',
-      path: '/business-config',
+      path: '/business-entities',
       parentId: businessParentMenu.id,
       orderNum: 2,
       menuType: 'menu',
