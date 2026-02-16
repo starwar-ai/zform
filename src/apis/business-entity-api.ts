@@ -4,7 +4,7 @@
  * 统一实体配置 API 前端封装。
  */
 
-import type { CategoryTypeKey } from "@/types/parameter"
+import type { ParameterTypeKey } from "@/types/parameter"
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3001/api"
 
@@ -48,7 +48,7 @@ async function request<T>(
 }
 
 /** 获取分类列表/树 */
-export async function fetchCategoryListApi<T>(type: CategoryTypeKey): Promise<T[]> {
+export async function fetchCategoryListApi<T>(type: ParameterTypeKey): Promise<T[]> {
   // 特殊处理运输方式，使用独立的API路径
   const path = type === 'transport-method' ? '/transport-methods' : `/categories/${type}`
   return request<T[]>(path)
@@ -56,7 +56,7 @@ export async function fetchCategoryListApi<T>(type: CategoryTypeKey): Promise<T[
 
 /** 创建分类 */
 export async function createCategoryApi<T>(
-  type: CategoryTypeKey,
+  type: ParameterTypeKey,
   data: Record<string, unknown>
 ): Promise<T> {
   const path = type === 'transport-method' ? '/transport-methods' : `/categories/${type}`
@@ -68,7 +68,7 @@ export async function createCategoryApi<T>(
 
 /** 更新分类 */
 export async function updateCategoryApi<T>(
-  type: CategoryTypeKey,
+  type: ParameterTypeKey,
   id: string,
   data: Record<string, unknown>
 ): Promise<T> {
@@ -81,7 +81,7 @@ export async function updateCategoryApi<T>(
 
 /** 删除分类 */
 export async function deleteCategoryApi(
-  type: CategoryTypeKey,
+  type: ParameterTypeKey,
   id: string
 ): Promise<void> {
   const basePath = type === 'transport-method' ? '/transport-methods' : `/categories/${type}`

@@ -8,10 +8,10 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react"
 import type {
-  CategoryConfig,
-  CategoryTypeKey,
-  CategoryFormField,
-  CategoryColumn,
+  ParameterConfig,
+  ParameterTypeKey,
+  ParameterFormField,
+  ParameterColumn,
 } from "@/types/parameter"
 import {
   fetchCategoryListApi,
@@ -59,7 +59,7 @@ import {
 } from "@/components/ui/select"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from "@/components/ui/checkbox"
-import { OtherConfigPanel } from "./business-config/other-config-panel"
+import { OtherConfigPanel } from "./business-entities/other-config-panel"
 import {
   Plus,
   Edit,
@@ -82,7 +82,7 @@ import {
 /**
  * 所有分类配置。新增分类类型在此添加即可。
  */
-export const CATEGORY_CONFIGS: CategoryConfig[] = [
+export const CATEGORY_CONFIGS: ParameterConfig[] = [
   {
     key: "customer",
     label: "客户分类",
@@ -301,7 +301,7 @@ function flattenForSelect(nodes: TreeNode[], nameField: string, level = 0): { id
 
 // ==================== 单个分类 Tab 面板 ====================
 
-function CategoryPanel({ config }: { config: CategoryConfig }) {
+function CategoryPanel({ config }: { config: ParameterConfig }) {
   const [data, setData] = useState<TreeNode[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -457,7 +457,7 @@ function CategoryPanel({ config }: { config: CategoryConfig }) {
 
   // ---- 渲染表格内容 ----
 
-  const renderCellValue = (item: TreeNode, col: CategoryColumn) => {
+  const renderCellValue = (item: TreeNode, col: ParameterColumn) => {
     const value = item[col.key]
     switch (col.render) {
       case "date":
@@ -608,7 +608,7 @@ function CategoryPanel({ config }: { config: CategoryConfig }) {
   }
 
   // 渲染表单字段
-  const renderFormField = (field: CategoryFormField) => {
+  const renderFormField = (field: ParameterFormField) => {
     const value = formData[field.key]
 
     switch (field.type) {
@@ -802,7 +802,7 @@ function CategoryPanel({ config }: { config: CategoryConfig }) {
 // ==================== 主组件 ====================
 
 export function BusinessParameters() {
-  const [activeKey, setActiveKey] = useState<CategoryTypeKey>(CATEGORY_CONFIGS[0].key)
+  const [activeKey, setActiveKey] = useState<ParameterTypeKey>(CATEGORY_CONFIGS[0].key)
 
   const activeConfig = CATEGORY_CONFIGS.find((c) => c.key === activeKey) || CATEGORY_CONFIGS[0]
 
@@ -815,7 +815,7 @@ export function BusinessParameters() {
       </div>
 
       {/* 分类 Tab 切换 */}
-      <Tabs value={activeKey} onValueChange={(v) => setActiveKey(v as CategoryTypeKey)}>
+      <Tabs value={activeKey} onValueChange={(v) => setActiveKey(v as ParameterTypeKey)}>
         <TabsList>
           {CATEGORY_CONFIGS.map((cfg) => {
             const Icon = getCategoryIcon(cfg.icon)

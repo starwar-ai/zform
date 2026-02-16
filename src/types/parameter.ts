@@ -177,7 +177,7 @@ export interface UpdateTransportMethodInput {
 // ==================== 配置驱动类型 ====================
 
 /** 表单字段定义 */
-export interface CategoryFormField {
+export interface ParameterFormField {
   key: string
   label: string
   type: 'text' | 'number' | 'select' | 'boolean' | 'parent-select'
@@ -188,7 +188,7 @@ export interface CategoryFormField {
 }
 
 /** 表格列定义 */
-export interface CategoryColumn {
+export interface ParameterColumn {
   key: string
   label: string
   width?: string
@@ -196,13 +196,13 @@ export interface CategoryColumn {
 }
 
 /** 分类配置 */
-export interface CategoryConfig {
+export interface ParameterConfig {
   key: ParameterTypeKey
   label: string
   icon: string               // lucide-react icon name
   apiPath: string             // e.g. '/categories/customer'
   isTree: boolean             // 是否树形结构
-  columns: CategoryColumn[]   // 表格列
+  columns: ParameterColumn[]   // 表格列
   formFields: CategoryFormField[] // 表单字段
   nameField: string           // 名称字段（用于树形展示）
   codeField?: string          // 编码字段（可选）
