@@ -96,7 +96,7 @@ export class SupplierService {
           where: { deleted: 0 },
           include: {
             items: {
-              include: { paymentTerm: true },
+              include: { supplierPaymentTerm: true },
               orderBy: { periodIndex: 'asc' },
             },
           },

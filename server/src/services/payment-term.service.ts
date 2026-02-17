@@ -21,6 +21,7 @@ export interface CreatePaymentTermInput {
   code: string;
   name: string;
   nameEng: string;
+  sortOrder?: number;
   steps?: PaymentTermStepInput[];
 }
 
@@ -28,6 +29,7 @@ export interface UpdatePaymentTermInput {
   code?: string;
   name?: string;
   nameEng?: string;
+  sortOrder?: number;
   steps?: PaymentTermStepInput[];
 }
 
@@ -136,5 +138,16 @@ export class PaymentTermService {
       where: { id },
       data: { deleted: 1 },
     });
+  }
+
+  /** 批量更新排序 */
+  async reorder(items: { id: string; sortOrder: number }[], userId?: string): Promise<void> {
+    const updates = items.map((item) =>
+      prisma.paymentTerm.update({
+        where: { id: item.id },
+        data: { sortOrder: item.sortOrder, updatedBy: userId || undefined },
+      })
+    );
+    await prisma.$transaction(updates);
   }
 }

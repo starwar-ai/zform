@@ -3,12 +3,6 @@ import prisma from '../config/database';
 interface PaymentPlanItemInput {
   periodIndex: number;
   paymentTermId?: string;
-  receiptRatio?: number;
-  receiptDescription?: string;
-  receiptDateBase?: number;
-  daysOffset?: number;
-  blockPurchaseUntilPaid?: boolean;
-  blockShipmentUntilPaid?: boolean;
 }
 
 interface CreatePaymentPlanInput {
@@ -78,12 +72,7 @@ export class CustomerPaymentPlanService {
           create: data.items.map((item) => ({
             periodIndex: item.periodIndex,
             paymentTermId: item.paymentTermId || undefined,
-            receiptRatio: item.receiptRatio,
-            receiptDescription: item.receiptDescription,
-            receiptDateBase: item.receiptDateBase,
-            daysOffset: item.daysOffset ?? 0,
-            blockPurchaseUntilPaid: item.blockPurchaseUntilPaid ?? false,
-            blockShipmentUntilPaid: item.blockShipmentUntilPaid ?? false,
+
           })),
         },
       },
@@ -121,12 +110,7 @@ export class CustomerPaymentPlanService {
             create: data.items.map((item) => ({
               periodIndex: item.periodIndex,
               paymentTermId: item.paymentTermId || undefined,
-              receiptRatio: item.receiptRatio,
-              receiptDescription: item.receiptDescription,
-              receiptDateBase: item.receiptDateBase,
-              daysOffset: item.daysOffset ?? 0,
-              blockPurchaseUntilPaid: item.blockPurchaseUntilPaid ?? false,
-              blockShipmentUntilPaid: item.blockShipmentUntilPaid ?? false,
+
             })),
           },
         }),

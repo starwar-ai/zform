@@ -19,12 +19,6 @@ export interface PaymentPlanItem {
     nameEng: string
     steps?: PaymentTermStep[]
   }
-  receiptRatio?: number
-  receiptDescription?: string
-  receiptDateBase?: number
-  daysOffset: number
-  blockPurchaseUntilPaid: boolean
-  blockShipmentUntilPaid: boolean
 }
 
 export interface CustomerPaymentPlan {

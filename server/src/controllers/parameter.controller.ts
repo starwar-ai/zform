@@ -300,6 +300,20 @@ export const parameterController = {
     }
   },
 
+  /** PUT /parameters/payment-terms/reorder - 批量更新排序 */
+  async reorderPaymentTerms(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { items } = req.body;
+      if (!Array.isArray(items)) {
+        return res.status(400).json({ success: false, message: '参数格式错误' });
+      }
+      await paymentTermService.reorder(items, getUserId(req));
+      res.json(successResponse(null, '排序更新成功'));
+    } catch (error) {
+      next(error);
+    }
+  },
+
   // ==================== 供应商付款条件 ====================
 
   /** GET /parameters/supplier-payment-terms - 获取供应商付款条件列表 */

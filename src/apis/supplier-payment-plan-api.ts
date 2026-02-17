@@ -19,10 +19,6 @@ export interface SupplierPaymentPlanItem {
     nameEng: string | null
     steps?: SupplierPaymentTermStep[]
   }
-  paymentRatio?: number
-  paymentDescription?: string
-  paymentDateBase?: number
-  daysOffset: number
 }
 
 export interface SupplierPaymentPlan {

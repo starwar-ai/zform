@@ -3,10 +3,6 @@ import prisma from '../config/database';
 interface PaymentPlanItemInput {
   periodIndex: number;
   supplierPaymentTermId?: string;
-  paymentRatio?: number;
-  paymentDescription?: string;
-  paymentDateBase?: number;
-  daysOffset?: number;
 }
 
 interface CreatePaymentPlanInput {
@@ -76,10 +72,7 @@ export class SupplierPaymentPlanService {
           create: data.items.map((item) => ({
             periodIndex: item.periodIndex,
             supplierPaymentTermId: item.supplierPaymentTermId || undefined,
-            paymentRatio: item.paymentRatio,
-            paymentDescription: item.paymentDescription,
-            paymentDateBase: item.paymentDateBase,
-            daysOffset: item.daysOffset ?? 0,
+
           })),
         },
       },
@@ -117,10 +110,7 @@ export class SupplierPaymentPlanService {
             create: data.items.map((item) => ({
               periodIndex: item.periodIndex,
               supplierPaymentTermId: item.supplierPaymentTermId || undefined,
-              paymentRatio: item.paymentRatio,
-              paymentDescription: item.paymentDescription,
-              paymentDateBase: item.paymentDateBase,
-              daysOffset: item.daysOffset ?? 0,
+
             })),
           },
         }),

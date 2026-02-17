@@ -700,35 +700,7 @@ const supplierDetailTables: DetailTableDef[] = [
           isTree: false,
         },
       },
-      {
-        id: "paymentRatio",
-        label: "比例(%)",
-        type: "number",
-        placeholder: "如: 30",
-      },
-      {
-        id: "paymentDescription",
-        label: "说明",
-        type: "text",
-        placeholder: "如: T/T 30%预付",
-      },
-      {
-        id: "paymentDateBase",
-        label: "起始日类型",
-        type: "select",
-        options: [
-          { label: "合同签订日", value: "1" },
-          { label: "发货日", value: "2" },
-          { label: "验收日", value: "3" },
-          { label: "开票日", value: "4" },
-        ],
-      },
-      {
-        id: "daysOffset",
-        label: "延后天数",
-        type: "number",
-        defaultValue: 0,
-      },
+
     ],
   },
 ]

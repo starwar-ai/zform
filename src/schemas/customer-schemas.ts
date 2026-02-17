@@ -42,47 +42,7 @@ const paymentTermsDetailTable = {
         isTree: false,
       },
     },
-    {
-      id: "receiptRatio",
-      label: "比例(%)",
-      type: "number" as const,
-      placeholder: "如: 30",
-    },
-    {
-      id: "receiptDescription",
-      label: "说明",
-      type: "text" as const,
-      placeholder: "如: T/T 30%预付",
-    },
-    {
-      id: "receiptDateBase",
-      label: "起始日类型",
-      type: "select" as const,
-      options: [
-        { label: "合同签订日", value: "1" },
-        { label: "回签日", value: "2" },
-        { label: "发货日", value: "3" },
-        { label: "开票日", value: "4" },
-      ],
-    },
-    {
-      id: "daysOffset",
-      label: "延后天数",
-      type: "number" as const,
-      defaultValue: 0,
-    },
-    {
-      id: "blockPurchaseUntilPaid",
-      label: "禁采购",
-      type: "checkbox" as const,
-      defaultValue: false,
-    },
-    {
-      id: "blockShipmentUntilPaid",
-      label: "禁出运",
-      type: "checkbox" as const,
-      defaultValue: false,
-    },
+
   ],
 };
 

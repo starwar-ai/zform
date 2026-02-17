@@ -21,4 +21,7 @@ router.put('/:id', parameterController.updatePaymentTerm);
 /** DELETE /api/parameters/payment-terms/:id - 删除付款方式 */
 router.delete('/:id', parameterController.deletePaymentTerm);
 
+/** PUT /api/parameters/payment-terms/reorder - 批量更新排序 */
+router.put('/reorder', parameterController.reorderPaymentTerms);
+
 export default router;

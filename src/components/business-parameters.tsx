@@ -157,12 +157,14 @@ export const CATEGORY_CONFIGS: ParameterConfig[] = [
       { key: "name", label: "结汇名称", width: "160px" },
       { key: "nameEng", label: "结汇英文名称", width: "160px" },
       { key: "steps", label: "步骤数", width: "80px", render: "steps" },
+      { key: "sortOrder", label: "排序", width: "80px" },
       { key: "createdAt", label: "创建时间", render: "date" },
     ],
     formFields: [
       { key: "code", label: "编号", type: "text", required: true, placeholder: "例如: TT" },
       { key: "name", label: "结汇名称", type: "text", required: true, placeholder: "例如: 电汇" },
       { key: "nameEng", label: "结汇英文名称", type: "text", required: true, placeholder: "例如: T/T" },
+      { key: "sortOrder", label: "排序", type: "number", defaultValue: 0 },
     ],
   },
   {
