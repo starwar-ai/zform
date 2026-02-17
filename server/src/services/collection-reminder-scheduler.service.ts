@@ -146,7 +146,7 @@ export class CollectionReminderSchedulerService {
               customerId: true,
               customerCode: true,
               customerName: true,
-              salesmanId: true,
+              salesPerson: true,
             },
           },
         },
@@ -181,7 +181,7 @@ export class CollectionReminderSchedulerService {
               salesContractCode: plan.salesContract?.code,
               customerId: plan.salesContract?.customerId,
               customerCode: plan.salesContract?.customerCode,
-              customerName: plan.salesContract?.customerName,
+              customerName: plan.salesContract?.customerName ?? undefined,
               reminderType: 2, // 已逾期
               reminderDate: today,
               expectedDate,
@@ -189,7 +189,7 @@ export class CollectionReminderSchedulerService {
               receivedAmt: received,
               overdueDays,
               periodIndex: plan.periodIndex,
-              targetUserId: plan.salesContract?.salesmanId,
+              targetUserId: plan.salesContract?.salesPerson ?? undefined,
             });
             overdueReminders++;
           }
@@ -203,7 +203,7 @@ export class CollectionReminderSchedulerService {
               salesContractCode: plan.salesContract?.code,
               customerId: plan.salesContract?.customerId,
               customerCode: plan.salesContract?.customerCode,
-              customerName: plan.salesContract?.customerName,
+              customerName: plan.salesContract?.customerName ?? undefined,
               reminderType: 1, // 即将到期
               reminderDate: today,
               expectedDate,
@@ -211,7 +211,7 @@ export class CollectionReminderSchedulerService {
               receivedAmt: received,
               overdueDays: 0,
               periodIndex: plan.periodIndex,
-              targetUserId: plan.salesContract?.salesmanId,
+              targetUserId: plan.salesContract?.salesPerson ?? undefined,
             });
             dueSoonReminders++;
           }

@@ -59,7 +59,7 @@ export class CollectionPlanService {
         exeStatus: data.exeStatus ?? 0,
         createdBy: userId,
         updatedBy: userId,
-      },
+      } as any,
     });
   }
 
@@ -89,8 +89,8 @@ export class CollectionPlanService {
             blockPurchaseUntilPaid: toNum(p.blockPurchaseUntilPaid),
             blockShipmentUntilPaid: toNum(p.blockShipmentUntilPaid),
             exeStatus: p.exeStatus ?? 0,
-            children: p.children as Prisma.JsonInput | undefined,
-            differenceReason: p.differenceReason as Prisma.JsonInput | undefined,
+            children: p.children as Prisma.InputJsonValue | undefined,
+            differenceReason: p.differenceReason as Prisma.InputJsonValue | undefined,
             createdBy: userId,
             updatedBy: userId,
           },
@@ -107,7 +107,7 @@ export class CollectionPlanService {
       data: {
         ...data,
         updatedBy: userId,
-      },
+      } as any,
     });
   }
 
@@ -210,7 +210,7 @@ export class CollectionPlanService {
             customerId: true,
             customerCode: true,
             customerName: true,
-            salesmanId: true,
+            salesPerson: true,
           },
         },
       },
@@ -308,7 +308,7 @@ export class CollectionPlanService {
               customerId: true,
               customerCode: true,
               customerName: true,
-              salesmanId: true,
+              salesPerson: true,
               totalAmount: true,
               currency: true,
             },
@@ -330,11 +330,11 @@ export class CollectionPlanService {
     page?: number;
     pageSize?: number;
     customerId?: string;
-    salesmanId?: string;
+    salesPerson?: string;
     minOverdueDays?: number;
     maxOverdueDays?: number;
   } = {}) {
-    const { page = 1, pageSize = 20, customerId, salesmanId, minOverdueDays, maxOverdueDays } = params;
+    const { page = 1, pageSize = 20, customerId, salesPerson, minOverdueDays, maxOverdueDays } = params;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -353,10 +353,10 @@ export class CollectionPlanService {
     }
 
     // 通过关联合同过滤客户和业务员
-    if (customerId || salesmanId) {
+    if (customerId || salesPerson) {
       where.salesContract = {
         ...(customerId && { customerId }),
-        ...(salesmanId && { salesmanId }),
+        ...(salesPerson && { salesPerson }),
       };
     }
 
@@ -372,7 +372,7 @@ export class CollectionPlanService {
               customerId: true,
               customerCode: true,
               customerName: true,
-              salesmanId: true,
+              salesPerson: true,
               totalAmount: true,
               currency: true,
             },
@@ -394,7 +394,7 @@ export class CollectionPlanService {
     page?: number;
     pageSize?: number;
     customerId?: string;
-    salesmanId?: string;
+    salesPerson?: string;
     minOverdueDays?: number;
     maxOverdueDays?: number;
   } = {}) {
@@ -409,8 +409,8 @@ export class CollectionPlanService {
         ...(params.customerId && {
           salesContract: { customerId: params.customerId },
         }),
-        ...(params.salesmanId && {
-          salesContract: { salesmanId: params.salesmanId },
+        ...(params.salesPerson && {
+          salesContract: { salesPerson: params.salesPerson },
         }),
       },
       select: {

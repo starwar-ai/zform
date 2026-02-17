@@ -48,7 +48,7 @@ export const collectionWorkbenchController = {
       const page = parseInt(req.query.page as string) || 1;
       const pageSize = parseInt(req.query.pageSize as string) || 20;
       const customerId = req.query.customerId as string | undefined;
-      const salesmanId = req.query.salesmanId as string | undefined;
+      const salesPerson = req.query.salesPerson as string | undefined;
       const minOverdueDays = req.query.minOverdueDays
         ? parseInt(req.query.minOverdueDays as string)
         : undefined;
@@ -60,7 +60,7 @@ export const collectionWorkbenchController = {
         page,
         pageSize,
         customerId,
-        salesmanId,
+        salesPerson,
         minOverdueDays,
         maxOverdueDays,
       });
@@ -78,7 +78,7 @@ export const collectionWorkbenchController = {
       const page = parseInt(req.query.page as string) || 1;
       const pageSize = parseInt(req.query.pageSize as string) || 20;
       const customerId = req.query.customerId as string | undefined;
-      const salesmanId = req.query.salesmanId as string | undefined;
+      const salesPerson = req.query.salesPerson as string | undefined;
       const minOverdueDays = req.query.minOverdueDays
         ? parseInt(req.query.minOverdueDays as string)
         : undefined;
@@ -90,7 +90,7 @@ export const collectionWorkbenchController = {
         page,
         pageSize,
         customerId,
-        salesmanId,
+        salesPerson,
         minOverdueDays,
         maxOverdueDays,
       });
@@ -111,7 +111,7 @@ export const collectionWorkbenchController = {
    */
   async getProgress(req: Request, res: Response, next: NextFunction) {
     try {
-      const salesContractId = req.params.id;
+      const salesContractId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
       const data = await collectionPlanService.getProgressBoard(salesContractId);
       res.json(successResponse(data));
     } catch (error) {
@@ -179,7 +179,7 @@ export const collectionWorkbenchController = {
    */
   async markReminderAsRead(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
       await reminderService.markAsRead(id);
       res.json(successResponse(null, '已标记为已读'));
     } catch (error) {
@@ -208,7 +208,7 @@ export const collectionWorkbenchController = {
    */
   async markReminderAsHandled(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
       await reminderService.markAsHandled(id);
       res.json(successResponse(null, '已标记为已处理'));
     } catch (error) {
