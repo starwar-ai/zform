@@ -202,16 +202,7 @@ export const domesticCustomerSchema: DocumentSchema = {
         isTree: false
       }
     },
-    {
-      id: "currency",
-      label: "币种",
-      type: "select",
-      options: [
-        { label: "CNY", value: "CNY" },
-      ],
-      defaultValue: "CNY",
-      group: "业务信息",
-    },
+    // 币种信息移至明细表中管理
     {
       id: "salesRep",
       label: "主业务员",
@@ -958,14 +949,7 @@ export const customerSchema: DocumentSchema = {
         isTree: false
       }
     },
-    {
-      id: "currency",
-      label: "币种",
-      type: "select",
-      options: CURRENCY_OPTIONS,
-      defaultValue: "CNY",
-      group: "业务信息",
-    },
+    // 币种信息移至明细表中管理
     {
       id: "salesRep",
       label: "主业务员",

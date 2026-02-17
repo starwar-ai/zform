@@ -24,7 +24,7 @@ import { nanoid } from 'nanoid'
  * 转换为前端 DocumentData：
  * {
  *   id, typeId,
- *   docNumber: 'SC-2024001',   // 后端 code 映射到前端 docNumber
+ *   code: 'SC-2024001',   // 直接使用 code 字段
  *   masterData: { code, customerName, ... },
  *   detailTables: [{ tableId, rows: [...] }],
  *   status, createdAt, updatedAt
@@ -100,7 +100,7 @@ export function normalizeDocumentData(
   return {
     id: rawDoc.id,
     typeId,
-    docNumber: rawDoc.code || '', // 后端 code 映射到前端 docNumber
+    code: rawDoc.code || '', // 直接使用 code 字段
     masterData,
     detailTables,
     status: rawDoc.status?.toLowerCase() || 'draft',

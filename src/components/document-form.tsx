@@ -9,6 +9,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from "react"
 import type {
   DocumentData,
   ImpactAssessment,
+  DocumentSchema,
 } from "@/core/types"
 import { useDocumentStore, getTraceableStore } from "@/stores/document-store"
 import { useTabStore } from "@/stores/tab-store"
@@ -333,24 +334,31 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
   const isNew = Boolean(doc._isNew)
 
   const handleSave = () => {
-    // 构建新文档用于影响评估
-    const store = getTraceableStore()
-    const oldDoc = store.getDocument(docId)
-    if (!oldDoc) return
+    // 1. 前端验证必填字段
+    const validationErrors = validateRequiredFields(doc, schema);
+    if (validationErrors.length > 0) {
+      alert(`请填写以下必填字段:\n${validationErrors.join('\n')}`);
+      return;
+    }
 
-    // 检查是否有下游单据
-    const downstreamDocs = store.getDocumentsBySourceDoc(docId)
+    // 2. 构建新文档用于影响评估
+    const store = getTraceableStore();
+    const oldDoc = store.getDocument(docId);
+    if (!oldDoc) return;
+
+    // 3. 检查是否有下游单据
+    const downstreamDocs = store.getDocumentsBySourceDoc(docId);
     if (downstreamDocs.length > 0) {
-      const result = evaluate(oldDoc, doc)
+      const result = evaluate(oldDoc, doc);
       if (result.impacts.length > 0) {
-        setAssessment(result)
-        pendingSaveRef.current = doc
-        setImpactOpen(true)
-        return
+        setAssessment(result);
+        pendingSaveRef.current = doc;
+        setImpactOpen(true);
+        return;
       }
     }
 
-    persistToServer(doc)
+    persistToServer(doc);
   }
 
   const handleImpactConfirm = () => {
@@ -781,4 +789,57 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
       />
     </div>
   )
+}
+
+/**
+ * 验证必填字段
+ * @param doc 文档数据
+ * @param schema 文档Schema
+ * @returns 错误消息数组
+ */
+function validateRequiredFields(doc: DocumentData, schema: DocumentSchema | null): string[] {
+  if (!schema) return []
+  
+  const errors: string[] = []
+  
+  // 验证主表字段
+  for (const field of schema.masterFields) {
+    if (field.required) {
+      const value = doc.masterData[field.id]
+      if (
+        value === undefined || 
+        value === null || 
+        value === '' || 
+        (Array.isArray(value) && value.length === 0)
+      ) {
+        errors.push(`- ${field.label}`)
+      }
+    }
+  }
+  
+  // 验证明细表字段
+  for (const table of schema.detailTables) {
+    const tableData = doc.detailTables.find(t => t.tableId === table.id)
+    if (tableData?.rows) {
+      for (const field of table.fields) {
+        if (field.required) {
+          // 检查每一行的该字段
+          for (let i = 0; i < tableData.rows.length; i++) {
+            const row = tableData.rows[i]
+            const value = row.data?.[field.id]
+            if (
+              value === undefined || 
+              value === null || 
+              value === '' || 
+              (Array.isArray(value) && value.length === 0)
+            ) {
+              errors.push(`- ${table.label}[第${i + 1}行].${field.label}`)
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  return errors
 }

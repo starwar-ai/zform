@@ -106,7 +106,7 @@ const STATUS_OPTIONS: { value: string; label: string }[] = [
 
 interface ProductItem {
   _id: string
-  _docNumber: string
+  _code: string
   name: string
   nameEn?: string
   barcode?: string
@@ -155,7 +155,7 @@ function ProductTableRow({
             )}
           </div>
           <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-            <span>编码: {product._docNumber}</span>
+            <span>编码: {product._code}</span>
             <span>•</span>
             <span>单位: {product.unit}</span>
             {product.barcode && (

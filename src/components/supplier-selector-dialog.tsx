@@ -66,7 +66,7 @@ const PAGE_SIZE = 20
 
 interface SupplierItem {
   _id: string
-  _docNumber: string
+  _code: string
   name: string
   nameEn?: string
   shortName?: string
@@ -120,7 +120,7 @@ function SupplierTableRow({
             )}
           </div>
           <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-            <span>编码: {supplier._docNumber}</span>
+            <span>编码: {supplier._code}</span>
             {supplier.companyCity && (
               <>
                 <span>•</span>

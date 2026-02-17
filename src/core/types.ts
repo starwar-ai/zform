@@ -296,7 +296,7 @@ export interface DocumentData {
   /** 单据类型 ID */
   typeId: DocumentTypeId
   /** 单据编号 (业务编号) */
-  docNumber: string
+  code: string
   /** 主数据 */
   masterData: Record<string, unknown>
   /** 明细数据 */

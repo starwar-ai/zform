@@ -85,7 +85,7 @@ export const useDocumentStore = create<DocumentStoreState>()(
       const doc: DocumentData = {
         id: nanoid(),
         typeId,
-        docNumber: generateDocNumber(typeId),
+        code: generateDocNumber(typeId),
         masterData,
         detailTables,
         status: "draft",

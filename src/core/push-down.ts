@@ -117,7 +117,7 @@ export function pushDown(
   const newDoc: DocumentData = {
     id: docId,
     typeId: rule.targetTypeId,
-    docNumber: "", // 由业务层生成编号
+    code: "", // 由业务层生成编号
     masterData,
     detailTables,
     status: "draft",

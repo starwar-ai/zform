@@ -99,7 +99,7 @@ export type ListMode = "document" | "detail"
 /** 扁平化的单据行数据 (服务端已将 masterData 展开到顶层) */
 export type FlatDocumentRow = Record<string, unknown> & {
   _id: string
-  _docNumber: string
+  _code: string
   _status: string
   _createdAt: string
   _sourceTypeId?: string

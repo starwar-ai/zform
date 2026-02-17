@@ -43,7 +43,7 @@ function resolveField(adapter: DocumentTypeAdapter, columnId: string): string {
   }
   // 系统字段直接映射
   const systemMap: Record<string, string> = {
-    _docNumber: 'code',
+    _code: 'code',
     _status: 'status',
     _createdAt: 'createdAt',
   };
