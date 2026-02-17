@@ -708,6 +708,7 @@ export const purchaseContractSchema: DocumentSchema = {
         },
       ],
     },
+    paymentPlanItemsDetailTable,
   ],
 }
 
@@ -1237,6 +1238,7 @@ export const productPurchaseContractSchema: DocumentSchema = {
         },
       ],
     },
+    paymentPlanItemsDetailTable,
   ],
 }
 
@@ -1672,5 +1674,6 @@ export const packagingPurchaseContractSchema: DocumentSchema = {
         },
       ],
     },
+    paymentPlanItemsDetailTable,
   ],
 }
