@@ -27,7 +27,7 @@ const supplierPaymentPlanEffect: FieldEffect = {
 
       const rows = defaultPlan.items.map((item) => ({
         periodIndex: item.periodIndex,
-        paymentMethodType: String(item.paymentTermId || ""),
+        paymentMethodType: String(item.supplierPaymentTermId || ""),
         paymentDescription: item.paymentDescription || "",
         paymentDateBase: String(item.paymentDateBase || ""),
         daysOffset: item.daysOffset || 0,

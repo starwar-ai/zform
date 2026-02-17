@@ -333,6 +333,52 @@ async function main() {
     paymentTerms.push(term);
   }
 
+  // 为「电汇」添加步骤：签约付30%，发货前付70%
+  const ttTerm = await prisma.paymentTerm.findFirst({ where: { code: 'TT', deleted: 0 } });
+  if (ttTerm) {
+    const existingSteps = await prisma.paymentTermStep.count({ where: { paymentTermId: ttTerm.id } });
+    if (existingSteps === 0) {
+      await prisma.paymentTermStep.createMany({
+        data: [
+          { paymentTermId: ttTerm.id, stepOrder: 1, ratio: 30, description: '签约付30%', dateBase: 1, daysOffset: 0 },
+          { paymentTermId: ttTerm.id, stepOrder: 2, ratio: 70, description: '发货前付70%', dateBase: 2, daysOffset: 0 },
+        ],
+      });
+    }
+  }
+
+  // ---- 供应商付款条件 ----
+  const supplierPaymentTermSeeds = [
+    { code: 'NET30', name: '月结30天', nameEng: 'Net 30', sortOrder: 1 },
+    { code: 'NET60', name: '月结60天', nameEng: 'Net 60', sortOrder: 2 },
+    { code: 'PREPAY', name: '预付', nameEng: 'Prepay', sortOrder: 3 },
+    { code: 'COD', name: '货到付款', nameEng: 'COD', sortOrder: 4 },
+    { code: 'TT', name: '电汇', nameEng: 'T/T', sortOrder: 5 },
+    { code: 'LC', name: '信用证', nameEng: 'L/C', sortOrder: 6 },
+  ];
+
+  for (const seed of supplierPaymentTermSeeds) {
+    await prisma.supplierPaymentTerm.upsert({
+      where: { code: seed.code },
+      create: { code: seed.code, name: seed.name, nameEng: seed.nameEng, sortOrder: seed.sortOrder },
+      update: { name: seed.name, nameEng: seed.nameEng, sortOrder: seed.sortOrder },
+    });
+  }
+
+  // 为「预付」添加步骤：签约付30%，发货前付70%
+  const prepayTerm = await prisma.supplierPaymentTerm.findFirst({ where: { code: 'PREPAY', deleted: 0 } });
+  if (prepayTerm) {
+    const existingSteps = await prisma.supplierPaymentTermStep.count({ where: { supplierPaymentTermId: prepayTerm.id } });
+    if (existingSteps === 0) {
+      await prisma.supplierPaymentTermStep.createMany({
+        data: [
+          { supplierPaymentTermId: prepayTerm.id, stepOrder: 1, ratio: 30, description: '签约付30%', dateBase: 1, daysOffset: 0 },
+          { supplierPaymentTermId: prepayTerm.id, stepOrder: 2, ratio: 70, description: '发货前付70%', dateBase: 2, daysOffset: 0 },
+        ],
+      });
+    }
+  }
+
   // ==================== 分类管理 Seed 结束 ====================
 
   const standardProduct = await prisma.product.upsert({

@@ -10,7 +10,7 @@
  */
 
 import { Router } from 'express';
-import { parameterController} from '../controllers/parameter.controller';
+import { parameterController } from '../controllers/parameter.controller';
 
 const router = Router();
 

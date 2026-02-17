@@ -22,6 +22,7 @@ import warehouseRoutes from './warehouses';
 import inventoryRoutes from './inventory';
 import orderRouteRoutes from './order-routes';
 import paymentTermRoutes from './payment-terms';
+import supplierPaymentTermRoutes from './supplier-payment-terms';
 import otherConfigRoutes from './other-configs';
 import documentRoutes from '../documents/document.routes';
 import productImageRoutes from './product-images';
@@ -66,6 +67,7 @@ router.use('/document-permissions', docPermissionRoutes);
 router.use('/parameters/order-routes', orderRouteRoutes);
 router.use('/parameters/transport-methods', transportMethodRoutes);
 router.use('/parameters/payment-terms', paymentTermRoutes);
+router.use('/parameters/supplier-payment-terms', supplierPaymentTermRoutes);
 router.use('/parameters', categoryRoutes);
 
 // ---- 业务实体管理 API ----

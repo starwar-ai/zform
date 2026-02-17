@@ -2,7 +2,7 @@ import prisma from '../config/database';
 
 interface PaymentPlanItemInput {
   periodIndex: number;
-  paymentTermId?: string;
+  supplierPaymentTermId?: string;
   paymentRatio?: number;
   paymentDescription?: string;
   paymentDateBase?: number;
@@ -25,7 +25,11 @@ interface UpdatePaymentPlanInput {
 
 const planInclude = {
   items: {
-    include: { paymentTerm: true },
+    include: {
+      supplierPaymentTerm: {
+        include: { steps: { orderBy: { stepOrder: 'asc' as const } } },
+      },
+    },
     orderBy: { periodIndex: 'asc' as const },
   },
 };
@@ -71,7 +75,7 @@ export class SupplierPaymentPlanService {
         items: {
           create: data.items.map((item) => ({
             periodIndex: item.periodIndex,
-            paymentTermId: item.paymentTermId || undefined,
+            supplierPaymentTermId: item.supplierPaymentTermId || undefined,
             paymentRatio: item.paymentRatio,
             paymentDescription: item.paymentDescription,
             paymentDateBase: item.paymentDateBase,
@@ -112,7 +116,7 @@ export class SupplierPaymentPlanService {
           items: {
             create: data.items.map((item) => ({
               periodIndex: item.periodIndex,
-              paymentTermId: item.paymentTermId || undefined,
+              supplierPaymentTermId: item.supplierPaymentTermId || undefined,
               paymentRatio: item.paymentRatio,
               paymentDescription: item.paymentDescription,
               paymentDateBase: item.paymentDateBase,

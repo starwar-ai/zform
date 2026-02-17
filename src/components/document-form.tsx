@@ -96,6 +96,24 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
   
   // 保存初始数据快照用于变更检测
   const initialDocSnapshot = useRef<string | null>(null)
+  
+  // 获取 schema（必须在所有 hooks 之后，条件返回之前）
+  const schema = doc ? registry.getSchema(doc.typeId) : null
+  
+  // 额外 Tab（由 schema.extraTabKeys 驱动，如产品图片）
+  // 必须在所有条件返回之前定义，避免 Hook 顺序问题
+  const extraTabEntries = useMemo(
+    () => {
+      if (!schema?.extraTabKeys) return []
+      return schema.extraTabKeys
+        .map((key) => {
+          const tab = getExtraTab(key)
+          return tab ? { key, label: tab.label, render: tab.render } : null
+        })
+        .filter((e): e is NonNullable<typeof e> => e != null)
+    },
+    [schema?.extraTabKeys]
+  )
 
   // 数据加载逻辑：如果 store 中没有数据且提供了 typeId，从服务端加载
   useEffect(() => {
@@ -303,7 +321,6 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
     )
   }
 
-  const schema = registry.getSchema(doc.typeId)
   if (!schema) {
     return (
       <div className="p-8 text-center text-muted-foreground">
@@ -314,18 +331,6 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
 
   const isEditable = doc.status === "draft"
   const isNew = Boolean(doc._isNew)
-
-  // 额外 Tab（由 schema.extraTabKeys 驱动，如产品图片）
-  const extraTabEntries = useMemo(
-    () =>
-      (schema.extraTabKeys ?? [])
-        .map((key) => {
-          const tab = getExtraTab(key)
-          return tab ? { key, label: tab.label, render: tab.render } : null
-        })
-        .filter((e): e is NonNullable<typeof e> => e != null),
-    [schema.extraTabKeys]
-  )
 
   const handleSave = () => {
     // 构建新文档用于影响评估

@@ -25,6 +25,7 @@ function getParameterPath(type: ParameterTypeKey): string {
     "order-route": "/parameters/order-routes",
     "transport-method": "/parameters/transport-methods",
     "payment-terms": "/parameters/payment-terms",
+    "supplier-payment-terms": "/parameters/supplier-payment-terms",
   }
   return pathMap[type] ?? `/parameters/${type}`
 }

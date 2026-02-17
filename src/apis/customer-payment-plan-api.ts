@@ -1,10 +1,24 @@
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3001/api"
 
+export interface PaymentTermStep {
+  id: string
+  stepOrder: number
+  ratio?: number | null
+  description?: string | null
+  dateBase?: number | null
+  daysOffset: number
+}
+
 export interface PaymentPlanItem {
   id: string
   periodIndex: number
   paymentTermId?: string
-  paymentTerm?: { id: string; name: string; nameEng: string }
+  paymentTerm?: {
+    id: string
+    name: string
+    nameEng: string
+    steps?: PaymentTermStep[]
+  }
   receiptRatio?: number
   receiptDescription?: string
   receiptDateBase?: number

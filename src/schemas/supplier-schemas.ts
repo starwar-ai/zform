@@ -265,9 +265,9 @@ const baseFields: FieldDef[] = [
   },
 ]
 
-const fetchPaymentTermOptions = async (): Promise<ComboboxOption[]> => {
+const fetchSupplierPaymentTermOptions = async (): Promise<ComboboxOption[]> => {
   const { fetchParameterListApi } = await import("@/apis/business-entity-api")
-  const list = await fetchParameterListApi<{ id: string; name: string }>("payment-terms")
+  const list = await fetchParameterListApi<{ id: string; name: string }>("supplier-payment-terms")
   return list.map((t) => ({ value: t.id, label: t.name }))
 }
 
@@ -691,12 +691,12 @@ const supplierDetailTables: DetailTableDef[] = [
         defaultValue: 1,
       },
       {
-        id: "paymentTermId",
-        label: "付款方式",
+        id: "supplierPaymentTermId",
+        label: "付款条件",
         type: "combobox",
         required: true,
         comboboxConfig: {
-          fetchOptions: fetchPaymentTermOptions,
+          fetchOptions: fetchSupplierPaymentTermOptions,
           isTree: false,
         },
       },

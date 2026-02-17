@@ -27,7 +27,11 @@ interface UpdatePaymentPlanInput {
 
 const planInclude = {
   items: {
-    include: { paymentTerm: true },
+    include: {
+      paymentTerm: {
+        include: { steps: { orderBy: { stepOrder: 'asc' as const } } },
+      },
+    },
     orderBy: { periodIndex: 'asc' as const },
   },
 };

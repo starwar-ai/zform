@@ -12,6 +12,7 @@ import { HsCodeService } from '../services/hs-code.service';
 import { ExhibitionCategoryService } from '../services/exhibition-category.service';
 import { CustomerSourceTagService } from '../services/customer-source-tag.service';
 import { PaymentTermService } from '../services/payment-term.service';
+import { SupplierPaymentTermService } from '../services/supplier-payment-term.service';
 import { successResponse } from '../utils/response';
 
 const customerCategoryService = new CustomerCategoryService();
@@ -20,6 +21,7 @@ const hsCodeService = new HsCodeService();
 const exhibitionCategoryService = new ExhibitionCategoryService();
 const customerSourceTagService = new CustomerSourceTagService();
 const paymentTermService = new PaymentTermService();
+const supplierPaymentTermService = new SupplierPaymentTermService();
 
 /** 获取请求中的用户 ID */
 function getUserId(req: Request): string | undefined {
@@ -293,6 +295,62 @@ export const parameterController = {
     try {
       await paymentTermService.delete(param(req, 'id'));
       res.json(successResponse(null, '付款方式删除成功'));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // ==================== 供应商付款条件 ====================
+
+  /** GET /parameters/supplier-payment-terms - 获取供应商付款条件列表 */
+  async getSupplierPaymentTermList(_req: Request, res: Response, next: NextFunction) {
+    try {
+      const list = await supplierPaymentTermService.findAll();
+      res.json(successResponse(list));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** POST /parameters/supplier-payment-terms - 创建供应商付款条件 */
+  async createSupplierPaymentTerm(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await supplierPaymentTermService.create(req.body, getUserId(req));
+      res.status(201).json(successResponse(result, '供应商付款条件创建成功'));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** PUT /parameters/supplier-payment-terms/:id - 更新供应商付款条件 */
+  async updateSupplierPaymentTerm(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await supplierPaymentTermService.update(param(req, 'id'), req.body, getUserId(req));
+      res.json(successResponse(result, '供应商付款条件更新成功'));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** DELETE /parameters/supplier-payment-terms/:id - 删除供应商付款条件 */
+  async deleteSupplierPaymentTerm(req: Request, res: Response, next: NextFunction) {
+    try {
+      await supplierPaymentTermService.delete(param(req, 'id'));
+      res.json(successResponse(null, '供应商付款条件删除成功'));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** PUT /parameters/supplier-payment-terms/reorder - 批量更新排序 */
+  async reorderSupplierPaymentTerms(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { items } = req.body;
+      if (!Array.isArray(items)) {
+        return res.status(400).json({ success: false, message: '参数格式错误' });
+      }
+      await supplierPaymentTermService.reorder(items, getUserId(req));
+      res.json(successResponse(null, '排序更新成功'));
     } catch (error) {
       next(error);
     }

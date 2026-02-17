@@ -6,7 +6,7 @@
 // ==================== 通用基础类型 ====================
 
 /** 分类类型标识 */
-export type ParameterTypeKey = 'customer' | 'product' | 'product-category' | 'exhibition' | 'customer-source' | 'order-route' | 'transport-method' | 'payment-terms' | 'other-config'
+export type ParameterTypeKey = 'customer' | 'product' | 'product-category' | 'exhibition' | 'customer-source' | 'order-route' | 'transport-method' | 'payment-terms' | 'supplier-payment-terms' | 'other-config'
 
 /** 基础分类字段 */
 interface BaseParameterFields {
@@ -208,7 +208,7 @@ export interface ParameterColumn {
   key: string
   label: string
   width?: string
-  render?: 'text' | 'badge' | 'boolean' | 'date'
+  render?: 'text' | 'badge' | 'boolean' | 'date' | 'steps'
 }
 
 /** 分类配置 */

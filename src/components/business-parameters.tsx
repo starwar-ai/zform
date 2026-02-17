@@ -156,6 +156,7 @@ export const CATEGORY_CONFIGS: ParameterConfig[] = [
       { key: "code", label: "编号", width: "120px" },
       { key: "name", label: "结汇名称", width: "160px" },
       { key: "nameEng", label: "结汇英文名称", width: "160px" },
+      { key: "steps", label: "步骤数", width: "80px", render: "steps" },
       { key: "dateType", label: "起始日类型", width: "100px" },
       { key: "duration", label: "天数", width: "80px" },
       { key: "createdAt", label: "创建时间", render: "date" },
@@ -166,6 +167,33 @@ export const CATEGORY_CONFIGS: ParameterConfig[] = [
       { key: "nameEng", label: "结汇英文名称", type: "text", required: true, placeholder: "例如: T/T" },
       { key: "dateType", label: "起始日类型", type: "number", placeholder: "起始日类型" },
       { key: "duration", label: "天数", type: "number", placeholder: "天数" },
+    ],
+  },
+  {
+    key: "supplier-payment-terms",
+    label: "供应商付款条件",
+    icon: "Banknote",
+    apiPath: "/parameters/supplier-payment-terms",
+    isTree: false,
+    nameField: "name",
+    codeField: "code",
+    columns: [
+      { key: "code", label: "编号", width: "120px" },
+      { key: "name", label: "名称", width: "160px" },
+      { key: "nameEng", label: "英文名称", width: "160px" },
+      { key: "steps", label: "步骤数", width: "80px", render: "steps" },
+      { key: "dateType", label: "起始日类型", width: "100px" },
+      { key: "duration", label: "天数", width: "80px" },
+      { key: "sortOrder", label: "排序", width: "80px" },
+      { key: "createdAt", label: "创建时间", render: "date" },
+    ],
+    formFields: [
+      { key: "code", label: "编号", type: "text", required: true, placeholder: "例如: NET30" },
+      { key: "name", label: "名称", type: "text", required: true, placeholder: "例如: 月结30天" },
+      { key: "nameEng", label: "英文名称", type: "text", placeholder: "例如: Net 30" },
+      { key: "dateType", label: "起始日类型", type: "number", placeholder: "起始日类型" },
+      { key: "duration", label: "天数", type: "number", placeholder: "天数" },
+      { key: "sortOrder", label: "排序", type: "number", defaultValue: 0 },
     ],
   },
   {
@@ -581,6 +609,9 @@ function CategoryPanel({ config }: { config: ParameterConfig }) {
   // 表单数据
   const [formData, setFormData] = useState<Record<string, unknown>>({})
 
+  // 供应商付款条件步骤（仅 supplier-payment-terms 使用）
+  const [steps, setSteps] = useState<Array<{ stepOrder: number; ratio?: number; description?: string; dateBase?: number; daysOffset?: number }>>([])
+
   // 初始化表单默认值
   const getDefaultFormData = useCallback(
     (parentId?: string | null): Record<string, unknown> => {
@@ -714,6 +745,7 @@ function CategoryPanel({ config }: { config: ParameterConfig }) {
   const handleCreate = (parentId?: string | null) => {
     setEditingItem(null)
     setFormData(getDefaultFormData(parentId))
+    setSteps(config.key === "supplier-payment-terms" || config.key === "payment-terms" ? [] : [])
     setDialogOpen(true)
   }
 
@@ -725,6 +757,21 @@ function CategoryPanel({ config }: { config: ParameterConfig }) {
       fd[field.key] = item[field.key] ?? (field.defaultValue !== undefined ? field.defaultValue : "")
     }
     setFormData(fd)
+    if ((config.key === "supplier-payment-terms" || config.key === "payment-terms") && Array.isArray(item.steps)) {
+      setSteps(
+        (item.steps as Array<{ stepOrder: number; ratio?: unknown; description?: string; dateBase?: number; daysOffset?: number }>)
+          .sort((a, b) => a.stepOrder - b.stepOrder)
+          .map((s) => ({
+            stepOrder: s.stepOrder,
+            ratio: typeof s.ratio === "number" ? s.ratio : s.ratio != null ? Number(s.ratio) : undefined,
+            description: s.description ?? undefined,
+            dateBase: s.dateBase ?? undefined,
+            daysOffset: s.daysOffset ?? 0,
+          }))
+      )
+    } else {
+      setSteps([])
+    }
     setDialogOpen(true)
   }
 
@@ -759,6 +806,15 @@ function CategoryPanel({ config }: { config: ParameterConfig }) {
       // 如果 parentId 为空字符串，设置为 null
       if (submitData.parentId === "" || submitData.parentId === "__none__") {
         submitData.parentId = null
+      }
+      if (config.key === "supplier-payment-terms" || config.key === "payment-terms") {
+        submitData.steps = steps.map((s, i) => ({
+          stepOrder: i + 1,
+          ratio: s.ratio ?? null,
+          description: s.description ?? null,
+          dateBase: s.dateBase ?? null,
+          daysOffset: s.daysOffset ?? 0,
+        }))
       }
 
       if (editingItem) {
@@ -800,6 +856,8 @@ function CategoryPanel({ config }: { config: ParameterConfig }) {
     switch (col.render) {
       case "date":
         return value ? new Date(String(value)).toLocaleString("zh-CN") : "-"
+      case "steps":
+        return Array.isArray(item.steps) ? `${(item.steps as unknown[]).length}步` : "0步"
       case "boolean":
         return (
           <Badge variant={value ? "default" : "secondary"} className="text-xs">
@@ -1149,7 +1207,7 @@ function CategoryPanel({ config }: { config: ParameterConfig }) {
 
       {/* 创建/编辑对话框 */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className={config.key === "supplier-payment-terms" || config.key === "payment-terms" ? "max-w-2xl max-h-[90vh] overflow-y-auto" : "max-w-lg"}>
           <DialogHeader>
             <DialogTitle>
               {editingItem ? `编辑${config.label}` : `新建${config.label}`}
@@ -1168,6 +1226,116 @@ function CategoryPanel({ config }: { config: ParameterConfig }) {
                 {renderFormField(field)}
               </div>
             ))}
+            {(config.key === "supplier-payment-terms" || config.key === "payment-terms") && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>付款步骤</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSteps([...steps, { stepOrder: steps.length + 1, daysOffset: 0 }])}
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    添加步骤
+                  </Button>
+                </div>
+                {steps.length > 0 ? (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-16">序号</TableHead>
+                          <TableHead>比例(%)</TableHead>
+                          <TableHead>说明</TableHead>
+                          <TableHead className="w-24">起始日</TableHead>
+                          <TableHead className="w-24">延后天数</TableHead>
+                          <TableHead className="w-16" />
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {steps.map((s, idx) => (
+                          <TableRow key={idx}>
+                            <TableCell className="font-medium">{idx + 1}</TableCell>
+                            <TableCell>
+                              <Input
+                                type="number"
+                                className="h-8 w-20"
+                                value={s.ratio ?? ""}
+                                onChange={(e) => {
+                                  const v = e.target.value
+                                  const next = [...steps]
+                                  next[idx] = { ...next[idx], ratio: v ? Number(v) : undefined }
+                                  setSteps(next)
+                                }}
+                                placeholder="如30"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                className="h-8"
+                                value={s.description ?? ""}
+                                onChange={(e) => {
+                                  const next = [...steps]
+                                  next[idx] = { ...next[idx], description: e.target.value || undefined }
+                                  setSteps(next)
+                                }}
+                                placeholder="如：签约付30%"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Select
+                                value={String(s.dateBase ?? "")}
+                                onValueChange={(v) => {
+                                  const next = [...steps]
+                                  next[idx] = { ...next[idx], dateBase: v ? Number(v) : undefined }
+                                  setSteps(next)
+                                }}
+                              >
+                                <SelectTrigger className="h-8">
+                                  <SelectValue placeholder="-" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="1">合同签订日</SelectItem>
+                                  <SelectItem value="2">发货日</SelectItem>
+                                  <SelectItem value="3">验收日</SelectItem>
+                                  <SelectItem value="4">开票日</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                type="number"
+                                className="h-8 w-20"
+                                value={s.daysOffset ?? 0}
+                                onChange={(e) => {
+                                  const next = [...steps]
+                                  next[idx] = { ...next[idx], daysOffset: Number(e.target.value) || 0 }
+                                  setSteps(next)
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                onClick={() => setSteps(steps.filter((_, i) => i !== idx))}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground py-2">暂无步骤，可点击「添加步骤」定义付款流程</p>
+                )}
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
