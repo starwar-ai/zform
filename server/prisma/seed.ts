@@ -1296,6 +1296,32 @@ async function main() {
     },
   });
 
+  // 付款工作台菜单 - 财务入口子菜单
+  const paymentWorkbenchMenu = await prisma.sysMenu.create({
+    data: {
+      title: '付款工作台',
+      icon: 'CreditCard',
+      path: '/payment-workbench',
+      parentId: financeEntryMenu.id,
+      orderNum: 10,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
+  // 付款逾期报表菜单 - 财务入口子菜单
+  const paymentOverdueReportMenu = await prisma.sysMenu.create({
+    data: {
+      title: '付款逾期报表',
+      icon: 'AlertTriangle',
+      path: '/payment-overdue-report',
+      parentId: financeEntryMenu.id,
+      orderNum: 11,
+      menuType: 'menu',
+      status: 'visible',
+    },
+  });
+
   // ---- 单证入口（一级菜单） ----
   const documentEntryMenu = await prisma.sysMenu.create({
     data: {

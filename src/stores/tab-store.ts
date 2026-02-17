@@ -30,6 +30,8 @@ export type TabType =
   | "approval-flow-editor" // 审批规则编辑
   | "collection-workbench" // 收款工作台
   | "overdue-report" // 逾期报表
+  | "payment-workbench" // 付款工作台
+  | "payment-overdue-report" // 付款逾期报表
 
 // 标签数据结构
 export interface Tab {
