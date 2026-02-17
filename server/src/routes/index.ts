@@ -24,6 +24,7 @@ import orderRouteRoutes from './order-routes';
 import paymentTermRoutes from './payment-terms';
 import supplierPaymentTermRoutes from './supplier-payment-terms';
 import otherConfigRoutes from './other-configs';
+import currencyRoutes from './currencies';
 import documentRoutes from '../documents/document.routes';
 import productImageRoutes from './product-images';
 import employeeRoutes from './employees';
@@ -80,6 +81,7 @@ router.use('/brands', brandRoutes);
 router.use('/warehouses', warehouseRoutes);
 router.use('/inventory', inventoryRoutes);
 router.use('/other-configs', otherConfigRoutes);
+router.use('/currencies', currencyRoutes);
 
 // ---- 收款工作台 API ----
 router.use('/collection-workbench', collectionWorkbenchRoutes);

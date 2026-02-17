@@ -7,3 +7,9 @@ export function ensureString(value: unknown): string {
   if (Array.isArray(value)) return String(value[0] ?? '');
   return String(value);
 }
+
+export function ensureNumber(value: unknown, defaultValue: number = 0): number {
+  if (value === undefined || value === null) return defaultValue;
+  const num = Number(value);
+  return isNaN(num) ? defaultValue : num;
+}

@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Settings, Loader2, RefreshCw, Plus, X } from "lucide-react"
+import { Settings, Loader2, RefreshCw, Plus, X, Coins, Trash2 } from "lucide-react"
 
 // ==================== 验证函数 ====================
 
@@ -137,7 +137,118 @@ function validateParameter(
   return null
 }
 
-// ==================== 数组编辑器组件 ====================
+// ==================== 币种数组编辑器组件 ====================
+
+import { fetchCurrencyInfoApi, type CurrencyInfo } from "@/apis/currency-api"
+
+function CurrencyArrayEditor({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string[]
+  onChange: (v: string[]) => void
+  disabled?: boolean
+}) {
+  const [currencyInfo, setCurrencyInfo] = useState<Record<string, CurrencyInfo>>({})
+  const [loading, setLoading] = useState(false)
+
+  // 加载币种信息
+  useEffect(() => {
+    const loadCurrencyInfo = async () => {
+      setLoading(true)
+      try {
+        const currencies = await fetchCurrencyInfoApi()
+        const infoMap: Record<string, CurrencyInfo> = {}
+        currencies.forEach(currency => {
+          infoMap[currency.code] = currency
+        })
+        setCurrencyInfo(infoMap)
+      } catch (error) {
+        console.error('加载币种信息失败:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    loadCurrencyInfo()
+  }, [])
+
+  const addItem = () => onChange([...value, ''])
+  const removeItem = (index: number) => onChange(value.filter((_, i) => i !== index))
+  const updateItem = (index: number, v: string) => {
+    const newList = [...value]
+    newList[index] = v.toUpperCase()
+    onChange(newList)
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="space-y-2">
+        {value.map((code, index) => {
+          const info = currencyInfo[code] || { name: '未知', symbol: code, isCommon: false, isEnabled: true }
+          return (
+            <div key={index} className="flex gap-2 items-center">
+              <div className="flex-1 grid grid-cols-12 gap-2">
+                <div className="col-span-3">
+                  <Input
+                    value={code}
+                    onChange={(e) => updateItem(index, e.target.value)}
+                    disabled={disabled}
+                    placeholder="币种代码"
+                    className="uppercase"
+                  />
+                </div>
+                <div className="col-span-4">
+                  <Input
+                    value={info.name}
+                    disabled
+                    placeholder="币种名称"
+                  />
+                </div>
+                <div className="col-span-3">
+                  <Input
+                    value={info.symbol}
+                    disabled
+                    placeholder="符号"
+                  />
+                </div>
+                <div className="col-span-2 flex items-center">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeItem(index)}
+                    disabled={disabled}
+                    type="button"
+                    className="h-9 w-9"
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={addItem}
+        disabled={disabled || loading}
+        type="button"
+        className="w-full"
+      >
+        {loading && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+        <Plus className="h-4 w-4 mr-1" /> 添加币种
+      </Button>
+      <p className="text-sm text-muted-foreground mt-2">
+        输入3位字母代码，如: USD, CNY, EUR
+      </p>
+    </div>
+  )
+}
+
+// ==================== 标准数组编辑器组件 ====================
 
 function ArrayEditor({
   elementType = 'text',
@@ -350,7 +461,16 @@ export function OtherConfigPanel() {
               ) : (
                 configs.map((config) => (
                   <TableRow key={config.id} className="cursor-pointer hover:bg-muted/50">
-                    <TableCell className="font-medium">{config.name}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        {config.name === '币种配置' ? (
+                          <Coins className="h-4 w-4 text-primary" />
+                        ) : (
+                          <Settings className="h-4 w-4 text-muted-foreground" />
+                        )}
+                        {config.name}
+                      </div>
+                    </TableCell>
                     <TableCell>{config.description || '-'}</TableCell>
                     <TableCell>{config.parameters?.length || 0}</TableCell>
                     <TableCell>{formatDate(config.updatedAt)}</TableCell>
@@ -396,12 +516,20 @@ export function OtherConfigPanel() {
                     </Label>
 
                     {param.type === 'array' ? (
-                      <ArrayEditor
-                        elementType={param.elementType as 'text' | 'number' | 'date'}
-                        value={value as string[]}
-                        onChange={(v) => updateParameterValue(param.id, v)}
-                        disabled={saving}
-                      />
+                      editingConfig?.name === '币种配置' && param.name === '币种列表' ? (
+                        <CurrencyArrayEditor
+                          value={value as string[]}
+                          onChange={(v) => updateParameterValue(param.id, v)}
+                          disabled={saving}
+                        />
+                      ) : (
+                        <ArrayEditor
+                          elementType={param.elementType as 'text' | 'number' | 'date'}
+                          value={value as string[]}
+                          onChange={(v) => updateParameterValue(param.id, v)}
+                          disabled={saving}
+                        />
+                      )
                     ) : (
                       <Input
                         id={param.id}

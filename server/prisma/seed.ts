@@ -2473,6 +2473,50 @@ async function main() {
     },
   });
 
+  // 币种配置
+  const currencyConfig = await prisma.otherConfig.upsert({
+    where: { id: 'other-config-003' },
+    update: {
+      name: '币种配置',
+      description: '系统可用币种列表配置',
+      orderNum: 3,
+    },
+    create: {
+      id: 'other-config-003',
+      name: '币种配置',
+      description: '系统可用币种列表配置',
+      orderNum: 3,
+    },
+  });
+
+  // 币种列表参数 - 存储为JSON数组
+  await prisma.configParameter.upsert({
+    where: { id: 'config-param-005' },
+    update: {
+      configId: currencyConfig.id,
+      name: '币种列表',
+      type: 'array',
+      elementType: 'text',
+      value: JSON.stringify([
+        'USD', 'CNY', 'EUR', 'GBP', 'JPY', 'HKD', 'AUD', 'CAD', 'CHF', 'SGD'
+      ]),
+      validation: JSON.stringify({ minItems: 1, maxItems: 50 }),
+      orderNum: 1,
+    },
+    create: {
+      id: 'config-param-005',
+      configId: currencyConfig.id,
+      name: '币种列表',
+      type: 'array',
+      elementType: 'text',
+      value: JSON.stringify([
+        'USD', 'CNY', 'EUR', 'GBP', 'JPY', 'HKD', 'AUD', 'CAD', 'CHF', 'SGD'
+      ]),
+      validation: JSON.stringify({ minItems: 1, maxItems: 50 }),
+      orderNum: 1,
+    },
+  });
+
   // 系统通知配置
   const notificationConfig = await prisma.otherConfig.upsert({
     where: { id: 'other-config-002' },
