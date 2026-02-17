@@ -123,6 +123,8 @@ function parseMenuPath(path?: string | null): {
     "/approval-flow-management": "approval-flow-management",
     "/collection-workbench": "collection-workbench",
     "/overdue-report": "overdue-report",
+    "/payment-workbench": "payment-workbench",
+    "/payment-overdue-report": "payment-overdue-report",
   }
 
   const tabType = pathToTabType[path]

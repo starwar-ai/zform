@@ -2281,6 +2281,7 @@ model PurchaseContract {
 
   // 关联关系
   items PurchaseContractItem[] @relation("PurchaseContractItems")
+  paymentPlans PurchasePaymentPlan[] @relation("PurchaseContractPaymentPlans")
 
   @@index([code])
   @@index([supplierId])
@@ -5596,4 +5597,119 @@ model TransportMethod {
   @@index([sortOrder])
   @@index([createdAt])
   @@map("transport_methods")
+}
+
+// ==================== 采购付款计划表 (purchase_payment_plans) ====================
+// 跟踪采购合同的分期付款执行状态
+
+model PurchasePaymentPlan {
+  id String @id @default(cuid())
+
+  // 关联采购合同
+  purchaseContractId String           @map("purchase_contract_id")
+  purchaseContract   PurchaseContract @relation("PurchaseContractPaymentPlans", fields: [purchaseContractId], references: [id], onDelete: Cascade)
+
+  // 步骤与支付
+  periodIndex       Int     @default(1) @map("step") // 期序号
+  paymentMethodType Int?    @map("payment_method") // 付款方式类型
+  paymentDescription String?  @map("payment_name") // 本期付款说明
+
+  // 日期计算（付款日基准、基准日期、延后天数 → 预计付款日）
+  paymentDateBase     Int?      @map("date_type") // 付款日基准：1-合同签订日 2-回签日 3-收货日等
+  baseDate            DateTime? @map("start_date") // 基准日期
+  daysOffset          Int       @default(0) @map("days") // 延后天数
+  expectedPaymentDate DateTime? @map("expected_payment_date") // 预计付款日
+
+  // 金额
+  paymentRatio        Decimal   @map("payment_ratio") @db.Decimal(19, 6) // 本期比例(%)
+  realPaymentRatio    Decimal?  @map("real_payment_ratio") @db.Decimal(19, 6) // 实际付款比例
+  periodPayable       Decimal   @default(0) @map("payable_amount") @db.Decimal(15, 2) // 本期应付
+  periodPaid          Decimal   @default(0) @map("paid_amount") @db.Decimal(15, 2) // 本期已付
+
+  // 执行状态 0-未执行 1-部分执行 2-已执行
+  exeStatus Int @default(0) @map("exe_status")
+
+  // 逾期管理字段
+  overdueStatus     Int       @default(0) @map("overdue_status")     // 0-正常 1-即将到期 2-已逾期
+  overdueDays       Int       @default(0) @map("overdue_days")       // 逾期天数
+  earlyDays         Int       @default(0) @map("early_days")         // 正=提前付款天数，负=逾期天数，0=准时
+  reminderStatus    Int       @default(0) @map("reminder_status")    // 0-未提醒 1-已提醒
+  lastReminderAt    DateTime? @map("last_reminder_at")               // 最后提醒时间
+  reminderCount     Int       @default(0) @map("reminder_count")     // 提醒次数
+  actualPaymentDate DateTime? @map("actual_payment_date")            // 实际付款日
+
+  // 关联提醒
+  reminders PaymentReminder[] @relation("PaymentPlanReminders")
+
+  // 时间戳
+  createdBy String?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedBy String?   @map("updated_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([purchaseContractId])
+  @@index([periodIndex])
+  @@index([expectedPaymentDate])
+  @@index([exeStatus])
+  @@index([overdueStatus])
+  @@map("purchase_payment_plans")
+}
+
+// ==================== 付款提醒表 (payment_reminders) ====================
+// 记录付款计划的到期提醒和逾期提醒
+
+model PaymentReminder {
+  id String @id @default(cuid())
+
+  // 关联付款计划
+  paymentPlanId String              @map("payment_plan_id")
+  paymentPlan   PurchasePaymentPlan @relation("PaymentPlanReminders", fields: [paymentPlanId], references: [id], onDelete: Cascade)
+
+  // 关联采购合同（冗余便于查询）
+  purchaseContractId   String  @map("purchase_contract_id")
+  purchaseContractCode String? @map("purchase_contract_code")
+
+  // 供应商信息（冗余便于查询）
+  supplierId   String? @map("supplier_id")
+  supplierCode String? @map("supplier_code")
+  supplierName String? @map("supplier_name")
+
+  // 提醒类型 1-即将到期 2-已逾期
+  reminderType Int @map("reminder_type")
+
+  // 日期信息
+  reminderDate DateTime @map("reminder_date") // 提醒生成日期
+  expectedDate DateTime @map("expected_date") // 预计付款日
+
+  // 金额
+  payableAmt Decimal @map("payable_amt") @db.Decimal(15, 2) // 应付金额
+  paidAmt    Decimal @default(0) @map("paid_amt") @db.Decimal(15, 2) // 已付金额
+
+  // 逾期天数（仅逾期提醒有值）
+  overdueDays Int @default(0) @map("overdue_days")
+
+  // 期序号
+  periodIndex Int @default(1) @map("period_index")
+
+  // 目标用户（采购员）
+  targetUserId String? @map("target_user_id")
+
+  // 状态
+  readStatus   Int @default(0) @map("read_status")   // 0-未读 1-已读
+  handleStatus Int @default(0) @map("handle_status") // 0-未处理 1-已处理
+
+  // 时间戳
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@index([paymentPlanId])
+  @@index([purchaseContractId])
+  @@index([supplierId])
+  @@index([targetUserId])
+  @@index([reminderType])
+  @@index([readStatus])
+  @@index([reminderDate])
+  @@map("payment_reminders")
 }

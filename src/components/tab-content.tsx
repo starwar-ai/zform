@@ -28,6 +28,8 @@ import { ApprovalFlowManagement } from "@/components/approval-flow-management"
 import { ApprovalFlowEditor } from "@/components/approval-flow-editor"
 import { CollectionWorkbench } from "@/components/collection-workbench"
 import { OverdueReport } from "@/components/overdue-report"
+import { PaymentWorkbench } from "@/components/payment-workbench"
+import { PaymentOverdueReport } from "@/components/payment-overdue-report"
 
 import { DashboardHome } from "@/components/dashboard-home"
 
@@ -170,6 +172,24 @@ export function TabContent() {
           <OverdueReport
             onOpenContract={(contractId) =>
               openTab("document-form", { docId: contractId, typeId: "sales_contract" }, "销售合同")
+            }
+          />
+        )
+
+      case "payment-workbench":
+        return (
+          <PaymentWorkbench
+            onOpenContract={(contractId) =>
+              openTab("document-form", { docId: contractId, typeId: "purchase_contract" }, "采购合同")
+            }
+          />
+        )
+
+      case "payment-overdue-report":
+        return (
+          <PaymentOverdueReport
+            onOpenContract={(contractId) =>
+              openTab("document-form", { docId: contractId, typeId: "purchase_contract" }, "采购合同")
             }
           />
         )

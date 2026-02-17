@@ -33,6 +33,7 @@ import exchangeRateRoutes from './exchange-rate.routes';
 import rateSchedulerRoutes from './rate-scheduler.routes';
 import transportMethodRoutes from './transport-methods';
 import collectionWorkbenchRoutes from './collection-workbench';
+import paymentWorkbenchRoutes from './payment-workbench';
 
 const router = Router();
 
@@ -82,6 +83,9 @@ router.use('/other-configs', otherConfigRoutes);
 
 // ---- 收款工作台 API ----
 router.use('/collection-workbench', collectionWorkbenchRoutes);
+
+// ---- 付款工作台 API ----
+router.use('/payment-workbench', paymentWorkbenchRoutes);
 
 // ---- 旧路由 (保留兼容) ----
 router.use('/products', productRoutes);

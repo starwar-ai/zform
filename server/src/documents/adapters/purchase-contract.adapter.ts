@@ -11,6 +11,9 @@ import {
   calculateDocumentSummary,
   queryRelatedDocuments,
 } from '../../utils/business-utils';
+import { PurchasePaymentPlanService } from '../../services/purchase-payment-plan.service';
+
+const purchasePaymentPlanService = new PurchasePaymentPlanService();
 
 /**
  * 采购合同状态流转配置
@@ -52,11 +55,19 @@ export const purchaseContractAdapter: DocumentTypeAdapter = {
       orderBy: { lineNumber: 'asc' },
       take: 5,
     },
+    paymentPlans: {
+      where: { deletedAt: null },
+      orderBy: { periodIndex: 'asc' },
+    },
   },
   detailIncludes: {
     items: {
       where: { deletedAt: null },
       orderBy: { lineNumber: 'asc' },
+    },
+    paymentPlans: {
+      where: { deletedAt: null },
+      orderBy: { periodIndex: 'asc' },
     },
   },
 
@@ -196,6 +207,14 @@ export const purchaseContractAdapter: DocumentTypeAdapter = {
           PURCHASE_CONTRACT_STATUS_CONFIG
         );
       }
+    }
+
+    // 同步付款计划到 purchase_payment_plans 表
+    const detailTables = data.detailTables || [];
+    const paymentPlanTable = detailTables.find((t: any) => t.tableId === 'paymentPlanItems');
+    if (paymentPlanTable?.rows?.length) {
+      const plans = paymentPlanTable.rows.map((r: any) => ({ ...(r.data ?? r), id: r.id }));
+      await purchasePaymentPlanService.upsertByPurchaseContractId(id, plans, userId);
     }
   },
 

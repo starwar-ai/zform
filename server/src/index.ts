@@ -10,6 +10,7 @@ import swaggerSpec from './config/swagger';
 import { registerAllAdapters } from './documents';
 import { exchangeRateSchedulerService } from './services/exchange-rate-scheduler.service';
 import { collectionReminderSchedulerService } from './services/collection-reminder-scheduler.service';
+import { paymentReminderSchedulerService } from './services/payment-reminder-scheduler.service';
 
 dotenv.config();
 
@@ -57,5 +58,10 @@ app.listen(PORT, () => {
   // 启动收款提醒调度器
   collectionReminderSchedulerService.start().catch(err => {
     console.error('Failed to start collection reminder scheduler:', err);
+  });
+
+  // 启动付款提醒调度器
+  paymentReminderSchedulerService.start().catch(err => {
+    console.error('Failed to start payment reminder scheduler:', err);
   });
 });

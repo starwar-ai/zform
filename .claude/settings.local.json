@@ -16,7 +16,8 @@
       "Bash(find:*)",
       "WebSearch",
       "Bash(ls:*)",
-      "Bash(npx prisma generate:*)"
+      "Bash(npx prisma generate:*)",
+      "Bash(npx prisma migrate dev:*)"
     ]
   }
 }
