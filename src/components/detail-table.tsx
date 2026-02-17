@@ -155,6 +155,10 @@ function resolveFieldValue(field: FieldDef, data: Record<string, unknown>): unkn
       accessoryRatio: data[field.ratioConfig.accessoryRatioField],
     }
   }
+  // 如果设置了 displayField，则优先返回 displayField 的值
+  if (field.displayField && data[field.displayField] !== undefined) {
+    return data[field.displayField]
+  }
   return data[field.id]
 }
 

@@ -6,6 +6,7 @@
  */
 
 import type { DocumentTypeAdapter } from '../types';
+import { codeGeneratorApi } from '../../services/code-generator.service';
 
 function transformDocToPrisma(data: any) {
   const masterData = data.masterData || {};
@@ -43,11 +44,32 @@ function transformDocToPrisma(data: any) {
     paymentTermsTable?.rows?.map((r: any) => ({
       paymentTermId: r.data?.paymentTermId,
       isDefault: r.data?.isDefault ?? false,
+      // Add payment term details for display
+      paymentTermCode: r.data?.paymentTerm?.code || '',
+      paymentTermName: r.data?.paymentTerm?.name || '',
+      paymentTermNameEng: r.data?.paymentTerm?.nameEng || '',
+      stepCount: r.data?.paymentTerm?.steps?.length || 0,
     })) || [];
 
+  // Exclude frontend-only fields that don't exist in Prisma Customer model
+  const {
+    id: _id,
+    typeId: _typeId,
+    docNumber: _docNumber,
+    status: _status,
+    _isNew,
+    createdAt: _createdAt,
+    updatedAt: _updatedAt,
+    createdBy: _createdBy,
+    updatedBy: _updatedBy,
+    sourceRef: _sourceRef,
+    detailTables: _detailTables,
+    ...customerFields
+  } = masterData;
+
   return {
-    ...masterData,
-    code: masterData.code || masterData.docNumber,
+    ...customerFields,
+    code: customerFields.code || masterData.docNumber,
     bankAccounts: bankAccounts.length ? { create: bankAccounts } : undefined,
     contacts: contacts.length ? { create: contacts } : undefined,
     paymentTermList: paymentTermList.length ? paymentTermList : undefined,
@@ -103,6 +125,9 @@ const baseCustomerAdapter: Omit<DocumentTypeAdapter, 'typeId' | 'typeName' | 'ba
   aggregateFields: [],
 
   flattenRow(row: any) {
+    // Get the default payment term for display
+    const defaultPaymentTerm = row.customerPaymentTerms?.find((pt: any) => pt.isDefault);
+    
     return {
       _id: row.id,
       _docNumber: row.code,
@@ -115,12 +140,20 @@ const baseCustomerAdapter: Omit<DocumentTypeAdapter, 'typeId' | 'typeName' | 'ba
       currency: row.currency,
       phone: row.phone,
       email: row.email,
+      // Payment term display info
+      defaultPaymentTermName: defaultPaymentTerm?.paymentTerm?.name || '',
+      defaultPaymentTermNameEng: defaultPaymentTerm?.paymentTerm?.nameEng || '',
+      paymentTermStepCount: defaultPaymentTerm?.paymentTerm?.steps?.length || 0,
     };
   },
 
   async onCreate(data, userId, prisma) {
     const payload = transformDocToPrisma(data);
     const { paymentTermList, bankAccounts, contacts, ...rest } = payload;
+    // Auto-generate customer code if not provided
+    if (!rest.code) {
+      rest.code = await codeGeneratorApi.generateCustomerCode();
+    }
 
     const createData: any = {
       ...rest,
@@ -238,6 +271,33 @@ const baseCustomerAdapter: Omit<DocumentTypeAdapter, 'typeId' | 'typeName' | 'ba
       include: baseCustomerAdapter.detailIncludes,
     });
   },
+
+  // Custom actions for payment terms
+  actions: {
+    async setPaymentTermDefault({ id: customerId, body, userId, prisma }) {
+      const { paymentTermId } = body;
+      
+      // First, set all payment terms to non-default
+      await prisma.customerPaymentTerm.updateMany({
+        where: { customerId },
+        data: { isDefault: false }
+      });
+      
+      // Then set the selected one as default
+      const result = await prisma.customerPaymentTerm.updateMany({
+        where: { 
+          customerId,
+          paymentTermId
+        },
+        data: { isDefault: true }
+      });
+      
+      return { 
+        data: { success: result.count > 0 }, 
+        message: result.count > 0 ? '设置默认成功' : '设置默认失败' 
+      };
+    }
+  }
 };
 
 /** 国内客户 */
@@ -250,6 +310,10 @@ export const domesticCustomerAdapter: DocumentTypeAdapter = {
   async onCreate(data, userId, prisma) {
     const payload = transformDocToPrisma(data);
     const { paymentTermList, bankAccounts, contacts, ...rest } = payload;
+    // Auto-generate customer code if not provided
+    if (!rest.code) {
+      rest.code = await codeGeneratorApi.generateCustomerCode();
+    }
     const createData: any = {
       ...rest,
       isForeign: false,
@@ -299,6 +363,10 @@ export const internationalCustomerAdapter: DocumentTypeAdapter = {
   async onCreate(data, userId, prisma) {
     const payload = transformDocToPrisma(data);
     const { paymentTermList, bankAccounts, contacts, ...rest } = payload;
+    // Auto-generate customer code if not provided
+    if (!rest.code) {
+      rest.code = await codeGeneratorApi.generateCustomerCode();
+    }
     const createData: any = {
       ...rest,
       isForeign: true,

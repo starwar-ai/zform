@@ -26,13 +26,6 @@ const paymentTermsDetailTable = {
   editable: true,
   fields: [
     {
-      id: "periodIndex",
-      label: "期序号",
-      type: "number" as const,
-      required: true,
-      defaultValue: 1,
-    },
-    {
       id: "paymentTermId",
       label: "付款方式",
       type: "combobox" as const,
@@ -41,12 +34,32 @@ const paymentTermsDetailTable = {
         fetchOptions: fetchPaymentTermOptions,
         isTree: false,
       },
+      displayField: "paymentTermCode", // Display the payment term code instead of ID
+    },
+    {
+      id: "paymentTermCode",
+      label: "付款方式编码",
+      type: "text" as const,
+      readOnly: true,
+    },
+    {
+      id: "paymentTermNameEng",
+      label: "英文名称",
+      type: "text" as const,
+      readOnly: true,
+    },
+    {
+      id: "stepCount",
+      label: "步骤数",
+      type: "number" as const,
+      readOnly: true,
     },
     {
       id: "isDefault",
       label: "是否默认",
       type: "checkbox" as const,
       defaultValue: false,
+      readOnly: true,
     },
 
   ],
@@ -98,7 +111,6 @@ export const domesticCustomerSchema: DocumentSchema = {
       label: "客户编号",
       type: "text",
       readOnly: true,
-      required: true,
       group: "基本信息",
     },
     {
@@ -432,7 +444,6 @@ export const internationalCustomerSchema: DocumentSchema = {
       label: "客户编号",
       type: "text",
       readOnly: true,
-      required: true,
       group: "基本信息",
     },
     {
@@ -823,7 +834,6 @@ export const customerSchema: DocumentSchema = {
       label: "客户编号",
       type: "text",
       readOnly: true,
-      required: true,
       group: "基本信息",
     },
     {

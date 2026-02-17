@@ -196,6 +196,7 @@ export enum CodePrefix {
   JH = 'JH', // 结汇单
   MF = 'MF', // 制造单
   ST = 'ST', // 盘点单
+  KH = 'KH', // 客户
 }
 
 /**
@@ -219,6 +220,7 @@ export enum CodeType {
   SETTLEMENT = 'SN_SETTLEMENT', // 结汇单
   MANUFACTURE = 'SN_MANUFACTURE', // 制造单
   STOCKTAKING = 'SN_STOCKTAKING', // 盘点单
+  CUSTOMER = 'SN_CUSTOMER', // 客户
 }
 
 /**
@@ -418,6 +420,14 @@ export class CodeGeneratorApi {
    */
   async generateStocktakingCode(): Promise<string> {
     return this.generateCode(CodeType.STOCKTAKING, CodePrefix.ST);
+  }
+
+  /**
+   * 生成客户编码
+   * 格式：KH + 年月(yyMM) + 4位序列号
+   */
+  async generateCustomerCode(): Promise<string> {
+    return this.generateCode(CodeType.CUSTOMER, CodePrefix.KH);
   }
 
   /**

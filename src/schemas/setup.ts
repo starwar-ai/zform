@@ -1509,30 +1509,30 @@ const selfOwnedProductFormActions: DocumentFormActionConfig = {
   ],
 }
 
-/** 客户 - 表单操作 */
-const customerFormActions: DocumentFormActionConfig = {
-  typeId: "customer",
+/** 客户通用表单操作 */
+const customerFormActionsDef = (typeId: string): DocumentFormActionConfig => ({
+  typeId,
   actions: [
     { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["draft"], order: 1 },
-    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["draft"], permission: "customer:submit", order: 2 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["draft"], permission: `${typeId}:submit`, order: 2 },
     {
       id: "approve", label: "审批", icon: "Check", allowedStatuses: ["submitted"],
-      permission: "customer:approve", order: 3,
+      permission: `${typeId}:approve`, order: 3,
       visible: (ctx) => ctx.approvalState?.canApprove ?? false,
     },
     {
       id: "reject", label: "拒绝", icon: "X", variant: "destructive", allowedStatuses: ["submitted"],
-      permission: "customer:approve", order: 4,
+      permission: `${typeId}:approve`, order: 4,
       visible: (ctx) => ctx.approvalState?.canApprove ?? false,
     },
     {
       id: "withdraw", label: "撤回", icon: "Undo2", variant: "outline", allowedStatuses: ["submitted"], order: 5,
       visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
     },
-    { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["approved"], permission: "customer:close", order: 6 },
+    { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["approved"], permission: `${typeId}:close`, order: 6 },
     { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["draft"], order: 7 },
   ],
-}
+})
 
 /** 供应商通用表单操作 */
 const supplierFormActionsDef = (typeId: string): DocumentFormActionConfig => ({
@@ -1760,7 +1760,9 @@ export function setupSchemas(): void {
   registry.registerFormActionConfig(standardProductFormActions)
   registry.registerFormActionConfig(customerProductFormActions)
   registry.registerFormActionConfig(selfOwnedProductFormActions)
-  registry.registerFormActionConfig(customerFormActions)
+  registry.registerFormActionConfig(customerFormActionsDef("customer"))
+  registry.registerFormActionConfig(customerFormActionsDef("domestic_customer"))
+  registry.registerFormActionConfig(customerFormActionsDef("international_customer"))
   registry.registerFormActionConfig(manufacturerFormActions)
   registry.registerFormActionConfig(serviceProviderFormActions)
   registry.registerFormActionConfig(logisticsFormActions)
