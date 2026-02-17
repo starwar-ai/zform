@@ -493,7 +493,6 @@ export const internationalCustomerSchema: DocumentSchema = {
       label: "国家/地区",
       type: "combobox",
       placeholder: "请选择国家/地区",
-      span: 2,
       required: true,
       group: "基本信息",
       comboboxConfig: {
@@ -536,14 +535,6 @@ export const internationalCustomerSchema: DocumentSchema = {
       type: "text",
       readOnly: true,
       placeholder: "选择国家后自动显示",
-      group: "基本信息",
-    },
-    {
-      id: "countryCode",
-      label: "国家编码",
-      type: "text",
-      placeholder: "例如: US, JP, DE",
-      required: true,
       group: "基本信息",
     },
     {
@@ -933,11 +924,52 @@ export const customerSchema: DocumentSchema = {
       group: "基本信息",
     },
     {
-      id: "countryCode",
-      label: "国家编码",
+      id: "countryId",
+      label: "国家/地区",
+      type: "combobox",
+      placeholder: "请选择国家/地区",
+      group: "其他信息",
+      comboboxConfig: {
+        fetchOptions: async () => {
+          const { fetchCountriesApi } = await import("@/apis/business-parameter-api")
+          const countries = await fetchCountriesApi()
+          return countries.map((country: any) => ({
+            value: country.id,
+            label: country.name
+          }))
+        },
+        isTree: false
+      },
+      effect: {
+        watchFields: ["countryId"],
+        handler: async (data, onChange) => {
+          const countryId = data.countryId as string
+          if (!countryId) return
+          
+          try {
+            const { fetchCountriesApi } = await import("@/apis/business-parameter-api")
+            const countries = await fetchCountriesApi()
+            const selectedCountry = countries.find((c: any) => c.id === countryId)
+            
+            if (selectedCountry?.region) {
+              onChange("regionDisplay", selectedCountry.region.name)
+            } else {
+              onChange("regionDisplay", "")
+            }
+          } catch (error) {
+            console.error("获取国家地区信息失败:", error)
+            onChange("regionDisplay", "")
+          }
+        }
+      }
+    },
+    {
+      id: "regionDisplay",
+      label: "所属地区",
       type: "text",
-      placeholder: "例如: CN, US, JP",
-      group: "基本信息",
+      readOnly: true,
+      placeholder: "选择国家后自动显示",
+      group: "其他信息",
     },
     {
       id: "website",
@@ -1027,7 +1059,6 @@ export const customerSchema: DocumentSchema = {
       label: "国家/地区",
       type: "combobox",
       placeholder: "请选择国家/地区",
-      span: 2,
       group: "其他信息",
       comboboxConfig: {
         fetchOptions: async () => {
