@@ -15,6 +15,7 @@ function transformDocToPrisma(data: any) {
   const bankAccountsTable = detailTables.find((t: any) => t.tableId === 'bank_accounts');
   const contactsTable = detailTables.find((t: any) => t.tableId === 'contacts');
   const paymentTermsTable = detailTables.find((t: any) => t.tableId === 'payment_terms');
+  const currenciesTable = detailTables.find((t: any) => t.tableId === 'currencies');
 
   const bankAccounts =
     bankAccountsTable?.rows?.map((r: any) => ({
@@ -51,6 +52,14 @@ function transformDocToPrisma(data: any) {
       stepCount: r.data?.paymentTerm?.steps?.length || 0,
     })) || [];
 
+  const currencies =
+    currenciesTable?.rows?.map((r: any) => ({
+      currencyCode: r.data?.currencyCode,
+      isDefault: r.data?.isDefault ?? false,
+      exchangeRate: r.data?.exchangeRate,
+      remark: r.data?.remark,
+    })) || [];
+
   // Exclude frontend-only fields that don't exist in Prisma Customer model
   const {
     id: _id,
@@ -73,6 +82,7 @@ function transformDocToPrisma(data: any) {
     bankAccounts: bankAccounts.length ? { create: bankAccounts } : undefined,
     contacts: contacts.length ? { create: contacts } : undefined,
     paymentTermList: paymentTermList.length ? paymentTermList : undefined,
+    currencies: currencies.length ? currencies : undefined,
   };
 }
 
@@ -149,7 +159,7 @@ const baseCustomerAdapter: Omit<DocumentTypeAdapter, 'typeId' | 'typeName' | 'ba
 
   async onCreate(data, userId, prisma) {
     const payload = transformDocToPrisma(data);
-    const { paymentTermList, bankAccounts, contacts, ...rest } = payload;
+    const { paymentTermList, bankAccounts, contacts, currencies, ...rest } = payload;
     // Auto-generate customer code if not provided
     if (!rest.code) {
       rest.code = await codeGeneratorApi.generateCustomerCode();
@@ -186,6 +196,10 @@ const baseCustomerAdapter: Omit<DocumentTypeAdapter, 'typeId' | 'typeName' | 'ba
         })),
       };
     }
+    if (currencies?.length) {
+      // TODO: 需要在数据库中添加客户币种表
+      console.log('客户币种数据:', currencies);
+    }
 
     return prisma.customer.create({
       data: createData,
@@ -195,7 +209,7 @@ const baseCustomerAdapter: Omit<DocumentTypeAdapter, 'typeId' | 'typeName' | 'ba
 
   async onUpdate(id, data, userId, prisma) {
     const payload = transformDocToPrisma(data);
-    const { paymentTermList, bankAccounts, contacts, ...rest } = payload;
+    const { paymentTermList, bankAccounts, contacts, currencies, ...rest } = payload;
 
     if (paymentTermList !== undefined) {
       await prisma.customerPaymentTerm.deleteMany({ where: { customerId: id } });
@@ -260,6 +274,12 @@ const baseCustomerAdapter: Omit<DocumentTypeAdapter, 'typeId' | 'typeName' | 'ba
           });
         }
       }
+    }
+
+    // 处理币种数据
+    if (currencies !== undefined) {
+      // TODO: 需要在数据库中添加客户币种表
+      console.log('更新客户币种数据:', currencies);
     }
 
     return prisma.customer.update({

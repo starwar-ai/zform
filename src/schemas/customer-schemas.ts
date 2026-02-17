@@ -418,6 +418,37 @@ export const domesticCustomerSchema: DocumentSchema = {
       ],
     },
     paymentTermsDetailTable,
+    {
+      id: "currencies",
+      label: "币种设置",
+      editable: true,
+      fields: [
+        {
+          id: "currencyCode",
+          label: "币种",
+          type: "select",
+          options: CURRENCY_OPTIONS,
+          required: true,
+        },
+        {
+          id: "isDefault",
+          label: "默认币种",
+          type: "checkbox",
+          defaultValue: false,
+        },
+        {
+          id: "exchangeRate",
+          label: "汇率",
+          type: "number",
+          placeholder: "1.000000",
+        },
+        {
+          id: "remark",
+          label: "备注",
+          type: "text",
+        },
+      ],
+    },
   ],
 }
 
@@ -475,7 +506,37 @@ export const internationalCustomerSchema: DocumentSchema = {
           }))
         },
         isTree: false
+      },
+      effect: {
+        watchFields: ["countryId"],
+        handler: async (data, onChange) => {
+          const countryId = data.countryId as string
+          if (!countryId) return
+          
+          try {
+            const { fetchCountriesApi } = await import("@/apis/business-parameter-api")
+            const countries = await fetchCountriesApi()
+            const selectedCountry = countries.find((c: any) => c.id === countryId)
+            
+            if (selectedCountry?.region) {
+              onChange("regionDisplay", selectedCountry.region.name)
+            } else {
+              onChange("regionDisplay", "")
+            }
+          } catch (error) {
+            console.error("获取国家地区信息失败:", error)
+            onChange("regionDisplay", "")
+          }
+        }
       }
+    },
+    {
+      id: "regionDisplay",
+      label: "所属地区",
+      type: "text",
+      readOnly: true,
+      placeholder: "选择国家后自动显示",
+      group: "基本信息",
     },
     {
       id: "countryCode",
@@ -808,6 +869,37 @@ export const internationalCustomerSchema: DocumentSchema = {
       ],
     },
     paymentTermsDetailTable,
+    {
+      id: "currencies",
+      label: "币种设置",
+      editable: true,
+      fields: [
+        {
+          id: "currencyCode",
+          label: "币种",
+          type: "select",
+          options: CURRENCY_OPTIONS,
+          required: true,
+        },
+        {
+          id: "isDefault",
+          label: "默认币种",
+          type: "checkbox",
+          defaultValue: false,
+        },
+        {
+          id: "exchangeRate",
+          label: "汇率",
+          type: "number",
+          placeholder: "1.000000",
+        },
+        {
+          id: "remark",
+          label: "备注",
+          type: "text",
+        },
+      ],
+    },
   ],
 }
 
@@ -1196,6 +1288,37 @@ export const customerSchema: DocumentSchema = {
       ],
     },
     paymentTermsDetailTable,
+    {
+      id: "currencies",
+      label: "币种设置",
+      editable: true,
+      fields: [
+        {
+          id: "currencyCode",
+          label: "币种",
+          type: "select",
+          options: CURRENCY_OPTIONS,
+          required: true,
+        },
+        {
+          id: "isDefault",
+          label: "默认币种",
+          type: "checkbox",
+          defaultValue: false,
+        },
+        {
+          id: "exchangeRate",
+          label: "汇率",
+          type: "number",
+          placeholder: "1.000000",
+        },
+        {
+          id: "remark",
+          label: "备注",
+          type: "text",
+        },
+      ],
+    },
   ],
 }
 
