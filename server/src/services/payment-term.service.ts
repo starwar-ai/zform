@@ -21,8 +21,6 @@ export interface CreatePaymentTermInput {
   code: string;
   name: string;
   nameEng: string;
-  dateType?: number;
-  duration?: number;
   steps?: PaymentTermStepInput[];
 }
 
@@ -30,8 +28,6 @@ export interface UpdatePaymentTermInput {
   code?: string;
   name?: string;
   nameEng?: string;
-  dateType?: number;
-  duration?: number;
   steps?: PaymentTermStepInput[];
 }
 
@@ -71,8 +67,6 @@ export class PaymentTermService {
         code: data.code,
         name: data.name,
         nameEng: data.nameEng,
-        dateType: data.dateType ?? null,
-        duration: data.duration ?? null,
         createdBy: userId || null,
         updatedBy: userId || null,
         steps: data.steps?.length
@@ -117,8 +111,6 @@ export class PaymentTermService {
         ...(data.code !== undefined && { code: data.code }),
         ...(data.name !== undefined && { name: data.name }),
         ...(data.nameEng !== undefined && { nameEng: data.nameEng }),
-        ...(data.dateType !== undefined && { dateType: data.dateType }),
-        ...(data.duration !== undefined && { duration: data.duration }),
         updatedBy: userId || undefined,
         ...(data.steps?.length
           ? {

@@ -21,8 +21,6 @@ export interface CreateSupplierPaymentTermInput {
   code: string;
   name: string;
   nameEng?: string | null;
-  dateType?: number | null;
-  duration?: number | null;
   sortOrder?: number;
   steps?: SupplierPaymentTermStepInput[];
 }
@@ -31,8 +29,6 @@ export interface UpdateSupplierPaymentTermInput {
   code?: string;
   name?: string;
   nameEng?: string | null;
-  dateType?: number | null;
-  duration?: number | null;
   sortOrder?: number;
   steps?: SupplierPaymentTermStepInput[];
 }
@@ -73,8 +69,6 @@ export class SupplierPaymentTermService {
         code: data.code,
         name: data.name,
         nameEng: data.nameEng ?? null,
-        dateType: data.dateType ?? null,
-        duration: data.duration ?? null,
         sortOrder: data.sortOrder ?? 0,
         createdBy: userId || null,
         updatedBy: userId || null,
@@ -121,8 +115,6 @@ export class SupplierPaymentTermService {
         ...(data.code !== undefined && { code: data.code }),
         ...(data.name !== undefined && { name: data.name }),
         ...(data.nameEng !== undefined && { nameEng: data.nameEng }),
-        ...(data.dateType !== undefined && { dateType: data.dateType }),
-        ...(data.duration !== undefined && { duration: data.duration }),
         ...(data.sortOrder !== undefined && { sortOrder: data.sortOrder }),
         updatedBy: userId || undefined,
         ...(data.steps?.length
