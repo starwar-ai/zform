@@ -1837,6 +1837,8 @@ async function main() {
     invoiceRegistrationMenu.id,
     collectionWorkbenchMenu.id,
     overdueReportMenu.id,
+    paymentWorkbenchMenu.id, // 付款工作台
+    paymentOverdueReportMenu.id, // 付款逾期报表
     dataEntryMenu.id,
     productManagementMenu.id,
     customerMenu.id,
