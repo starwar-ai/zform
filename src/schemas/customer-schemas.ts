@@ -42,6 +42,12 @@ const paymentTermsDetailTable = {
         isTree: false,
       },
     },
+    {
+      id: "isDefault",
+      label: "是否默认",
+      type: "checkbox" as const,
+      defaultValue: false,
+    },
 
   ],
 };
@@ -248,13 +254,7 @@ export const domesticCustomerSchema: DocumentSchema = {
       group: "财务信息",
       visibleWhen: (data) => data.enableCreditLimit === true,
     },
-    {
-      id: "paymentType",
-      label: "收款类型",
-      type: "text",
-      placeholder: "选择收款类型",
-      group: "财务信息",
-    },
+
     {
       id: "invoiceTitle",
       label: "开票抬头",
@@ -646,13 +646,7 @@ export const internationalCustomerSchema: DocumentSchema = {
       group: "财务信息",
       visibleWhen: (data) => data.enableCreditLimit === true,
     },
-    {
-      id: "paymentType",
-      label: "收款类型",
-      type: "text",
-      placeholder: "选择收款类型",
-      group: "财务信息",
-    },
+
     {
       id: "invoiceTitle",
       label: "开票抬头",
@@ -1048,13 +1042,7 @@ export const customerSchema: DocumentSchema = {
       group: "财务信息",
       visibleWhen: (data) => data.enableCreditLimit === true,
     },
-    {
-      id: "paymentType",
-      label: "收款类型",
-      type: "text",
-      placeholder: "选择收款类型",
-      group: "财务信息",
-    },
+
     {
       id: "invoiceTitle",
       label: "开票抬头",
@@ -1234,6 +1222,22 @@ export const customerChangeRule: ChangeRule = {
   ],
   evaluate: (oldDoc, newDoc, downstreamDocs) => {
     const impacts = []
+
+    // 验证收款方式中只能有一个默认项
+    const paymentTermsTable = newDoc.detailTables.find((table: any) => table.tableId === 'payment_terms')
+    const paymentTerms = paymentTermsTable?.rows.map((row: any) => row.data) || []
+    const defaultTerms = paymentTerms.filter((term: any) => term.isDefault)
+    
+    if (defaultTerms.length > 1) {
+      impacts.push({
+        level: "critical" as const,
+        affectedDocId: newDoc.id,
+        affectedTypeId: newDoc.typeId,
+        affectedDocNumber: newDoc.docNumber,
+        affectedField: "payment_terms",
+        description: `收款方式中只能有一个默认项，当前选择了 ${defaultTerms.length} 个默认项。`
+      })
+    }
 
     // 客户名称变更
     if (oldDoc.masterData.name !== newDoc.masterData.name) {
