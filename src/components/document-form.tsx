@@ -67,6 +67,7 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
   const {
     updateMasterField,
     addDetailRow,
+    clearDetailTable,
     updateDetailRow,
     deleteDetailRow,
     reorderDetailRows,
@@ -614,6 +615,12 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
                           ? (doc.sourceRef ? "copy" : "create")
                           : "edit"
                       }
+                      effectContext={{
+                        setDetailRows: (tableId, rows) => {
+                          clearDetailTable(docId, tableId)
+                          rows.forEach((row) => addDetailRow(docId, tableId, row))
+                        },
+                      }}
                     />
                   </TabsContent>
 

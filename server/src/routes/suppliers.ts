@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { supplierController } from '../controllers/supplier.controller';
+import supplierPaymentPlanRoutes from './supplier-payment-plans';
 
 const router = Router();
 
@@ -273,5 +274,8 @@ router.put('/:id/bank-accounts/:bankAccountId', supplierController.updateBankAcc
  *         description: 银行账户删除成功
  */
 router.delete('/:id/bank-accounts/:bankAccountId', supplierController.deleteBankAccount);
+
+// 付款方案管理
+router.use('/:supplierId/payment-plans', supplierPaymentPlanRoutes);
 
 export default router;

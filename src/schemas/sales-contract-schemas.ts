@@ -4,7 +4,42 @@
  * 销售合同单据定义（基于后端 Prisma Schema）
  */
 
-import type { DocumentSchema, ChangeRule } from "@/core/types"
+import type { DocumentSchema, ChangeRule, FieldEffect } from "@/core/types"
+
+// ============================================================
+// 客户选择后自动带入收款计划
+// ============================================================
+
+/** 当 customerId 变化时，从客户的默认付款方案填充收款计划明细表 */
+const customerPaymentPlanEffect: FieldEffect = {
+  watchFields: ["customerId"],
+  handler: async (data, _onChange, context) => {
+    const customerId = data.customerId as string
+    if (!customerId || !context?.setDetailRows) return
+
+    try {
+      const { fetchCustomerPaymentPlans } = await import("@/apis/customer-payment-plan-api")
+      const plans = await fetchCustomerPaymentPlans(customerId)
+      const defaultPlan = plans.find((p) => p.isDefault) || plans[0]
+      if (!defaultPlan?.items?.length) return
+
+      const rows = defaultPlan.items.map((item) => ({
+        periodIndex: item.periodIndex,
+        receiptMethodType: String(item.paymentTermId || ""),
+        receiptDescription: item.receiptDescription || "",
+        receiptDateBase: String(item.receiptDateBase || ""),
+        daysOffset: item.daysOffset || 0,
+        receiptRatio: item.receiptRatio || 0,
+        blockPurchaseUntilPaid: item.blockPurchaseUntilPaid || false,
+        blockShipmentUntilPaid: item.blockShipmentUntilPaid || false,
+      }))
+
+      context.setDetailRows("receiptPlanItems", rows)
+    } catch (err) {
+      console.warn("[customerPaymentPlanEffect] 获取付款方案失败:", err)
+    }
+  },
+}
 
 // ============================================================
 // 销售合同 (Sales Contract)
@@ -92,6 +127,7 @@ export const salesContractSchema: DocumentSchema = {
       type: "text",
       required: true,
       group: "客户信息",
+      effect: customerPaymentPlanEffect,
     },
     {
       id: "customerCode",
@@ -1053,6 +1089,7 @@ export const exportSalesContractSchema: DocumentSchema = {
       type: "text",
       required: true,
       group: "客户信息",
+      effect: customerPaymentPlanEffect,
     },
     {
       id: "customerCode",
@@ -1375,6 +1412,7 @@ export const domesticSalesContractSchema: DocumentSchema = {
       type: "text",
       required: true,
       group: "客户信息",
+      effect: customerPaymentPlanEffect,
     },
     {
       id: "customerCode",
@@ -1623,6 +1661,7 @@ export const jointVentureSalesContractSchema: DocumentSchema = {
       type: "text",
       required: true,
       group: "合作方信息",
+      effect: customerPaymentPlanEffect,
     },
     {
       id: "customerCode",

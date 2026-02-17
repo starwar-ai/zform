@@ -9,7 +9,7 @@
  */
 
 import { useState, useEffect, useRef, useMemo } from "react"
-import type { FieldDef, FormMode } from "@/core/types"
+import type { FieldDef, FormMode, FieldEffectContext } from "@/core/types"
 import { FieldRenderer } from "./field-renderer"
 import { useFieldEffects } from "@/hooks/use-field-effects"
 
@@ -23,6 +23,8 @@ interface MasterFormProps {
   disabled?: boolean
   /** 当前表单模式（控制 FieldEffect 是否生效） */
   mode?: FormMode
+  /** FieldEffect 上下文（提供明细表操作等能力） */
+  effectContext?: FieldEffectContext
 }
 
 export function MasterForm({
@@ -31,6 +33,7 @@ export function MasterForm({
   onChange,
   disabled,
   mode,
+  effectContext,
 }: MasterFormProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [cols, setCols] = useState(4)
@@ -47,7 +50,7 @@ export function MasterForm({
   }, [])
 
   // 通用字段副作用：检测 fields 中声明了 effect 的字段，按需触发
-  useFieldEffects({ fields, data, onChange, mode })
+  useFieldEffects({ fields, data, onChange, mode, context: effectContext })
 
   // 按 group 分组，过滤隐藏字段及不满足 visibleWhen 的字段
   const groups = useMemo(() => {

@@ -14,7 +14,9 @@
       "Bash(npm ls:*)",
       "Bash(node -e:*)",
       "Bash(find:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(ls:*)",
+      "Bash(npx prisma generate:*)"
     ]
   }
 }

@@ -1,10 +1,33 @@
 import prisma from '../config/database';
 import { Prisma, CustomerStage, ApprovalStatus } from '@prisma/client';
+import { CustomerPaymentPlanService } from './customer-payment-plan.service';
+
+const paymentPlanService = new CustomerPaymentPlanService();
+
+interface PaymentPlanInput {
+  id?: string;
+  name: string;
+  isDefault?: boolean;
+  remark?: string;
+  items: Array<{
+    periodIndex: number;
+    paymentTermId?: string;
+    receiptRatio?: number;
+    receiptDescription?: string;
+    receiptDateBase?: number;
+    daysOffset?: number;
+    blockPurchaseUntilPaid?: boolean;
+    blockShipmentUntilPaid?: boolean;
+  }>;
+}
 
 export class CustomerService {
   // 创建客户
-  async create(data: Prisma.CustomerCreateInput & { paymentTermList?: Array<{ paymentTermId: string; isDefault?: boolean }> }, userId: string) {
-    const { paymentTermList, ...rest } = data as any;
+  async create(data: Prisma.CustomerCreateInput & {
+    paymentTermList?: Array<{ paymentTermId: string; isDefault?: boolean }>;
+    paymentPlans?: PaymentPlanInput[];
+  }, userId: string) {
+    const { paymentTermList, paymentPlans, ...rest } = data as any;
     const paymentTermCreate =
       paymentTermList?.length > 0
         ? {
@@ -30,6 +53,13 @@ export class CustomerService {
         customerPaymentTerms: { include: { paymentTerm: true } },
       },
     });
+
+    // 创建付款方案
+    if (paymentPlans?.length) {
+      for (const plan of paymentPlans) {
+        await paymentPlanService.create(customer.id, plan, userId);
+      }
+    }
 
     return customer;
   }
@@ -102,7 +132,7 @@ export class CustomerService {
     return { customers, total, page: pageNumber, pageSize: pageSizeNumber };
   }
 
-  // 获取客户详情（含银行账户、联系人和付款方式）
+  // 获取客户详情（含银行账户、联系人、付款方式和付款方案）
   async findById(id: string) {
     const customer = await prisma.customer.findUnique({
       where: { id },
@@ -119,6 +149,16 @@ export class CustomerService {
           include: { paymentTerm: true },
           orderBy: { isDefault: 'desc' },
         },
+        paymentPlans: {
+          where: { deleted: 0 },
+          include: {
+            items: {
+              include: { paymentTerm: true },
+              orderBy: { periodIndex: 'asc' },
+            },
+          },
+          orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
+        },
       },
     });
 
@@ -129,13 +169,16 @@ export class CustomerService {
   // 更新客户
   async update(
     id: string,
-    data: Prisma.CustomerUpdateInput & { paymentTermList?: Array<{ paymentTermId: string; isDefault?: boolean }> },
+    data: Prisma.CustomerUpdateInput & {
+      paymentTermList?: Array<{ paymentTermId: string; isDefault?: boolean }>;
+      paymentPlans?: PaymentPlanInput[];
+    },
     userId: string
   ) {
     const customer = await prisma.customer.findUnique({ where: { id } });
     if (!customer) throw new Error('客户不存在');
 
-    const { paymentTermList, ...rest } = data as any;
+    const { paymentTermList, paymentPlans, ...rest } = data as any;
 
     if (paymentTermList !== undefined) {
       await prisma.customerPaymentTerm.deleteMany({ where: { customerId: id } });
@@ -147,6 +190,29 @@ export class CustomerService {
             isDefault: p.isDefault ?? false,
           })),
         });
+      }
+    }
+
+    // 处理付款方案
+    if (paymentPlans !== undefined) {
+      // 获取现有方案
+      const existingPlans = await paymentPlanService.findByCustomerId(id);
+      const incomingIds = new Set(paymentPlans.filter((p: PaymentPlanInput) => p.id).map((p: PaymentPlanInput) => p.id));
+
+      // 软删除不再提交的方案
+      for (const existing of existingPlans) {
+        if (!incomingIds.has(existing.id)) {
+          await paymentPlanService.delete(existing.id);
+        }
+      }
+
+      // 创建或更新方案
+      for (const plan of paymentPlans) {
+        if (plan.id) {
+          await paymentPlanService.update(plan.id, plan, userId);
+        } else {
+          await paymentPlanService.create(id, plan, userId);
+        }
       }
     }
 

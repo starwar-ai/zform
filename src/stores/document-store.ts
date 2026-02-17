@@ -41,6 +41,8 @@ interface DocumentStoreState {
   updateDetailRow: (docId: DocumentId, tableId: string, rowId: string, fieldId: string, value: unknown) => void
   /** 删除明细行 */
   deleteDetailRow: (docId: DocumentId, tableId: string, rowId: string) => void
+  /** 清空明细表所有行 */
+  clearDetailTable: (docId: DocumentId, tableId: string) => void
   /** 重排明细行顺序 */
   reorderDetailRows: (docId: DocumentId, tableId: string, orderedRowIds: string[]) => void
 
@@ -174,6 +176,18 @@ export const useDocumentStore = create<DocumentStoreState>()(
         if (!table) return
         table.rows = table.rows.filter((r) => r.id !== rowId)
         doc.updatedAt = new Date().toISOString()
+      })
+    },
+
+    clearDetailTable: (docId, tableId) => {
+      set((state) => {
+        const doc = state.documents[docId]
+        if (!doc) return
+        const table = doc.detailTables.find((t) => t.tableId === tableId)
+        if (table) {
+          table.rows = []
+          doc.updatedAt = new Date().toISOString()
+        }
       })
     },
 

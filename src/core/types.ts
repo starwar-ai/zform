@@ -132,6 +132,12 @@ export type FormMode = "create" | "copy" | "edit"
  * 业务逻辑（如编号生成、价格计算）完全留在 Schema 定义中，
  * MasterForm 只负责通用的"检测变化 → 触发 handler"。
  */
+/** FieldEffect handler 的上下文，用于操作明细表等 */
+export interface FieldEffectContext {
+  /** 替换指定明细表的所有行 */
+  setDetailRows?: (tableId: string, rows: Record<string, unknown>[]) => void
+}
+
 export interface FieldEffect {
   /** 需要监听的字段 ID 列表 */
   watchFields: FieldId[]
@@ -141,10 +147,12 @@ export interface FieldEffect {
    * 副作用处理函数
    * @param data     当前表单全量数据
    * @param onChange  字段更新回调 (fieldId, value)
+   * @param context   可选上下文，提供明细表操作等能力
    */
   handler: (
     data: Record<string, unknown>,
     onChange: (fieldId: string, value: unknown) => void,
+    context?: FieldEffectContext,
   ) => Promise<void> | void
 }
 

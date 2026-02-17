@@ -92,6 +92,16 @@ export class SupplierService {
           orderBy: { quotationDate: 'desc' },
           take: 10,
         },
+        paymentPlans: {
+          where: { deleted: 0 },
+          include: {
+            items: {
+              include: { paymentTerm: true },
+              orderBy: { periodIndex: 'asc' },
+            },
+          },
+          orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
+        },
       },
     });
 

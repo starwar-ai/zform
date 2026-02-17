@@ -5,7 +5,7 @@
  * 三种供应商类型各自独立 Schema：生产商、服务商、物流商
  */
 
-import type { DocumentSchema, ChangeRule, FieldDef, DetailTableDef } from "@/core/types"
+import type { DocumentSchema, ChangeRule, FieldDef, DetailTableDef, ComboboxOption } from "@/core/types"
 
 // ============================================================
 // 共享字段定义
@@ -264,6 +264,12 @@ const baseFields: FieldDef[] = [
     group: "备注信息",
   },
 ]
+
+const fetchPaymentTermOptions = async (): Promise<ComboboxOption[]> => {
+  const { fetchParameterListApi } = await import("@/apis/business-entity-api")
+  const list = await fetchParameterListApi<{ id: string; name: string }>("payment-terms")
+  return list.map((t) => ({ value: t.id, label: t.name }))
+}
 
 /** 供应商明细表定义 (所有类型共用) */
 const supplierDetailTables: DetailTableDef[] = [
@@ -669,6 +675,59 @@ const supplierDetailTables: DetailTableDef[] = [
         label: "图片",
         type: "text",
         width: "100px",
+      },
+    ],
+  },
+  {
+    id: "payment_terms",
+    label: "付款方式",
+    editable: true,
+    fields: [
+      {
+        id: "periodIndex",
+        label: "期序号",
+        type: "number",
+        required: true,
+        defaultValue: 1,
+      },
+      {
+        id: "paymentTermId",
+        label: "付款方式",
+        type: "combobox",
+        required: true,
+        comboboxConfig: {
+          fetchOptions: fetchPaymentTermOptions,
+          isTree: false,
+        },
+      },
+      {
+        id: "paymentRatio",
+        label: "比例(%)",
+        type: "number",
+        placeholder: "如: 30",
+      },
+      {
+        id: "paymentDescription",
+        label: "说明",
+        type: "text",
+        placeholder: "如: T/T 30%预付",
+      },
+      {
+        id: "paymentDateBase",
+        label: "起始日类型",
+        type: "select",
+        options: [
+          { label: "合同签订日", value: "1" },
+          { label: "发货日", value: "2" },
+          { label: "验收日", value: "3" },
+          { label: "开票日", value: "4" },
+        ],
+      },
+      {
+        id: "daysOffset",
+        label: "延后天数",
+        type: "number",
+        defaultValue: 0,
       },
     ],
   },

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { customerController } from '../controllers/customer.controller';
+import customerPaymentPlanRoutes from './customer-payment-plans';
 
 const router = Router();
 
@@ -498,5 +499,8 @@ router.delete('/:id/contacts/:contactId', customerController.deleteContact);
  *         description: 成功获取付款方式列表
  */
 router.get('/:id/payment-terms', customerController.getPaymentTerms);
+
+// 付款方案管理
+router.use('/:customerId/payment-plans', customerPaymentPlanRoutes);
 
 export default router;

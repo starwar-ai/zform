@@ -10,6 +10,83 @@ import type { CustomerCategoryTreeNode, TransportMethod } from "@/types/paramete
 import { CURRENCY_OPTIONS } from "@/lib/currency"
 
 // ============================================================
+// 共享的付款方案明细表字段定义
+// ============================================================
+
+const fetchPaymentTermOptions = async () => {
+  const { fetchParameterListApi } = await import("@/apis/business-entity-api");
+  const list = await fetchParameterListApi<{ id: string; name: string }>("payment-terms");
+  return list.map((t) => ({ value: t.id, label: t.name }));
+};
+
+/** 付款方案明细表定义（收款方式），供所有客户 schema 复用 */
+const paymentTermsDetailTable = {
+  id: "payment_terms",
+  label: "收款方式",
+  editable: true,
+  fields: [
+    {
+      id: "periodIndex",
+      label: "期序号",
+      type: "number" as const,
+      required: true,
+      defaultValue: 1,
+    },
+    {
+      id: "paymentTermId",
+      label: "付款方式",
+      type: "combobox" as const,
+      required: true,
+      comboboxConfig: {
+        fetchOptions: fetchPaymentTermOptions,
+        isTree: false,
+      },
+    },
+    {
+      id: "receiptRatio",
+      label: "比例(%)",
+      type: "number" as const,
+      placeholder: "如: 30",
+    },
+    {
+      id: "receiptDescription",
+      label: "说明",
+      type: "text" as const,
+      placeholder: "如: T/T 30%预付",
+    },
+    {
+      id: "receiptDateBase",
+      label: "起始日类型",
+      type: "select" as const,
+      options: [
+        { label: "合同签订日", value: "1" },
+        { label: "回签日", value: "2" },
+        { label: "发货日", value: "3" },
+        { label: "开票日", value: "4" },
+      ],
+    },
+    {
+      id: "daysOffset",
+      label: "延后天数",
+      type: "number" as const,
+      defaultValue: 0,
+    },
+    {
+      id: "blockPurchaseUntilPaid",
+      label: "禁采购",
+      type: "checkbox" as const,
+      defaultValue: false,
+    },
+    {
+      id: "blockShipmentUntilPaid",
+      label: "禁出运",
+      type: "checkbox" as const,
+      defaultValue: false,
+    },
+  ],
+};
+
+// ============================================================
 // 客户分类下拉选项获取函数
 // ============================================================
 
@@ -377,32 +454,7 @@ export const domesticCustomerSchema: DocumentSchema = {
         },
       ],
     },
-    {
-      id: "payment_terms",
-      label: "收款方式",
-      editable: true,
-      fields: [
-        {
-          id: "paymentTermId",
-          label: "收款方式",
-          type: "combobox",
-          required: true,
-          comboboxConfig: {
-            fetchOptions: async () => {
-              const { fetchParameterListApi } = await import("@/apis/business-entity-api");
-              const list = await fetchParameterListApi<{ id: string; name: string }>("payment-terms");
-              return list.map((t) => ({ value: t.id, label: t.name }));
-            },
-            isTree: false,
-          },
-        },
-        {
-          id: "isDefault",
-          label: "默认",
-          type: "checkbox",
-        },
-      ],
-    },
+    paymentTermsDetailTable,
   ],
 }
 
@@ -799,32 +851,7 @@ export const internationalCustomerSchema: DocumentSchema = {
         },
       ],
     },
-    {
-      id: "payment_terms",
-      label: "收款方式",
-      editable: true,
-      fields: [
-        {
-          id: "paymentTermId",
-          label: "收款方式",
-          type: "combobox",
-          required: true,
-          comboboxConfig: {
-            fetchOptions: async () => {
-              const { fetchParameterListApi } = await import("@/apis/business-entity-api");
-              const list = await fetchParameterListApi<{ id: string; name: string }>("payment-terms");
-              return list.map((t) => ({ value: t.id, label: t.name }));
-            },
-            isTree: false,
-          },
-        },
-        {
-          id: "isDefault",
-          label: "默认",
-          type: "checkbox",
-        },
-      ],
-    },
+    paymentTermsDetailTable,
   ],
 }
 
@@ -1226,32 +1253,7 @@ export const customerSchema: DocumentSchema = {
         },
       ],
     },
-    {
-      id: "payment_terms",
-      label: "收款方式",
-      editable: true,
-      fields: [
-        {
-          id: "paymentTermId",
-          label: "收款方式",
-          type: "combobox",
-          required: true,
-          comboboxConfig: {
-            fetchOptions: async () => {
-              const { fetchParameterListApi } = await import("@/apis/business-entity-api");
-              const list = await fetchParameterListApi<{ id: string; name: string }>("payment-terms");
-              return list.map((t) => ({ value: t.id, label: t.name }));
-            },
-            isTree: false,
-          },
-        },
-        {
-          id: "isDefault",
-          label: "默认",
-          type: "checkbox",
-        },
-      ],
-    },
+    paymentTermsDetailTable,
   ],
 }
 

@@ -791,6 +791,7 @@ model Supplier {
   // 关联关系
   bankAccounts SupplierBankAccount[]
   quotations   SupplierQuotation[]
+  paymentPlans SupplierPaymentPlan[]
 
   @@index([code])
   @@index([stage])
@@ -992,6 +993,7 @@ model Customer {
   bankAccounts          CustomerBankAccount[]
   contacts              CustomerContact[]
   customerPaymentTerms  CustomerPaymentTerm[]
+  paymentPlans          CustomerPaymentPlan[]
 
   @@index([code])
   @@index([stage])
@@ -1082,6 +1084,8 @@ model PaymentTerm {
   deleted   Int       @default(0) // 0：有效 1：删除
 
   customerPaymentTerms CustomerPaymentTerm[]
+  planItems            CustomerPaymentPlanItem[]
+  supplierPlanItems    SupplierPaymentPlanItem[]
 
   @@map("payment_terms")
 }
@@ -1102,6 +1106,94 @@ model CustomerPaymentTerm {
   @@unique([customerId, paymentTermId])
   @@index([customerId])
   @@map("customer_payment_terms")
+}
+
+// ==================== 客户付款方案（主表） ====================
+
+model CustomerPaymentPlan {
+  id         String   @id @default(cuid())
+  customerId String   @map("customer_id")
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  name       String // 方案名称，如 "TT30%预付+LC70%"
+  isDefault  Boolean  @default(false) @map("is_default")
+  remark     String? // 备注
+
+  items CustomerPaymentPlanItem[]
+
+  createdBy String?  @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedBy String?  @map("updated_by")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deleted   Int      @default(0)
+
+  @@index([customerId])
+  @@map("customer_payment_plans")
+}
+
+// ==================== 客户付款方案明细（子表） ====================
+
+model CustomerPaymentPlanItem {
+  id                     String              @id @default(cuid())
+  planId                 String              @map("plan_id")
+  plan                   CustomerPaymentPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  periodIndex            Int                 @map("period_index") // 期序号
+  paymentTermId          String?             @map("payment_term_id") // 付款方式（TT/LC等）
+  paymentTerm            PaymentTerm?        @relation(fields: [paymentTermId], references: [id])
+  receiptRatio           Decimal?            @map("receipt_ratio") @db.Decimal(5, 2) // 比例(%)
+  receiptDescription     String?             @map("receipt_description") // 说明
+  receiptDateBase        Int?                @map("receipt_date_base") // 起始日类型
+  daysOffset             Int                 @default(0) @map("days_offset")
+  blockPurchaseUntilPaid Boolean             @default(false) @map("block_purchase")
+  blockShipmentUntilPaid Boolean             @default(false) @map("block_shipment")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([planId])
+  @@map("customer_payment_plan_items")
+}
+
+// ==================== 供应商付款方案（主表） ====================
+
+model SupplierPaymentPlan {
+  id         String   @id @default(cuid())
+  supplierId String   @map("supplier_id")
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  name       String
+  isDefault  Boolean  @default(false) @map("is_default")
+  remark     String?
+
+  items SupplierPaymentPlanItem[]
+
+  createdBy String?  @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedBy String?  @map("updated_by")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deleted   Int      @default(0)
+
+  @@index([supplierId])
+  @@map("supplier_payment_plans")
+}
+
+// ==================== 供应商付款方案明细（子表） ====================
+
+model SupplierPaymentPlanItem {
+  id                 String              @id @default(cuid())
+  planId             String              @map("plan_id")
+  plan               SupplierPaymentPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  periodIndex        Int                 @map("period_index")
+  paymentTermId      String?             @map("payment_term_id")
+  paymentTerm        PaymentTerm?        @relation(fields: [paymentTermId], references: [id])
+  paymentRatio       Decimal?            @map("payment_ratio") @db.Decimal(5, 2)
+  paymentDescription String?             @map("payment_description")
+  paymentDateBase    Int?                @map("payment_date_base")
+  daysOffset         Int                 @default(0) @map("days_offset")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([planId])
+  @@map("supplier_payment_plan_items")
 }
 
 // ==================== 销售合同相关枚举 ====================

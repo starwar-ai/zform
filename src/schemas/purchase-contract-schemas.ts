@@ -6,7 +6,78 @@
  * 分为：商品采购合同(Product Purchase Contract) 和 包材采购合同(Packaging Purchase Contract)
  */
 
-import type { DocumentSchema, PushDownRule, ChangeRule } from "@/core/types"
+import type { DocumentSchema, PushDownRule, ChangeRule, FieldEffect } from "@/core/types"
+
+// ============================================================
+// 供应商选择后自动带入付款计划
+// ============================================================
+
+/** 当 supplierId 变化时，从供应商的默认付款方案填充付款计划明细表 */
+const supplierPaymentPlanEffect: FieldEffect = {
+  watchFields: ["supplierId"],
+  handler: async (data, _onChange, context) => {
+    const supplierId = data.supplierId as string
+    if (!supplierId || !context?.setDetailRows) return
+
+    try {
+      const { fetchSupplierPaymentPlans } = await import("@/apis/supplier-payment-plan-api")
+      const plans = await fetchSupplierPaymentPlans(supplierId)
+      const defaultPlan = plans.find((p) => p.isDefault) || plans[0]
+      if (!defaultPlan?.items?.length) return
+
+      const rows = defaultPlan.items.map((item) => ({
+        periodIndex: item.periodIndex,
+        paymentMethodType: String(item.paymentTermId || ""),
+        paymentDescription: item.paymentDescription || "",
+        paymentDateBase: String(item.paymentDateBase || ""),
+        daysOffset: item.daysOffset || 0,
+        paymentRatio: item.paymentRatio || 0,
+      }))
+
+      context.setDetailRows("paymentPlanItems", rows)
+    } catch (err) {
+      console.warn("[supplierPaymentPlanEffect] 获取付款方案失败:", err)
+    }
+  },
+}
+
+/** 付款计划明细表定义，供所有采购合同 schema 复用 */
+const paymentPlanItemsDetailTable = {
+  id: "paymentPlanItems",
+  label: "付款计划",
+  editable: true,
+  fields: [
+    { id: "periodIndex", label: "期序号", type: "number" as const, required: true, defaultValue: 1 },
+    {
+      id: "paymentMethodType",
+      label: "付款方式类型",
+      type: "select" as const,
+      options: [
+        { label: "电汇(T/T)", value: "1" },
+        { label: "信用证(L/C)", value: "2" },
+        { label: "承兑汇票", value: "3" },
+        { label: "现金", value: "4" },
+        { label: "支票", value: "5" },
+      ],
+    },
+    { id: "paymentDescription", label: "本期付款说明", type: "text" as const },
+    {
+      id: "paymentDateBase",
+      label: "付款日基准",
+      type: "select" as const,
+      options: [
+        { label: "合同签订日", value: "1" },
+        { label: "发货日", value: "2" },
+        { label: "验收日", value: "3" },
+        { label: "开票日", value: "4" },
+      ],
+    },
+    { id: "daysOffset", label: "延后天数", type: "number" as const, defaultValue: 0 },
+    { id: "paymentRatio", label: "本期比例(%)", type: "number" as const, required: true },
+    { id: "periodPayable", label: "本期应付", type: "number" as const, readOnly: true },
+    { id: "periodPaid", label: "本期已付", type: "number" as const, defaultValue: 0 },
+  ],
+}
 
 // ============================================================
 // 采购合同 (Purchase Contract)
@@ -97,6 +168,7 @@ export const purchaseContractSchema: DocumentSchema = {
       type: "text",
       required: true,
       group: "供应商信息",
+      effect: supplierPaymentPlanEffect,
     },
     {
       id: "supplierCode",
@@ -835,6 +907,7 @@ export const productPurchaseContractSchema: DocumentSchema = {
       type: "text",
       required: true,
       group: "供应商信息",
+      effect: supplierPaymentPlanEffect,
     },
     {
       id: "supplierCode",
@@ -1269,6 +1342,7 @@ export const packagingPurchaseContractSchema: DocumentSchema = {
       type: "text",
       required: true,
       group: "供应商信息",
+      effect: supplierPaymentPlanEffect,
     },
     {
       id: "supplierCode",

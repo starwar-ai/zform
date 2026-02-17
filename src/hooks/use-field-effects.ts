@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useRef } from "react"
-import type { FieldDef, FormMode } from "@/core/types"
+import type { FieldDef, FormMode, FieldEffectContext } from "@/core/types"
 
 interface UseFieldEffectsOptions {
   /** 字段定义列表 */
@@ -18,6 +18,8 @@ interface UseFieldEffectsOptions {
   onChange: (fieldId: string, value: unknown) => void
   /** 当前表单模式 */
   mode?: FormMode
+  /** 副作用上下文（提供明细表操作等能力） */
+  context?: FieldEffectContext
 }
 
 /**
@@ -55,10 +57,15 @@ export function useFieldEffects({
   data,
   onChange,
   mode,
+  context,
 }: UseFieldEffectsOptions): void {
   // 稳定引用 onChange，避免 effect 中拿到过时的闭包
   const onChangeRef = useRef(onChange)
   onChangeRef.current = onChange
+
+  // 稳定引用 context
+  const contextRef = useRef(context)
+  contextRef.current = context
 
   // 记录每个 effect 上次触发时的快照，避免重复触发
   const prevSnapshotsRef = useRef<Map<number, string>>(new Map())
@@ -91,7 +98,7 @@ export function useFieldEffects({
 
       // 触发 handler
       runningRef.current.add(i)
-      const result = effect.handler(data, onChangeRef.current)
+      const result = effect.handler(data, onChangeRef.current, contextRef.current)
 
       if (result && typeof result.then === "function") {
         result
