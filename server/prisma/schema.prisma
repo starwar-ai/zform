@@ -1295,7 +1295,7 @@ model SalesContract {
   @@map("sales_contracts")
 }
 
-// ==================== 收款计划表 (sms_collection_plan) ====================
+// ==================== 收款计划表 (collection_plans) ====================
 // 基于 zexport CollectionPlan，支持分期付款如 "T/T 20%预付，余款发货后30天"
 
 model SmsCollectionPlan {
@@ -1358,7 +1358,7 @@ model SmsCollectionPlan {
   @@index([expectedReceiptDate])
   @@index([exeStatus])
   @@index([overdueStatus])
-  @@map("sms_collection_plan")
+  @@map("collection_plans")
 }
 
 // ==================== 收款提醒表 (collection_reminders) ====================
