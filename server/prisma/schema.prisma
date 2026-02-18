@@ -633,9 +633,6 @@ model Customer {
   isAgent              Boolean               @default(false) @map("is_agent")
   shippingMethod       ShippingMethod?       @map("shipping_method")
   paymentMethodId      String?               @map("payment_method_id")
-  currency             String?               @default("CNY")
-  salesRepList         Json?                 @map("sales_rep_list")
-  salesRep             String?               @map("sales_rep")
   businessAddress      String?               @map("business_address")
   mailingAddress       String?               @map("mailing_address")
   phone                String?
@@ -670,7 +667,9 @@ model Customer {
   customerCategoryId   String?               @map("customer_category_id")
   bankAccounts         CustomerBankAccount[]
   contacts             CustomerContact[]
-  paymentPlans         CustomerPaymentPlan[]
+  shippingAddresses    CustomerShippingAddress[]
+  salesReps            CustomerSalesRep[]
+  paymentPlans         SalesContractPaymentPlan[]
   customerPaymentTerms CustomerPaymentTerm[]
   customerCategory     CustomerCategory?     @relation(fields: [customerCategoryId], references: [id])
 
@@ -734,6 +733,49 @@ model CustomerContact {
   @@map("customer_contacts")
 }
 
+model CustomerSalesRep {
+  id              String    @id @default(cuid())
+  customerId      String    @map("customer_id")
+  customerVersion Int       @default(1) @map("customer_version")
+  employeeId      String    @map("employee_id")
+  employeeName    String    @map("employee_name")
+  isDefault       Boolean   @default(false) @map("is_default")
+  version         Int       @default(1)
+  createdBy       String?   @map("created_by")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedBy       String?   @map("updated_by")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([isDefault])
+  @@map("customer_sales_reps")
+}
+
+model CustomerShippingAddress {
+  id              String    @id @default(cuid())
+  customerId      String    @map("customer_id")
+  customerVersion Int       @default(1) @map("customer_version")
+  contact         String?
+  address         String?
+  addressType     String?   @map("address_type") // 大件地址 or 快递地址
+  postalCode      String?   @map("postal_code")
+  phone           String?
+  email           String?
+  remark          String?
+  version         Int       @default(1)
+  createdBy       String?   @map("created_by")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedBy       String?   @map("updated_by")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@map("customer_shipping_addresses")
+}
+
 model SupplierPaymentTerm {
   id                String                    @id @default(cuid())
   code              String                    @unique
@@ -782,7 +824,7 @@ model PaymentTerm {
   updatedBy            String?                   @map("updated_by")
   updatedAt            DateTime                  @updatedAt @map("updated_at")
   deleted              Int                       @default(0)
-  planItems            CustomerPaymentPlanItem[]
+  planItems            SalesContractPaymentPlanItem[]
   customerPaymentTerms CustomerPaymentTerm[]
   steps                PaymentTermStep[]
 
@@ -820,7 +862,7 @@ model CustomerPaymentTerm {
   @@map("customer_payment_terms")
 }
 
-model CustomerPaymentPlan {
+model SalesContractPaymentPlan {
   id         String                    @id @default(cuid())
   customerId String                    @map("customer_id")
   name       String
@@ -831,14 +873,14 @@ model CustomerPaymentPlan {
   updatedBy  String?                   @map("updated_by")
   updatedAt  DateTime                  @updatedAt @map("updated_at")
   deleted    Int                       @default(0)
-  items      CustomerPaymentPlanItem[]
+  items      SalesContractPaymentPlanItem[]
   customer   Customer                  @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   @@index([customerId])
-  @@map("customer_payment_plans")
+  @@map("sales_contract_payment_plans")
 }
 
-model CustomerPaymentPlanItem {
+model SalesContractPaymentPlanItem {
   id            String              @id @default(cuid())
   planId        String              @map("plan_id")
   periodIndex   Int                 @map("period_index")
@@ -846,10 +888,10 @@ model CustomerPaymentPlanItem {
   createdAt     DateTime            @default(now()) @map("created_at")
   updatedAt     DateTime            @updatedAt @map("updated_at")
   paymentTerm   PaymentTerm?        @relation(fields: [paymentTermId], references: [id])
-  plan          CustomerPaymentPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  plan          SalesContractPaymentPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
 
   @@index([planId])
-  @@map("customer_payment_plan_items")
+  @@map("sales_contract_payment_plans_items")
 }
 
 model SupplierPaymentPlan {

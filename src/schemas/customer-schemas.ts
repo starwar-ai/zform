@@ -203,18 +203,6 @@ export const domesticCustomerSchema: DocumentSchema = {
       }
     },
     // 币种信息移至明细表中管理
-    {
-      id: "salesRep",
-      label: "主业务员",
-      type: "employeeSelector",
-      placeholder: "选择业务员",
-      group: "业务信息",
-      employeeSelectorConfig: {
-        mode: "multiple",
-        columns: ["name", "username", "department"],
-        statusFilter: "active"
-      }
-    },
 
     // === 地址与联系信息 ===
     {
@@ -417,6 +405,83 @@ export const domesticCustomerSchema: DocumentSchema = {
         },
       ],
     },
+    {
+      id: "shipping_addresses",
+      label: "收件地址",
+      editable: true,
+      fields: [
+        {
+          id: "contact",
+          label: "联系人",
+          type: "text",
+        },
+        {
+          id: "address",
+          label: "地址",
+          type: "text",
+        },
+        {
+          id: "addressType",
+          label: "地址类型",
+          type: "select",
+          options: [
+            { label: "大件地址", value: "大件地址" },
+            { label: "快递地址", value: "快递地址" },
+          ],
+        },
+        {
+          id: "postalCode",
+          label: "邮编",
+          type: "text",
+        },
+        {
+          id: "phone",
+          label: "电话",
+          type: "text",
+        },
+        {
+          id: "email",
+          label: "邮箱",
+          type: "text",
+        },
+        {
+          id: "remark",
+          label: "备注",
+          type: "text",
+        },
+      ],
+    },
+    {
+      id: "sales_reps",
+      label: "业务员",
+      editable: true,
+      fields: [
+        {
+          id: "employeeId",
+          label: "业务员",
+          type: "employeeSelector",
+          required: true,
+          employeeSelectorConfig: {
+            mode: "single",
+            columns: ["name", "username", "department"],
+            statusFilter: "active"
+          },
+          displayField: "employeeName",
+        },
+        {
+          id: "employeeName",
+          label: "姓名",
+          type: "text",
+          readOnly: true,
+        },
+        {
+          id: "isDefault",
+          label: "默认业务员",
+          type: "checkbox",
+          defaultValue: false,
+        },
+      ],
+    },
     paymentTermsDetailTable,
     {
       id: "currencies",
@@ -606,26 +671,7 @@ export const internationalCustomerSchema: DocumentSchema = {
         isTree: false
       }
     },
-    {
-      id: "currency",
-      label: "币种",
-      type: "select",
-      options: CURRENCY_OPTIONS,
-      defaultValue: "USD",
-      group: "业务信息",
-    },
-    {
-      id: "salesRep",
-      label: "主业务员",
-      type: "employeeSelector",
-      placeholder: "选择业务员",
-      group: "业务信息",
-      employeeSelectorConfig: {
-        mode: "multiple",
-        columns: ["name", "username", "department"],
-        statusFilter: "active"
-      }
-    },
+    // 币种信息移至币种设置明细表中管理
 
     // === 地址与联系信息 ===
     {
@@ -856,6 +902,83 @@ export const internationalCustomerSchema: DocumentSchema = {
           id: "remark",
           label: "备注",
           type: "text",
+        },
+      ],
+    },
+    {
+      id: "shipping_addresses",
+      label: "收件地址",
+      editable: true,
+      fields: [
+        {
+          id: "contact",
+          label: "联系人",
+          type: "text",
+        },
+        {
+          id: "address",
+          label: "地址",
+          type: "text",
+        },
+        {
+          id: "addressType",
+          label: "地址类型",
+          type: "select",
+          options: [
+            { label: "大件地址", value: "大件地址" },
+            { label: "快递地址", value: "快递地址" },
+          ],
+        },
+        {
+          id: "postalCode",
+          label: "邮编",
+          type: "text",
+        },
+        {
+          id: "phone",
+          label: "电话",
+          type: "text",
+        },
+        {
+          id: "email",
+          label: "邮箱",
+          type: "text",
+        },
+        {
+          id: "remark",
+          label: "备注",
+          type: "text",
+        },
+      ],
+    },
+    {
+      id: "sales_reps",
+      label: "业务员",
+      editable: true,
+      fields: [
+        {
+          id: "employeeId",
+          label: "业务员",
+          type: "employeeSelector",
+          required: true,
+          employeeSelectorConfig: {
+            mode: "single",
+            columns: ["name", "username", "department"],
+            statusFilter: "active"
+          },
+          displayField: "employeeName",
+        },
+        {
+          id: "employeeName",
+          label: "姓名",
+          type: "text",
+          readOnly: true,
+        },
+        {
+          id: "isDefault",
+          label: "默认业务员",
+          type: "checkbox",
+          defaultValue: false,
         },
       ],
     },
@@ -1315,6 +1438,83 @@ export const customerSchema: DocumentSchema = {
           id: "remark",
           label: "备注",
           type: "text",
+        },
+      ],
+    },
+    {
+      id: "shipping_addresses",
+      label: "收件地址",
+      editable: true,
+      fields: [
+        {
+          id: "contact",
+          label: "联系人",
+          type: "text",
+        },
+        {
+          id: "address",
+          label: "地址",
+          type: "text",
+        },
+        {
+          id: "addressType",
+          label: "地址类型",
+          type: "select",
+          options: [
+            { label: "大件地址", value: "大件地址" },
+            { label: "快递地址", value: "快递地址" },
+          ],
+        },
+        {
+          id: "postalCode",
+          label: "邮编",
+          type: "text",
+        },
+        {
+          id: "phone",
+          label: "电话",
+          type: "text",
+        },
+        {
+          id: "email",
+          label: "邮箱",
+          type: "text",
+        },
+        {
+          id: "remark",
+          label: "备注",
+          type: "text",
+        },
+      ],
+    },
+    {
+      id: "sales_reps",
+      label: "业务员",
+      editable: true,
+      fields: [
+        {
+          id: "employeeId",
+          label: "业务员",
+          type: "employeeSelector",
+          required: true,
+          employeeSelectorConfig: {
+            mode: "single",
+            columns: ["name", "username", "department"],
+            statusFilter: "active"
+          },
+          displayField: "employeeName",
+        },
+        {
+          id: "employeeName",
+          label: "姓名",
+          type: "text",
+          readOnly: true,
+        },
+        {
+          id: "isDefault",
+          label: "默认业务员",
+          type: "checkbox",
+          defaultValue: false,
         },
       ],
     },

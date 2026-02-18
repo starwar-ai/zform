@@ -33,7 +33,7 @@ const planInclude = {
 export class CustomerPaymentPlanService {
   // 获取客户的所有付款方案
   async findByCustomerId(customerId: string) {
-    return prisma.customerPaymentPlan.findMany({
+    return prisma.salesContractPaymentPlan.findMany({
       where: { customerId, deleted: 0 },
       include: planInclude,
       orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
@@ -42,7 +42,7 @@ export class CustomerPaymentPlanService {
 
   // 获取单个方案详情
   async findById(id: string) {
-    const plan = await prisma.customerPaymentPlan.findUnique({
+    const plan = await prisma.salesContractPaymentPlan.findUnique({
       where: { id },
       include: planInclude,
     });
@@ -54,13 +54,13 @@ export class CustomerPaymentPlanService {
   async create(customerId: string, data: CreatePaymentPlanInput, userId: string) {
     // 如果设为默认，先取消该客户其他默认方案
     if (data.isDefault) {
-      await prisma.customerPaymentPlan.updateMany({
+      await prisma.salesContractPaymentPlan.updateMany({
         where: { customerId, isDefault: true, deleted: 0 },
         data: { isDefault: false },
       });
     }
 
-    return prisma.customerPaymentPlan.create({
+    return prisma.salesContractPaymentPlan.create({
       data: {
         customerId,
         name: data.name,
@@ -82,12 +82,12 @@ export class CustomerPaymentPlanService {
 
   // 更新方案（替换模式：先删明细再建）
   async update(id: string, data: UpdatePaymentPlanInput, userId: string) {
-    const plan = await prisma.customerPaymentPlan.findUnique({ where: { id } });
+    const plan = await prisma.salesContractPaymentPlan.findUnique({ where: { id } });
     if (!plan || plan.deleted !== 0) throw new Error('付款方案不存在');
 
     // 如果设为默认，先取消该客户其他默认方案
     if (data.isDefault) {
-      await prisma.customerPaymentPlan.updateMany({
+      await prisma.salesContractPaymentPlan.updateMany({
         where: { customerId: plan.customerId, isDefault: true, deleted: 0, id: { not: id } },
         data: { isDefault: false },
       });
@@ -95,10 +95,10 @@ export class CustomerPaymentPlanService {
 
     // 如果有新的明细，先删后建
     if (data.items) {
-      await prisma.customerPaymentPlanItem.deleteMany({ where: { planId: id } });
+      await prisma.salesContractPaymentPlanItem.deleteMany({ where: { planId: id } });
     }
 
-    return prisma.customerPaymentPlan.update({
+    return prisma.salesContractPaymentPlan.update({
       where: { id },
       data: {
         ...(data.name !== undefined && { name: data.name }),
@@ -121,10 +121,10 @@ export class CustomerPaymentPlanService {
 
   // 软删除
   async delete(id: string) {
-    const plan = await prisma.customerPaymentPlan.findUnique({ where: { id } });
+    const plan = await prisma.salesContractPaymentPlan.findUnique({ where: { id } });
     if (!plan || plan.deleted !== 0) throw new Error('付款方案不存在');
 
-    return prisma.customerPaymentPlan.update({
+    return prisma.salesContractPaymentPlan.update({
       where: { id },
       data: { deleted: 1 },
     });
@@ -133,12 +133,12 @@ export class CustomerPaymentPlanService {
   // 设置默认方案
   async setDefault(customerId: string, planId: string) {
     // 取消该客户其他默认方案
-    await prisma.customerPaymentPlan.updateMany({
+    await prisma.salesContractPaymentPlan.updateMany({
       where: { customerId, isDefault: true, deleted: 0 },
       data: { isDefault: false },
     });
 
-    return prisma.customerPaymentPlan.update({
+    return prisma.salesContractPaymentPlan.update({
       where: { id: planId },
       data: { isDefault: true },
       include: planInclude,

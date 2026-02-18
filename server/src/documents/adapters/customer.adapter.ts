@@ -14,6 +14,8 @@ function transformDocToPrisma(data: any) {
 
   const bankAccountsTable = detailTables.find((t: any) => t.tableId === 'bank_accounts');
   const contactsTable = detailTables.find((t: any) => t.tableId === 'contacts');
+  const shippingAddressesTable = detailTables.find((t: any) => t.tableId === 'shipping_addresses');
+  const salesRepsTable = detailTables.find((t: any) => t.tableId === 'sales_reps');
   const paymentTermsTable = detailTables.find((t: any) => t.tableId === 'payment_terms');
   const currenciesTable = detailTables.find((t: any) => t.tableId === 'currencies');
 
@@ -39,6 +41,24 @@ function transformDocToPrisma(data: any) {
       qq: r.data?.qq,
       isDefault: r.data?.isDefault ?? false,
       remark: r.data?.remark,
+    })) || [];
+
+  const shippingAddresses =
+    shippingAddressesTable?.rows?.map((r: any) => ({
+      contact: r.data?.contact,
+      address: r.data?.address,
+      addressType: r.data?.addressType,
+      postalCode: r.data?.postalCode,
+      phone: r.data?.phone,
+      email: r.data?.email,
+      remark: r.data?.remark,
+    })) || [];
+
+  const salesReps =
+    salesRepsTable?.rows?.map((r: any) => ({
+      employeeId: r.data?.employeeId,
+      employeeName: r.data?.employeeName || '',
+      isDefault: r.data?.isDefault ?? false,
     })) || [];
 
   const paymentTermList =
@@ -81,6 +101,7 @@ function transformDocToPrisma(data: any) {
     code: customerFields.code || masterData.docNumber,
     bankAccounts: bankAccounts.length ? { create: bankAccounts } : undefined,
     contacts: contacts.length ? { create: contacts } : undefined,
+    salesReps: salesReps.length ? salesReps : undefined,
     paymentTermList: paymentTermList.length ? paymentTermList : undefined,
     currencies: currencies.length ? currencies : undefined,
   };
@@ -102,6 +123,10 @@ const baseCustomerAdapter: Omit<DocumentTypeAdapter, 'typeId' | 'typeName' | 'ba
       orderBy: { isDefault: 'desc' },
       take: 1,
     },
+    salesReps: {
+      where: { deletedAt: null },
+      orderBy: { isDefault: 'desc' },
+    },
     customerPaymentTerms: {
       include: { paymentTerm: true },
       orderBy: { isDefault: 'desc' },
@@ -113,6 +138,10 @@ const baseCustomerAdapter: Omit<DocumentTypeAdapter, 'typeId' | 'typeName' | 'ba
       orderBy: { isDefault: 'desc' },
     },
     contacts: {
+      where: { deletedAt: null },
+      orderBy: { isDefault: 'desc' },
+    },
+    salesReps: {
       where: { deletedAt: null },
       orderBy: { isDefault: 'desc' },
     },
@@ -147,7 +176,6 @@ const baseCustomerAdapter: Omit<DocumentTypeAdapter, 'typeId' | 'typeName' | 'ba
       shortName: row.shortName,
       stage: row.stage,
       isEnabled: row.isEnabled,
-      currency: row.currency,
       phone: row.phone,
       email: row.email,
       // Payment term display info
@@ -159,7 +187,7 @@ const baseCustomerAdapter: Omit<DocumentTypeAdapter, 'typeId' | 'typeName' | 'ba
 
   async onCreate(data, userId, prisma) {
     const payload = transformDocToPrisma(data);
-    const { paymentTermList, bankAccounts, contacts, currencies, ...rest } = payload;
+    const { paymentTermList, bankAccounts, contacts, salesReps, currencies, ...rest } = payload;
     // Auto-generate customer code if not provided
     if (!rest.code) {
       rest.code = await codeGeneratorApi.generateCustomerCode();
@@ -188,6 +216,17 @@ const baseCustomerAdapter: Omit<DocumentTypeAdapter, 'typeId' | 'typeName' | 'ba
         })),
       };
     }
+    if (salesReps?.length) {
+      createData.salesReps = {
+        create: salesReps.map((s: any) => ({
+          employeeId: s.employeeId,
+          employeeName: s.employeeName,
+          isDefault: s.isDefault ?? false,
+          createdBy: userId,
+          updatedBy: userId,
+        })),
+      };
+    }
     if (paymentTermList?.length) {
       createData.customerPaymentTerms = {
         create: paymentTermList.map((p: any) => ({
@@ -209,7 +248,7 @@ const baseCustomerAdapter: Omit<DocumentTypeAdapter, 'typeId' | 'typeName' | 'ba
 
   async onUpdate(id, data, userId, prisma) {
     const payload = transformDocToPrisma(data);
-    const { paymentTermList, bankAccounts, contacts, currencies, ...rest } = payload;
+    const { paymentTermList, bankAccounts, contacts, salesReps, currencies, ...rest } = payload;
 
     if (paymentTermList !== undefined) {
       await prisma.customerPaymentTerm.deleteMany({ where: { customerId: id } });
@@ -276,6 +315,27 @@ const baseCustomerAdapter: Omit<DocumentTypeAdapter, 'typeId' | 'typeName' | 'ba
       }
     }
 
+    if (salesReps !== undefined) {
+      await prisma.customerSalesRep.updateMany({
+        where: { customerId: id },
+        data: { deletedAt: new Date(), updatedBy: userId },
+      });
+      if (salesReps.length) {
+        for (const s of salesReps) {
+          await prisma.customerSalesRep.create({
+            data: {
+              customerId: id,
+              employeeId: s.employeeId,
+              employeeName: s.employeeName,
+              isDefault: s.isDefault ?? false,
+              createdBy: userId,
+              updatedBy: userId,
+            },
+          });
+        }
+      }
+    }
+
     // 处理币种数据
     if (currencies !== undefined) {
       // TODO: 需要在数据库中添加客户币种表
@@ -329,7 +389,7 @@ export const domesticCustomerAdapter: DocumentTypeAdapter = {
 
   async onCreate(data, userId, prisma) {
     const payload = transformDocToPrisma(data);
-    const { paymentTermList, bankAccounts, contacts, ...rest } = payload;
+    const { paymentTermList, bankAccounts, contacts, salesReps, ...rest } = payload;
     // Auto-generate customer code if not provided
     if (!rest.code) {
       rest.code = await codeGeneratorApi.generateCustomerCode();
@@ -353,6 +413,17 @@ export const domesticCustomerAdapter: DocumentTypeAdapter = {
       createData.contacts = {
         create: contacts.create.map((c: any) => ({
           ...c,
+          createdBy: userId,
+          updatedBy: userId,
+        })),
+      };
+    }
+    if (salesReps?.length) {
+      createData.salesReps = {
+        create: salesReps.map((s: any) => ({
+          employeeId: s.employeeId,
+          employeeName: s.employeeName,
+          isDefault: s.isDefault ?? false,
           createdBy: userId,
           updatedBy: userId,
         })),
@@ -382,7 +453,7 @@ export const internationalCustomerAdapter: DocumentTypeAdapter = {
 
   async onCreate(data, userId, prisma) {
     const payload = transformDocToPrisma(data);
-    const { paymentTermList, bankAccounts, contacts, ...rest } = payload;
+    const { paymentTermList, bankAccounts, contacts, salesReps, ...rest } = payload;
     // Auto-generate customer code if not provided
     if (!rest.code) {
       rest.code = await codeGeneratorApi.generateCustomerCode();
@@ -406,6 +477,17 @@ export const internationalCustomerAdapter: DocumentTypeAdapter = {
       createData.contacts = {
         create: contacts.create.map((c: any) => ({
           ...c,
+          createdBy: userId,
+          updatedBy: userId,
+        })),
+      };
+    }
+    if (salesReps?.length) {
+      createData.salesReps = {
+        create: salesReps.map((s: any) => ({
+          employeeId: s.employeeId,
+          employeeName: s.employeeName,
+          isDefault: s.isDefault ?? false,
           createdBy: userId,
           updatedBy: userId,
         })),
