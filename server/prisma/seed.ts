@@ -2557,7 +2557,7 @@ async function main() {
   });
 
   await prisma.configParameter.upsert({
-    where: { id: 'config-param-005' },
+    where: { id: 'config-param-006' },
     update: {
       configId: notificationConfig.id,
       name: '通知间隔(分钟)',
@@ -2567,7 +2567,7 @@ async function main() {
       orderNum: 2,
     },
     create: {
-      id: 'config-param-005',
+      id: 'config-param-006',
       configId: notificationConfig.id,
       name: '通知间隔(分钟)',
       type: 'number',
