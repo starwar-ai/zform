@@ -101,6 +101,7 @@ function transformDocToPrisma(data: any) {
     code: customerFields.code || masterData.docNumber,
     bankAccounts: bankAccounts.length ? { create: bankAccounts } : undefined,
     contacts: contacts.length ? { create: contacts } : undefined,
+    shippingAddresses: shippingAddresses.length ? { create: shippingAddresses } : undefined,
     salesReps: salesReps.length ? salesReps : undefined,
     paymentTermList: paymentTermList.length ? paymentTermList : undefined,
     currencies: currencies.length ? currencies : undefined,
@@ -140,6 +141,9 @@ const baseCustomerAdapter: Omit<DocumentTypeAdapter, 'typeId' | 'typeName' | 'ba
     contacts: {
       where: { deletedAt: null },
       orderBy: { isDefault: 'desc' },
+    },
+    shippingAddresses: {
+      where: { deletedAt: null },
     },
     salesReps: {
       where: { deletedAt: null },
@@ -187,7 +191,7 @@ const baseCustomerAdapter: Omit<DocumentTypeAdapter, 'typeId' | 'typeName' | 'ba
 
   async onCreate(data, userId, prisma) {
     const payload = transformDocToPrisma(data);
-    const { paymentTermList, bankAccounts, contacts, salesReps, currencies, ...rest } = payload;
+    const { paymentTermList, bankAccounts, contacts, shippingAddresses, salesReps, currencies, ...rest } = payload;
     // Auto-generate customer code if not provided
     if (!rest.code) {
       rest.code = await codeGeneratorApi.generateCustomerCode();
@@ -211,6 +215,15 @@ const baseCustomerAdapter: Omit<DocumentTypeAdapter, 'typeId' | 'typeName' | 'ba
       createData.contacts = {
         create: contacts.create.map((c: any) => ({
           ...c,
+          createdBy: userId,
+          updatedBy: userId,
+        })),
+      };
+    }
+    if (shippingAddresses?.create?.length) {
+      createData.shippingAddresses = {
+        create: shippingAddresses.create.map((s: any) => ({
+          ...s,
           createdBy: userId,
           updatedBy: userId,
         })),
@@ -248,7 +261,7 @@ const baseCustomerAdapter: Omit<DocumentTypeAdapter, 'typeId' | 'typeName' | 'ba
 
   async onUpdate(id, data, userId, prisma) {
     const payload = transformDocToPrisma(data);
-    const { paymentTermList, bankAccounts, contacts, salesReps, currencies, ...rest } = payload;
+    const { paymentTermList, bankAccounts, contacts, shippingAddresses, salesReps, currencies, ...rest } = payload;
 
     if (paymentTermList !== undefined) {
       await prisma.customerPaymentTerm.deleteMany({ where: { customerId: id } });
@@ -307,6 +320,31 @@ const baseCustomerAdapter: Omit<DocumentTypeAdapter, 'typeId' | 'typeName' | 'ba
               qq: c.qq,
               isDefault: c.isDefault ?? false,
               remark: c.remark,
+              createdBy: userId,
+              updatedBy: userId,
+            },
+          });
+        }
+      }
+    }
+
+    if (shippingAddresses !== undefined) {
+      await prisma.customerShippingAddress.updateMany({
+        where: { customerId: id },
+        data: { deletedAt: new Date(), updatedBy: userId },
+      });
+      if (shippingAddresses?.create?.length) {
+        for (const s of shippingAddresses.create) {
+          await prisma.customerShippingAddress.create({
+            data: {
+              customerId: id,
+              contact: s.contact,
+              address: s.address,
+              addressType: s.addressType,
+              postalCode: s.postalCode,
+              phone: s.phone,
+              email: s.email,
+              remark: s.remark,
               createdBy: userId,
               updatedBy: userId,
             },
@@ -389,7 +427,7 @@ export const domesticCustomerAdapter: DocumentTypeAdapter = {
 
   async onCreate(data, userId, prisma) {
     const payload = transformDocToPrisma(data);
-    const { paymentTermList, bankAccounts, contacts, salesReps, ...rest } = payload;
+    const { paymentTermList, bankAccounts, contacts, shippingAddresses, salesReps, ...rest } = payload;
     // Auto-generate customer code if not provided
     if (!rest.code) {
       rest.code = await codeGeneratorApi.generateCustomerCode();
@@ -413,6 +451,15 @@ export const domesticCustomerAdapter: DocumentTypeAdapter = {
       createData.contacts = {
         create: contacts.create.map((c: any) => ({
           ...c,
+          createdBy: userId,
+          updatedBy: userId,
+        })),
+      };
+    }
+    if (shippingAddresses?.create?.length) {
+      createData.shippingAddresses = {
+        create: shippingAddresses.create.map((s: any) => ({
+          ...s,
           createdBy: userId,
           updatedBy: userId,
         })),
@@ -453,7 +500,7 @@ export const internationalCustomerAdapter: DocumentTypeAdapter = {
 
   async onCreate(data, userId, prisma) {
     const payload = transformDocToPrisma(data);
-    const { paymentTermList, bankAccounts, contacts, salesReps, ...rest } = payload;
+    const { paymentTermList, bankAccounts, contacts, shippingAddresses, salesReps, ...rest } = payload;
     // Auto-generate customer code if not provided
     if (!rest.code) {
       rest.code = await codeGeneratorApi.generateCustomerCode();
@@ -477,6 +524,15 @@ export const internationalCustomerAdapter: DocumentTypeAdapter = {
       createData.contacts = {
         create: contacts.create.map((c: any) => ({
           ...c,
+          createdBy: userId,
+          updatedBy: userId,
+        })),
+      };
+    }
+    if (shippingAddresses?.create?.length) {
+      createData.shippingAddresses = {
+        create: shippingAddresses.create.map((s: any) => ({
+          ...s,
           createdBy: userId,
           updatedBy: userId,
         })),
