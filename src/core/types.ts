@@ -208,6 +208,8 @@ export interface FieldDef {
   width?: number | string
   /** 显示字段：当该字段值来自关联对象时，指定显示哪个字段的值（如 combobox 选择后显示名称而非 ID） */
   displayField?: string
+  /** 校验字段：指定实际用于校验的字段ID（用于复合控件，如 skuCode 实际存储在 codeField） */
+  validationField?: string
 }
 
 // ============================================================

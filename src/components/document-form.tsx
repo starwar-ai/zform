@@ -801,24 +801,32 @@ function validateRequiredFields(doc: DocumentData, schema: DocumentSchema | null
   if (!schema) return []
   
   const errors: string[] = []
+  const masterData = doc.masterData
   
   // 验证主表字段
   for (const field of schema.masterFields) {
-    if (field.required) {
-      const value = doc.masterData[field.id]
-      if (
-        value === undefined || 
-        value === null || 
-        value === '' || 
-        (Array.isArray(value) && value.length === 0)
-      ) {
-        errors.push(`- ${field.label}`)
-      }
+    if (!field.required) continue
+    // 跳过隐藏或根据 visibleWhen 不显示的字段
+    if (field.hidden || (field.visibleWhen && !field.visibleWhen(masterData))) continue
+
+    // 复合控件：如果指定了 validationField，校验实际存储字段的值
+    const value = field.validationField
+      ? masterData[field.validationField]
+      : masterData[field.id]
+
+    if (
+      value === undefined || 
+      value === null || 
+      value === '' || 
+      (Array.isArray(value) && value.length === 0)
+    ) {
+      errors.push(`- ${field.label}`)
     }
   }
   
   // 验证明细表字段
   for (const table of schema.detailTables) {
+    if (table.visibleWhen && !table.visibleWhen(masterData)) continue
     const tableData = doc.detailTables.find(t => t.tableId === table.id)
     if (tableData?.rows) {
       for (const field of table.fields) {

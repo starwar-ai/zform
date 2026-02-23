@@ -604,6 +604,7 @@ export const standardProductSchema: DocumentSchema = {
       required: true,
       readOnlyModes: ["edit"],
       group: "基本信息",
+      validationField: "code",
       skuCodeConfig: {
         categoryIdField: "categoryId",
         preCodeField: "preCode",

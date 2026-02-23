@@ -4,6 +4,7 @@
  * 根据 FieldDef 动态渲染表单字段。
  */
 
+import { useRef, useEffect } from "react"
 import type { FieldDef } from "@/core/types"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -22,6 +23,7 @@ import {
 } from "@/components/ui/select"
 import { Combobox } from "@/components/ui/combobox"
 import { EmployeeSelectorField } from "@/components/employee-selector-field"
+import { DimensionsField } from "@/components/ui/dimensions-field"
 import type { Employee } from "@/types/employee"
 
 interface FieldRendererProps {
@@ -242,41 +244,13 @@ export function FieldRenderer({
         const placeholder =
           field.placeholder ||
           `${placeholders.length || "长"}/${placeholders.width || "宽"}/${placeholders.height || "高"}`
-        const formatPart = (v: unknown) =>
-          v === null || v === undefined || v === "" ? "" : String(v)
-        const parts = [
-          formatPart(current.length),
-          formatPart(current.width),
-          formatPart(current.height),
-        ]
-        const displayValue = parts.every((p) => !p)
-          ? ""
-          : parts.join("/")
-        const toNumberOrUndefined = (raw: string | undefined) => {
-          const trimmed = (raw ?? "").trim()
-          if (trimmed === "") return undefined
-          const num = Number(trimmed)
-          return Number.isNaN(num) ? undefined : num
-        }
-
         return (
-          <div className="flex items-center gap-2">
-            <Input
-              value={displayValue}
-              onChange={(e) => {
-                const parts = e.target.value.split("/")
-                const next = {
-                  length: toNumberOrUndefined(parts[0]),
-                  width: toNumberOrUndefined(parts[1]),
-                  height: toNumberOrUndefined(parts[2]),
-                }
-                onChange(next)
-              }}
-              placeholder={placeholder}
-              disabled={isDisabled}
-              aria-label="规格尺寸"
-            />
-          </div>
+          <DimensionsField
+            value={current}
+            onChange={onChange}
+            placeholder={placeholder}
+            disabled={isDisabled}
+          />
         )
       }
 
