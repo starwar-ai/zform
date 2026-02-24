@@ -458,6 +458,58 @@ export const standardProductAdapter: DocumentTypeAdapter = {
         throw new Error('只有待提交状态的产品才能提交审核');
       }
 
+      // 检查是否存在审批规则
+      const approvalRules = await prisma.approvalRuleConfig.findMany({
+        where: { docType: product.productType === 'STANDARD' ? 'standard_product'
+          : product.productType === 'CUSTOMER' ? 'customer_product'
+          : 'self_owned_product', enabled: true },
+      });
+
+      if (approvalRules.length === 0) {
+        // 无审批流：直接自动审批通过
+        // 检查是否有活跃的 ProductChange
+        const activeChange = await prisma.productChange.findFirst({
+          where: { productId: id, changeStatus: 'PENDING' },
+        });
+
+        if (activeChange) {
+          const currentProduct = await prisma.product.findUnique({ where: { id } });
+          await prisma.productChange.update({
+            where: { id: activeChange.id },
+            data: {
+              changeData: currentProduct as any,
+              changeStatus: 'COMPLETED',
+              approvedBy: userId,
+              approvedAt: new Date(),
+              updatedBy: userId,
+            },
+          });
+        }
+
+        const updated = await prisma.product.update({
+          where: { id },
+          data: {
+            approvalStatus: 'APPROVED',
+            status: 'ACTIVE',
+            updatedBy: userId,
+            version: { increment: 1 },
+          },
+        });
+
+        await prisma.productChangeLog.create({
+          data: {
+            productId: id,
+            version: updated.version,
+            changeType: activeChange ? 'CHANGE_APPROVED' : 'APPROVE',
+            changedBy: userId,
+            changeDetails: { autoApproved: true },
+          },
+        });
+
+        return { data: { ...updated, autoApproved: true }, message: '无审批流，产品已自动审批通过' };
+      }
+
+      // 有审批流：正常提交
       const updated = await prisma.product.update({
         where: { id },
         data: {

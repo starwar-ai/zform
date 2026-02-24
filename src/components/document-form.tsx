@@ -407,9 +407,26 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
         await createDocumentApi(doc.typeId, { ...payload, status: "submitted" })
         saveDocument({ ...doc, _isNew: undefined, status: "submitted" })
       } else {
-        // 已有文档提交: 更新状态
-        await updateDocumentApi(doc.typeId, doc.id, { ...doc, status: "submitted" })
-        updateStatus(docId, "submitted")
+        // 先保存当前数据
+        const { _isNew, ...payload } = doc
+        await updateDocumentApi(doc.typeId, doc.id, payload)
+
+        // 调用 submit action（后端会判断是否有审批流）
+        const result = await executeDocumentAction(doc.typeId, doc.id, "submit", {})
+
+        if (result?.data?.autoApproved) {
+          // 无审批流：后端已自动审批
+          updateStatus(docId, "approved")
+          setActiveChange(null)
+          // 更新快照
+          initialDocSnapshot.current = JSON.stringify({
+            masterData: doc.masterData,
+            detailTables: doc.detailTables,
+            status: "approved",
+          })
+        } else {
+          updateStatus(docId, "submitted")
+        }
       }
     } catch (err) {
       console.error("提交失败:", err)
