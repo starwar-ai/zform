@@ -89,11 +89,11 @@ export const purchasePlanAdapter: DocumentTypeAdapter = {
   // ---- 扁平化 ----
   flattenRow(row: any) {
     return {
-      _id: row.id,
-      _docNumber: row.code,
-      _status: row.planStatus,
-      _createdAt: row.createdAt,
-      _sourceTypeId: row.salesContractId ? 'sales_contract' : undefined,
+      id: row.id,
+      code: row.code,
+      status: row.planStatus,
+      createdAt: row.createdAt,
+      sourceTypeId: row.salesContractId ? 'sales_contract' : undefined,
       // 主数据字段
       planDate: row.planDate,
       expectedDeliveryDate: row.expectedDeliveryDate,
@@ -112,11 +112,11 @@ export const purchasePlanAdapter: DocumentTypeAdapter = {
 
   flattenDetailRow(masterRow: any, detailRow: any) {
     return {
-      _id: masterRow.id,
-      _docNumber: masterRow.code,
-      _status: masterRow.planStatus,
-      _createdAt: masterRow.createdAt,
-      _detailRowId: detailRow.id,
+      id: masterRow.id,
+      code: masterRow.code,
+      status: masterRow.planStatus,
+      createdAt: masterRow.createdAt,
+      detailRowId: detailRow.id,
       // 主数据
       customerCode: masterRow.customerCode,
       salesContractCode: masterRow.salesContractCode,

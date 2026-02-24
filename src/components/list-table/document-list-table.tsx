@@ -254,14 +254,14 @@ export function DocumentListTable({
     Record<string, (row: FlatDocumentRow) => void>
   >(
     () => ({
-      open: (row) => onOpenDocument(String(row._id), typeId),
-      delete: (row) => handleDeleteDocument(String(row._id)),
+      open: (row) => onOpenDocument(String(row.id), typeId),
+      delete: (row) => handleDeleteDocument(String(row.id)),
       "delete-detail": (row) =>
         handleDeleteDetail(
-          String(row._id),
-          row._detailRowId ? String(row._detailRowId) : undefined
+          String(row.id),
+          row.detailRowId ? String(row.detailRowId) : undefined
         ),
-      "copy-id": (row) => handleCopyText(String(row._id)),
+      "copy-id": (row) => handleCopyText(String(row.id)),
     }),
     [onOpenDocument, typeId, handleDeleteDocument, handleDeleteDetail, handleCopyText]
   )
@@ -481,8 +481,8 @@ export function DocumentListTable({
     defaultPageSize={20}
     rowKey={(row) =>
       isDetailMode
-        ? (row._detailRowId as string)
-        : (row._id as string)
+        ? (row.detailRowId as string)
+        : (row.id as string)
     }
     exportFilename={schema.typeName}
   />

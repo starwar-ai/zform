@@ -86,15 +86,15 @@ export const inspectionOrderAdapter: DocumentTypeAdapter = {
   // ---- 扁平化 ----
   flattenRow(row: any) {
     return {
-      _id: row.id,
-      _docNumber: row.code,
-      _status: row.status,
-      _createdAt: row.createdAt,
-      _sourceTypeId: row.purchaseContractId ? 'purchase_contract' : undefined,
-      // 主数据字段
+      id: row.id,
       code: row.code,
-      orderLinkCode: row.orderLinkCode,
       status: row.status,
+      createdAt: row.createdAt,
+      sourceTypeId: row.purchaseContractId ? 'purchase_contract' : undefined,
+      // 主数据字段
+      // code: row.code,  // Removed duplicate - already defined above
+      orderLinkCode: row.orderLinkCode,
+      // status: row.status,  // Removed duplicate - already defined above
       approvalStatus: row.approvalStatus,
       buyer: row.buyer,
       salesPerson: row.salesPerson,
@@ -128,11 +128,11 @@ export const inspectionOrderAdapter: DocumentTypeAdapter = {
 
   flattenDetailRow(masterRow: any, detailRow: any) {
     return {
-      _id: masterRow.id,
-      _docNumber: masterRow.code,
-      _status: masterRow.status,
-      _createdAt: masterRow.createdAt,
-      _detailRowId: detailRow.id,
+      id: masterRow.id,
+      code: masterRow.code,
+      status: masterRow.status,
+      createdAt: masterRow.createdAt,
+      detailRowId: detailRow.id,
       // 主数据
       supplierCode: masterRow.supplierCode,
       supplierName: masterRow.supplierName,

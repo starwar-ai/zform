@@ -37,20 +37,6 @@ function getModelDelegate(modelName: string): any {
 // ============================================================
 
 function resolveField(adapter: DocumentTypeAdapter, columnId: string): string {
-  // 先查映射表
-  if (adapter.columnToPrismaField?.[columnId]) {
-    return adapter.columnToPrismaField[columnId];
-  }
-  // 系统字段直接映射
-  const systemMap: Record<string, string> = {
-    _code: 'code',
-    _status: 'status',
-    _createdAt: 'createdAt',
-  };
-  if (systemMap[columnId]) {
-    return systemMap[columnId];
-  }
-  // 原样返回 (字段名与 Prisma 一致的情况)
   return columnId;
 }
 

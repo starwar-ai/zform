@@ -157,10 +157,10 @@ export const quotationAdapter: DocumentTypeAdapter = {
   // ---- 扁平化 ----
   flattenRow(row: any) {
     return {
-      _id: row.id,
-      _docNumber: row.code,
-      _status: row.status,
-      _createdAt: row.createdAt,
+      id: row.id,
+      code: row.code,
+      status: row.status,
+      createdAt: row.createdAt,
       // 主数据字段
       customerId: row.customerId,
       customerCode: row.customerCode,
@@ -185,11 +185,11 @@ export const quotationAdapter: DocumentTypeAdapter = {
 
   flattenDetailRow(masterRow: any, detailRow: any) {
     return {
-      _id: masterRow.id,
-      _docNumber: masterRow.code,
-      _status: masterRow.status,
-      _createdAt: masterRow.createdAt,
-      _detailRowId: detailRow.id,
+      id: masterRow.id,
+      code: masterRow.code,
+      status: masterRow.status,
+      createdAt: masterRow.createdAt,
+      detailRowId: detailRow.id,
       // 主数据
       customerCode: masterRow.customerCode,
       customerName: masterRow.customerName,

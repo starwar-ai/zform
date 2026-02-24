@@ -99,11 +99,11 @@ export const purchaseContractAdapter: DocumentTypeAdapter = {
   // ---- 扁平化 ----
   flattenRow(row: any) {
     return {
-      _id: row.id,
-      _docNumber: row.code,
-      _status: row.status,
-      _createdAt: row.createdAt,
-      _sourceTypeId: row.purchasePlanId ? 'purchase_plan' : undefined,
+      id: row.id,
+      code: row.code,
+      status: row.status,
+      createdAt: row.createdAt,
+      sourceTypeId: row.purchasePlanId ? 'purchase_plan' : undefined,
       // 主数据字段
       supplierId: row.supplierId,
       supplierCode: row.supplierCode,
@@ -111,7 +111,7 @@ export const purchaseContractAdapter: DocumentTypeAdapter = {
       purchasePlanCode: row.purchasePlanCode,
       contractDate: row.contractDate,
       deliveryDate: row.deliveryDate,
-      status: row.status,
+      // status: row.status,  // Removed duplicate - already defined above
       approvalStatus: row.approvalStatus,
       contractType: row.contractType,
       currency: row.currency,

@@ -98,13 +98,13 @@ export type ListMode = "document" | "detail"
 
 /** 扁平化的单据行数据 (服务端已将 masterData 展开到顶层) */
 export type FlatDocumentRow = Record<string, unknown> & {
-  _id: string
-  _code: string
-  _status: string
-  _createdAt: string
-  _sourceTypeId?: string
+  id: string
+  code: string
+  status: string
+  createdAt: string
+  sourceTypeId?: string
   /** 明细行 ID (仅明细模式下存在) */
-  _detailRowId?: string
+  detailRowId?: string
 }
 
 /** 服务端返回的列表数据结构 */

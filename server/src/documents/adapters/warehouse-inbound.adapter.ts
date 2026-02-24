@@ -96,10 +96,10 @@ export const warehouseInboundAdapter: DocumentTypeAdapter = {
   // ---- 扁平化 ----
   flattenRow(row: any) {
     return {
-      _id: row.id,
-      _docNumber: row.code,
-      _status: row.orderStatus,
-      _createdAt: row.createdAt,
+      id: row.id,
+      code: row.code,
+      status: row.orderStatus,
+      createdAt: row.createdAt,
       // 主数据字段
       internalCode: row.internalCode,
       shippingInvoiceNo: row.shippingInvoiceNo,
@@ -132,10 +132,10 @@ export const warehouseInboundAdapter: DocumentTypeAdapter = {
   // 明细扁平化（用于明细模式列表）
   flattenDetailRow(masterRow: any, detailRow: any) {
     return {
-      _id: detailRow.id,
-      _docNumber: masterRow.code,
-      _status: masterRow.orderStatus,
-      _createdAt: masterRow.createdAt,
+      id: detailRow.id,
+      code: masterRow.code,
+      status: masterRow.orderStatus,
+      createdAt: masterRow.createdAt,
       // 明细字段
       lineNumber: detailRow.lineNumber,
       barcode: detailRow.barcode,

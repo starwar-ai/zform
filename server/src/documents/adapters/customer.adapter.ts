@@ -157,14 +157,6 @@ const baseCustomerAdapter: Omit<DocumentTypeAdapter, 'typeId' | 'typeName' | 'ba
 
   defaultOrderBy: { createdAt: 'desc' },
 
-  columnToPrismaField: {
-    _docNumber: 'code',
-    _status: 'approvalStatus',
-    _createdAt: 'createdAt',
-    stage: 'stage',
-    isEnabled: 'isEnabled',
-  },
-
   aggregateFields: [],
 
   flattenRow(row: any) {
@@ -172,10 +164,10 @@ const baseCustomerAdapter: Omit<DocumentTypeAdapter, 'typeId' | 'typeName' | 'ba
     const defaultPaymentTerm = row.customerPaymentTerms?.find((pt: any) => pt.isDefault);
     
     return {
-      _id: row.id,
-      _docNumber: row.code,
-      _status: row.approvalStatus,
-      _createdAt: row.createdAt,
+      id: row.id,
+      code: row.code,
+      status: row.approvalStatus,
+      createdAt: row.createdAt,
       name: row.name,
       shortName: row.shortName,
       stage: row.stage,

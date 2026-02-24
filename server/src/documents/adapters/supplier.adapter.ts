@@ -57,10 +57,10 @@ const baseSupplierAdapter: Omit<DocumentTypeAdapter, 'typeId' | 'typeName' | 'ba
 
   flattenRow(row: any) {
     return {
-      _id: row.id,
-      _docNumber: row.code,
-      _status: row.approvalStatus,
-      _createdAt: row.createdAt,
+      id: row.id,
+      code: row.code,
+      status: row.approvalStatus,
+      createdAt: row.createdAt,
       name: row.name,
       nameEn: row.nameEn,
       shortName: row.shortName,

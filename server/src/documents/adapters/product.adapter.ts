@@ -98,28 +98,16 @@ export const standardProductAdapter: DocumentTypeAdapter = {
   // ---- 默认排序 ----
   defaultOrderBy: { createdAt: 'desc' },
 
-  // ---- 字段映射 ----
-  columnToPrismaField: {
-    _docNumber: 'code',
-    _status: 'status',
-    _createdAt: 'createdAt',
-    productType: 'productType',
-    skuType: 'skuType',
-    categoryId: 'categoryId',
-    brandId: 'brandId',
-    approvalStatus: 'approvalStatus',
-  },
-
   // ---- 聚合 (产品一般不需要列合计) ----
   aggregateFields: [],
 
   // ---- 扁平化 ----
   flattenRow(row: any) {
     return {
-      _id: row.id,
-      _docNumber: row.code,
-      _status: row.status,
-      _createdAt: row.createdAt,
+      id: row.id,
+      code: row.code,
+      status: row.status,
+      createdAt: row.createdAt,
       // 产品字段
       name: row.name,
       nameEn: row.nameEn,
