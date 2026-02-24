@@ -721,13 +721,6 @@ export const standardProductSchema: DocumentSchema = {
       placeholder: "English description...",
       group: "描述信息",
     },
-    {
-      id: "remark",
-      label: "备注",
-      type: "textarea",
-      span: 4,
-      group: "描述信息",
-    },
 
     // === 报关信息（辅料不需要）===
     {
@@ -913,6 +906,15 @@ export const standardProductSchema: DocumentSchema = {
       defaultValue: false,
       group: "其他信息",
       visibleWhen: isAuxiliary,
+    },
+
+    // === 备注 ===
+    {
+      id: "remark",
+      label: "备注",
+      type: "textarea",
+      span: 4,
+      group: "其他信息",
     },
   ],
   detailTables: [
@@ -1612,6 +1614,15 @@ export const selfOwnedProductSchema: DocumentSchema = {
       visibleWhen: isFullInputMode,
     },
 
+    // === 备注 ===
+    {
+      id: "remark",
+      label: "备注",
+      type: "textarea",
+      span: 4,
+      group: "其他信息",
+    },
+
     // === 描述 ===
     {
       id: "description",
@@ -1629,13 +1640,6 @@ export const selfOwnedProductSchema: DocumentSchema = {
       span: 2,
       rows: 6,
       placeholder: "English description...",
-      group: "描述信息",
-    },
-    {
-      id: "remark",
-      label: "备注",
-      type: "textarea",
-      span: 4,
       group: "描述信息",
     },
   ],
