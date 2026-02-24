@@ -111,6 +111,14 @@ function transformDocToPrisma(data: any) {
 const baseCustomerAdapter: Omit<DocumentTypeAdapter, 'typeId' | 'typeName' | 'baseWhere'> = {
   prismaModel: 'customer',
 
+  // ---- 数据转换 ----
+  detailTableMapping: {
+    bankAccounts: 'bank_accounts',
+    customerPaymentTerms: 'payment_terms',
+    shippingAddresses: 'shipping_addresses',
+    salesReps: 'sales_reps',
+  },
+
   searchFields: ['code', 'name', 'shortName'],
 
   listIncludes: {

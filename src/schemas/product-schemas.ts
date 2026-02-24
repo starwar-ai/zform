@@ -560,6 +560,25 @@ export const standardProductSchema: DocumentSchema = {
   typeId: "standard_product",
   typeName: "标准产品",
   masterFields: [
+    {
+      id: "skuCode",
+      label: "产品编码",
+      type: "skuCode",
+      required: true,
+      readOnlyModes: ["edit"],
+      group: "基本信息",
+      validationField: "code",
+      skuCodeConfig: {
+        categoryIdField: "categoryId",
+        preCodeField: "preCode",
+        xhCodeField: "xhCode",
+        afterCodeField: "afterCode",
+        codeField: "code",
+        serialLengthField: "serialLength",
+      },
+      effect: skuCodeGenerationEffect,
+      visibleWhen: needsAutoCode,
+    },
     // === 产品分类（优先选择，决定后续录入内容）===
     {
       id: "skuType",
@@ -596,25 +615,6 @@ export const standardProductSchema: DocumentSchema = {
       group: "基本信息",
       placeholder: "请手动输入产品编码",
       visibleWhen: needsManualCode,
-    },
-    {
-      id: "skuCode",
-      label: "产品编码",
-      type: "skuCode",
-      required: true,
-      readOnlyModes: ["edit"],
-      group: "基本信息",
-      validationField: "code",
-      skuCodeConfig: {
-        categoryIdField: "categoryId",
-        preCodeField: "preCode",
-        xhCodeField: "xhCode",
-        afterCodeField: "afterCode",
-        codeField: "code",
-        serialLengthField: "serialLength",
-      },
-      effect: skuCodeGenerationEffect,
-      visibleWhen: needsAutoCode,
     },
     {
       id: "name",

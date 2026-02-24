@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import path from 'path';
+import { Decimal } from '@prisma/client/runtime/library';
 import routes from './routes';
 import { errorHandler } from './middleware/error-handler';
 import swaggerUi from 'swagger-ui-express';
@@ -13,6 +14,11 @@ import { collectionReminderSchedulerService } from './services/collection-remind
 import { paymentReminderSchedulerService } from './services/payment-reminder-scheduler.service';
 
 dotenv.config();
+
+// 全局自动转换 Prisma Decimal 序列化，避免 JSON.stringify 报错
+Decimal.prototype.toJSON = function() {
+  return this.toString();
+};
 
 // 注册所有单据类型适配器 (统一 Document API)
 registerAllAdapters();

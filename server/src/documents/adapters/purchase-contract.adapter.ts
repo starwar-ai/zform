@@ -40,6 +40,11 @@ export const purchaseContractAdapter: DocumentTypeAdapter = {
   parentForeignKey: 'purchaseContractId',
   itemRelationName: 'items',
 
+  // ---- 数据转换 ----
+  detailTableMapping: {
+    paymentPlans: 'paymentPlanItems',
+  },
+
   // ---- 搜索 ----
   searchFields: [
     'code',

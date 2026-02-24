@@ -19,6 +19,11 @@ const baseSupplierAdapter: Omit<DocumentTypeAdapter, 'typeId' | 'typeName' | 'ba
   parentForeignKey: 'supplierId',
   itemRelationName: 'bankAccounts',
 
+  // ---- 数据转换 ----
+  detailTableMapping: {
+    bankAccounts: 'bank_accounts',
+  },
+
   searchFields: ['code', 'name', 'shortName'],
 
   listIncludes: {

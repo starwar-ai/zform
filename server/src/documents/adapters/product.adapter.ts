@@ -1,11 +1,12 @@
 /**
  * 产品 Adapter
  *
- * 产品没有传统的"明细行"(items)，但有 BOM 和辅料关联。
+ * 产品没有传统的“明细行”(items)，但有 BOM 和辅料关联。
  * BOM/辅料通过自定义 actions 操作。
  */
 
 import type { DocumentTypeAdapter } from '../types';
+import { transformFromFrontend } from '../data-transform';
 
 /**
  * 检测 BOM 循环依赖
@@ -127,13 +128,16 @@ export const standardProductAdapter: DocumentTypeAdapter = {
 
   // ---- 自定义创建 (带变更日志) ----
   async onCreate(data, userId, prisma) {
+    // 使用白名单模式：只保留 Product schema 中定义的字段
+    const createData = {
+      ...transformFromFrontend(data, { prismaModel: 'Product' }),
+      productType: 'STANDARD',
+      createdBy: userId,
+      updatedBy: userId,
+    };
+
     const product = await prisma.product.create({
-      data: {
-        ...data,
-        productType: 'STANDARD',
-        createdBy: userId,
-        updatedBy: userId,
-      },
+      data: createData,
       include: {
         category: true,
         brand: true,
@@ -159,13 +163,16 @@ export const standardProductAdapter: DocumentTypeAdapter = {
     const oldProduct = await prisma.product.findUnique({ where: { id } });
     if (!oldProduct) throw new Error('产品不存在');
 
+    // 使用白名单模式：只保留 Product schema 中定义的字段
+    const updateData = {
+      ...transformFromFrontend(data, { prismaModel: 'Product' }),
+      updatedBy: userId,
+      version: { increment: 1 },
+    };
+
     const updated = await prisma.product.update({
       where: { id },
-      data: {
-        ...data,
-        updatedBy: userId,
-        version: { increment: 1 },
-      },
+      data: updateData,
       include: {
         category: true,
         brand: true,
@@ -340,18 +347,21 @@ export const standardProductAdapter: DocumentTypeAdapter = {
       for (let i = 0; i < products.length; i++) {
         const productData = products[i];
         try {
+          // 使用白名单模式转换数据
+          const flatData = transformFromFrontend(productData, { prismaModel: 'Product' });
+          
           // 检查产品编码是否重复
           const existing = await prisma.product.findUnique({
-            where: { code: productData.code },
+            where: { code: flatData.code as string },
           });
           if (existing) {
-            errors.push({ row: i + 1, error: `产品编码 ${productData.code} 已存在` });
+            errors.push({ row: i + 1, error: `产品编码 ${flatData.code} 已存在` });
             continue;
           }
 
           const product = await prisma.product.create({
             data: {
-              ...productData,
+              ...flatData,
               productType: 'STANDARD',
               createdBy: userId,
               updatedBy: userId,
@@ -809,8 +819,11 @@ export const customerProductAdapter: DocumentTypeAdapter = {
   baseWhere: { productType: 'CUSTOMER' },
 
   async onCreate(data, userId, prisma) {
+    // 使用白名单模式转换数据
+    const flatData = transformFromFrontend(data, { prismaModel: 'Product' });
+    
     // 从基础产品继承 skuType/isAgent
-    const createData = await inheritSkuTypeFromBase(data, prisma);
+    const createData = await inheritSkuTypeFromBase(flatData, prisma);
     
     const product = await prisma.product.create({
       data: {
@@ -843,8 +856,11 @@ export const selfOwnedProductAdapter: DocumentTypeAdapter = {
   baseWhere: { productType: 'SELF_OWNED' },
 
   async onCreate(data, userId, prisma) {
+    // 使用通用工具转换前端数据结构
+    const flatData = transformFromFrontend(data);
+    
     // 从基础产品继承 skuType/isAgent
-    const createData = await inheritSkuTypeFromBase(data, prisma);
+    const createData = await inheritSkuTypeFromBase(flatData, prisma);
     
     const product = await prisma.product.create({
       data: {

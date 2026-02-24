@@ -7,6 +7,7 @@
 
 import prisma from '../config/database';
 import { documentTypeRegistry } from './registry';
+import { transformToFrontend, transformFromFrontend, isFrontendFormat } from './data-transform';
 import type {
   DocumentTypeAdapter,
   DocumentListParams,
@@ -355,6 +356,8 @@ export class DocumentService {
 
   /**
    * 获取单据详情
+   *
+   * 返回前端 DocumentData 格式：{ id, typeId, code, masterData, detailTables, status, ... }
    */
   async getById(typeId: string, id: string): Promise<any> {
     const adapter = documentTypeRegistry.getOrThrow(typeId);
@@ -369,24 +372,36 @@ export class DocumentService {
       throw new Error(`${adapter.typeName}不存在`);
     }
 
-    return doc;
+    // 转换为前端 DocumentData 格式
+    if (adapter.transformToFrontend) {
+      return adapter.transformToFrontend(doc, typeId);
+    }
+    return transformToFrontend(doc, typeId, adapter);
   }
 
   /**
    * 创建单据
+   *
+   * 统一入站转换：如果收到前端格式数据（含 masterData/detailTables），
+   * 先用 transformFromFrontend 提取扁平主数据，再传给适配器。
    */
   async create(typeId: string, data: any, userId: string): Promise<any> {
     const adapter = documentTypeRegistry.getOrThrow(typeId);
 
-    // 如果 adapter 有自定义创建逻辑
+    // 如果 adapter 有自定义创建逻辑，由 adapter 自行处理转换
     if (adapter.onCreate) {
       return adapter.onCreate(data, userId, prisma);
     }
 
+    // 通用路径：统一转换前端格式
+    const cleanData = isFrontendFormat(data)
+      ? transformFromFrontend(data, { prismaModel: adapter.prismaModel })
+      : data;
+
     const model = getModelDelegate(adapter.prismaModel);
     return model.create({
       data: {
-        ...data,
+        ...cleanData,
         createdBy: userId,
         updatedBy: userId,
       },
@@ -396,14 +411,22 @@ export class DocumentService {
 
   /**
    * 更新单据
+   *
+   * 统一入站转换：如果收到前端格式数据（含 masterData/detailTables），
+   * 先用 transformFromFrontend 提取扁平主数据，再传给适配器。
    */
   async update(typeId: string, id: string, data: any, userId: string): Promise<any> {
     const adapter = documentTypeRegistry.getOrThrow(typeId);
 
-    // 如果 adapter 有自定义更新逻辑
+    // 如果 adapter 有自定义更新逻辑，由 adapter 自行处理转换
     if (adapter.onUpdate) {
       return adapter.onUpdate(id, data, userId, prisma);
     }
+
+    // 通用路径：统一转换前端格式
+    const cleanData = isFrontendFormat(data)
+      ? transformFromFrontend(data, { prismaModel: adapter.prismaModel })
+      : data;
 
     const model = getModelDelegate(adapter.prismaModel);
 
@@ -416,7 +439,7 @@ export class DocumentService {
     return model.update({
       where: { id },
       data: {
-        ...data,
+        ...cleanData,
         updatedBy: userId,
         version: { increment: 1 },
       },

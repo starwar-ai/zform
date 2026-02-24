@@ -53,6 +53,21 @@ export interface DocumentTypeAdapter {
   /** 明细表在主表 include 中的关系名 (如 'items') */
   itemRelationName?: string
 
+  // ---- 数据转换 ----
+
+  /**
+   * 明细表映射: Prisma关系名 → 前端tableId。
+   * 仅在两者不一致时需要配置。
+   * 如: { collectionPlans: 'receiptPlanItems', bankAccounts: 'bank_accounts' }
+   */
+  detailTableMapping?: Record<string, string>
+
+  /**
+   * 自定义响应转换（覆盖通用 transformToFrontend 逻辑）。
+   * 当通用转换无法满足需求时使用。
+   */
+  transformToFrontend?: (prismaData: any, typeId: string) => any
+
   // ---- 列表查询 ----
 
   /** 关键字搜索的字段列表 (支持 OR 模糊匹配) */
