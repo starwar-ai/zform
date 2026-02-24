@@ -126,7 +126,7 @@ export function Combobox({
             {loading ? (
               <div className="flex items-center justify-center py-6">
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                <span className="ml-2 text-sm text-muted-foreground">加载中...</span>
+                <span className="ml-2 text-xs text-muted-foreground">加载中...</span>
               </div>
             ) : (
               <>

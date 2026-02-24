@@ -92,13 +92,13 @@ export function SkuCodeSearch({
         </PopoverTrigger>
         <PopoverContent className="w-96" align="start">
           <div className="space-y-3">
-            <div className="text-sm font-medium">批量编号搜索</div>
+            <div className="text-xs font-medium">批量编号搜索</div>
             <Textarea
               value={batchText}
               onChange={(e) => setBatchText(e.target.value)}
               placeholder={`编号搜索，一行一项，最多 ${MAX_BATCH_COUNT} 项\n支持换行、逗号、分号分隔`}
               rows={6}
-              className="font-mono text-sm"
+              className="font-mono text-xs"
             />
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>

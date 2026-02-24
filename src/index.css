@@ -45,6 +45,16 @@
   body {
     @apply bg-background text-foreground;
     font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px;
+  }
+  
+  /* Form-specific styling - reduce spacing and font sizes */
+  input, select, textarea, button {
+    font-size: 12px;
+  }
+  
+  label {
+    font-size: 12px;
   }
 }
 

@@ -94,7 +94,7 @@ export function RatioField({
     return (
       <div
         className={cn(
-          "flex h-9 items-center rounded-md border border-input bg-muted px-3 py-1 text-sm",
+          "flex h-8 items-center rounded-md border border-input bg-muted px-2 py-1 text-xs",
           className
         )}
       >
@@ -106,7 +106,7 @@ export function RatioField({
   return (
     <div
       className={cn(
-        "flex h-9 items-center gap-1 overflow-hidden rounded-md border border-input bg-background shadow-sm transition-colors focus-within:ring-1 focus-within:ring-ring",
+        "flex h-8 items-center gap-1 overflow-hidden rounded-md border border-input bg-background shadow-none transition-colors focus-within:ring-1 focus-within:ring-ring",
         disabled && "cursor-not-allowed opacity-50",
         className
       )}
@@ -121,7 +121,7 @@ export function RatioField({
         className="h-full flex-1 min-w-0 border-0 bg-transparent shadow-none focus-visible:ring-0"
         aria-label="产品数"
       />
-      <span className="shrink-0 text-muted-foreground px-0.5">:</span>
+      <span className="shrink-0 text-muted-foreground px-0.5 text-xs">:</span>
       <Input
         type="text"
         inputMode="numeric"

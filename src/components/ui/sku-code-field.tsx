@@ -85,7 +85,7 @@ export function SkuCodeField({
         value={preCode}
         disabled
         placeholder="前缀"
-        className="w-28 bg-muted font-mono text-center rounded-r-none border-r-0 px-2"
+        className="w-28 bg-muted font-mono text-center rounded-r-none border-r-0 px-2 text-xs"
         aria-label="前缀"
       />
       <Input
@@ -95,7 +95,7 @@ export function SkuCodeField({
         disabled={disabled}
         placeholder={"0".repeat(xhLen)}
         maxLength={xhLen}
-        className="w-16 font-mono text-center rounded-none border-r-0 px-2"
+        className="w-16 font-mono text-center rounded-none border-r-0 px-2 text-xs"
         aria-label="序号"
       />
       <Input
@@ -103,7 +103,7 @@ export function SkuCodeField({
         onChange={handleAfterChange}
         disabled={disabled}
         placeholder="后缀"
-        className="w-16 flex-1 rounded-l-none px-2"
+        className="w-16 flex-1 rounded-l-none px-2 text-xs"
         aria-label="后缀"
       />
     </div>

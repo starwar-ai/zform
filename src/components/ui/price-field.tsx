@@ -126,7 +126,7 @@ export function PriceField({
     return (
       <div
         className={cn(
-          "flex h-9 items-center rounded-md border border-input bg-muted px-3 py-1 text-sm",
+          "flex h-8 items-center rounded-md border border-input bg-muted px-2 py-1 text-xs",
           className
         )}
       >
@@ -138,7 +138,7 @@ export function PriceField({
   return (
     <div
       className={cn(
-        "flex h-9 items-center overflow-hidden rounded-md border border-input bg-background shadow-sm transition-colors focus-within:ring-1 focus-within:ring-ring",
+        "flex h-8 items-center overflow-hidden rounded-md border border-input bg-background shadow-none transition-colors focus-within:ring-1 focus-within:ring-ring",
         disabled && "cursor-not-allowed opacity-50",
         className
       )}
@@ -160,7 +160,7 @@ export function PriceField({
         disabled={disabled}
       >
         <SelectTrigger
-          className="h-full w-[90px] shrink-0 border-0 border-l border-input rounded-none bg-muted/50 focus:ring-0"
+          className="h-full w-[80px] shrink-0 border-0 border-l border-input rounded-none bg-muted/50 focus:ring-0 text-xs"
           aria-label="币种"
         >
           <SelectValue />
