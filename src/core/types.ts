@@ -180,6 +180,8 @@ export interface FieldDef {
   span?: number
   /** textarea 行数（控制高度，与 rows 相同的字段可并排且高度一致） */
   rows?: number
+  /** 是否显示复制按钮（用于 textarea 类型字段） */
+  copyable?: boolean
   /** 占位提示 */
   placeholder?: string
   /** 是否隐藏（不渲染，用于 skuCode 的子字段等） */

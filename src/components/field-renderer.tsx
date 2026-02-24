@@ -4,12 +4,14 @@
  * 根据 FieldDef 动态渲染表单字段。
  */
 
-import { useRef, useEffect } from "react"
+import { useRef, useEffect, useState } from "react"
 import type { FieldDef } from "@/core/types"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Button } from "@/components/ui/button"
+import { Copy, Check } from "lucide-react"
 import { SkuCodeField } from "@/components/ui/sku-code-field"
 import { PriceField } from "@/components/ui/price-field"
 import { RatioField } from "@/components/ui/ratio-field"
@@ -52,6 +54,18 @@ export function FieldRenderer({
   hideLabel = false,
 }: FieldRendererProps) {
   const isDisabled = disabled || field.readOnly || fieldReadOnly
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = async () => {
+    const textToCopy = String(value ?? "")
+    try {
+      await navigator.clipboard.writeText(textToCopy)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (err) {
+      console.error("Failed to copy:", err)
+    }
+  }
 
   const renderField = () => {
     switch (field.type) {
@@ -90,14 +104,32 @@ export function FieldRenderer({
 
       case "textarea":
         return (
-          <Textarea
-            value={(value as string) ?? ""}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder={field.placeholder}
-            disabled={isDisabled}
-            rows={field.rows}
-            className={field.rows ? "min-h-0 resize-none" : undefined}
-          />
+          <div className="relative">
+            <Textarea
+              value={(value as string) ?? ""}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder={field.placeholder}
+              disabled={isDisabled}
+              rows={field.rows}
+              className={field.rows ? "min-h-0 resize-none" : undefined}
+            />
+            {field.copyable && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute top-1 right-1 h-7 w-7 p-0"
+                onClick={handleCopy}
+                title="复制内容"
+              >
+                {copied ? (
+                  <Check className="h-3.5 w-3.5 text-green-600" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
+              </Button>
+            )}
+          </div>
         )
 
       case "select":
