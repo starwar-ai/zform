@@ -3774,6 +3774,9 @@ enum ApprovalStatus {
 enum ChangeStatus {
   PENDING
   IN_PROGRESS
+  SUBMITTED
+  APPROVED
+  REJECTED
   COMPLETED
   CANCELLED
 }

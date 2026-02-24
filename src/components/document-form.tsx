@@ -17,7 +17,7 @@ import { useTraceability, usePushDown, useImpactAssessment } from "@/hooks/use-d
 import { useApproval } from "@/hooks/use-approval"
 import { useDocumentFormActions } from "@/hooks/use-document-form-actions"
 import { registry } from "@/core/registry"
-import { createDocumentApi, updateDocumentApi, fetchDocumentApi } from "@/apis/document-api"
+import { createDocumentApi, updateDocumentApi, fetchDocumentApi, executeDocumentAction } from "@/apis/document-api"
 import { MasterForm } from "./master-form"
 import { DetailTable } from "./detail-table"
 import { AddRowSelectorAdapter } from "./add-row-selector-adapter"
@@ -27,6 +27,8 @@ import { UnsavedChangesDialog } from "./unsaved-changes-dialog"
 import { ApprovalHistory } from "./approval-history"
 import { ApprovalFlowVisualizer } from "./approval-flow-visualizer"
 import { DocumentPermissionPanel } from "./document-permission-panel"
+import { ChangeRequestDialog } from "./change-request-dialog"
+import { ChangeDiffPanel } from "./change-diff-panel"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -38,15 +40,16 @@ import {
 } from "@/components/ui/resizable"
 import {
   Save, Send, ArrowDownToLine, FileText, PanelRightClose, PanelRightOpen,
-  Check, X, Undo2, Lock, Ban, Trash2,
+  Check, X, Undo2, Lock, Ban, Trash2, FileEdit,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { statusLabels, statusColors } from "@/lib/document-status"
 import { getExtraTab } from "@/lib/extra-tab-registry"
 
 /** 图标名称 → 组件映射 */
 const iconMap: Record<string, LucideIcon> = {
-  Save, Send, ArrowDownToLine, Check, X, Undo2, Lock, Ban, Trash2,
+  Save, Send, ArrowDownToLine, Check, X, Undo2, Lock, Ban, Trash2, FileEdit,
 }
 
 /** 根据图标名称渲染图标 */
@@ -82,7 +85,6 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
   const { getAvailableRules, executePushDown } = usePushDown()
   const { evaluate } = useImpactAssessment()
   const approval = useApproval(doc?.typeId ?? "", docId)
-  const { visibleActions, isDisabled: isActionDisabled } = useDocumentFormActions(doc)
 
   const [impactOpen, setImpactOpen] = useState(false)
   const [assessment, setAssessment] = useState<ImpactAssessment | null>(null)
@@ -91,6 +93,14 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
   const [unsavedDialogOpen, setUnsavedDialogOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [changeRequestOpen, setChangeRequestOpen] = useState(false)
+  const [activeChange, setActiveChange] = useState<{
+    id: string
+    originalData: Record<string, unknown>
+    changeReason: string
+  } | null>(null)
+
+  const { visibleActions, isDisabled: isActionDisabled } = useDocumentFormActions(doc, activeChange)
   const pendingSaveRef = useRef<DocumentData | null>(null)
   const pendingCloseResolveRef = useRef<((value: boolean) => void) | null>(null)
   const sidePanelRef = usePanelRef()
@@ -133,6 +143,20 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
         })
     }
   }, [docId, typeId, doc, loading, error, addDocument])
+
+  // 获取活跃的产品变更记录
+  const isProductType = doc?.typeId?.includes("product") ?? false
+  useEffect(() => {
+    if (!doc || doc._isNew || !isProductType) return
+
+    executeDocumentAction(doc.typeId, doc.id, "getActiveChange", {})
+      .then((result) => {
+        setActiveChange(result?.data ?? null)
+      })
+      .catch(() => {
+        setActiveChange(null)
+      })
+  }, [doc?.id, doc?.typeId, doc?.status, doc?._isNew, isProductType])
 
   const togglePanel = useCallback(() => {
     const panel = sidePanelRef.current
@@ -403,6 +427,86 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
     onNavigate?.(newDoc.id, newDoc.typeId)
   }
 
+  /** 申请变更 */
+  const handleRequestChange = () => {
+    setChangeRequestOpen(true)
+  }
+
+  const handleChangeRequestConfirm = async (changeReason: string) => {
+    if (!doc) return
+
+    setSaving(true)
+    try {
+      const result = await executeDocumentAction(
+        doc.typeId,
+        doc.id,
+        "requestChange",
+        { changeReason }
+      )
+
+      if (result?.data) {
+        // 更新本地状态为草稿（可编辑）
+        updateStatus(docId, "draft")
+        // 设置活跃变更记录
+        setActiveChange({
+          id: result.data.id,
+          originalData: result.data.originalData,
+          changeReason,
+        })
+        // 更新快照（变更后从当前数据开始跟踪变更）
+        initialDocSnapshot.current = JSON.stringify({
+          masterData: doc.masterData,
+          detailTables: doc.detailTables,
+          status: "draft",
+        })
+        setChangeRequestOpen(false)
+      }
+    } catch (err) {
+      console.error("申请变更失败:", err)
+      alert(`申请变更失败: ${err instanceof Error ? err.message : String(err)}`)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  /** 取消变更 */
+  const handleCancelChange = async () => {
+    if (!doc) return
+    if (!confirm("确定要取消变更吗？产品将恢复到变更前的数据和审批状态。")) return
+
+    setSaving(true)
+    try {
+      const result = await executeDocumentAction(
+        doc.typeId,
+        doc.id,
+        "cancelChange",
+        {}
+      )
+
+      if (result?.data) {
+        // 恢复本地状态为已审批
+        updateStatus(docId, "approved")
+        setActiveChange(null)
+
+        // 刷新文档数据：从服务器重新获取
+        const freshData = await fetchDocumentApi(doc.typeId, doc.id)
+        addDocument(freshData)
+
+        // 更新快照
+        initialDocSnapshot.current = JSON.stringify({
+          masterData: freshData.masterData,
+          detailTables: freshData.detailTables,
+          status: freshData.status,
+        })
+      }
+    } catch (err) {
+      console.error("取消变更失败:", err)
+      alert(`取消变更失败: ${err instanceof Error ? err.message : String(err)}`)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   /** 审批通过 */
   const handleApprove = async () => {
     setSaving(true)
@@ -534,6 +638,12 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
         break
       case "void":
         handleVoid()
+        break
+      case "requestChange":
+        handleRequestChange()
+        break
+      case "cancelChange":
+        handleCancelChange()
         break
       default:
         console.warn(`[DocumentForm] 未处理的操作: "${actionId}"`)
@@ -716,14 +826,29 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
               <div className="flex items-center px-3 py-2 border-b">
                 <span className="text-sm font-semibold">详情</span>
               </div>
-              <Tabs defaultValue="trace" className="flex flex-col">
+              <Tabs defaultValue={activeChange ? "diff" : "trace"} className="flex flex-col">
                 <div className="px-3 pt-2">
-                  <TabsList className="grid w-full grid-cols-3">
+                  <TabsList className={cn("grid w-full", activeChange ? "grid-cols-4" : "grid-cols-3")}>
+                    {activeChange && (
+                      <TabsTrigger value="diff">变更对比</TabsTrigger>
+                    )}
                     <TabsTrigger value="trace">关联单据</TabsTrigger>
                     <TabsTrigger value="approval">审核记录</TabsTrigger>
                     <TabsTrigger value="permissions">权限</TabsTrigger>
                   </TabsList>
                 </div>
+
+                {activeChange && (
+                  <TabsContent value="diff" className="mt-2">
+                    <div className="p-3 pt-1">
+                      <ChangeDiffPanel
+                        originalData={activeChange.originalData}
+                        currentData={doc.masterData as Record<string, unknown>}
+                        schema={schema}
+                      />
+                    </div>
+                  </TabsContent>
+                )}
 
                 <TabsContent value="trace" className="mt-2">
                   <div className="p-3 pt-1">
@@ -786,6 +911,14 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
         onSave={handleUnsavedSave}
         onDiscard={handleUnsavedDiscard}
         onCancel={handleUnsavedCancel}
+      />
+
+      {/* 变更申请对话框 */}
+      <ChangeRequestDialog
+        open={changeRequestOpen}
+        onOpenChange={setChangeRequestOpen}
+        onConfirm={handleChangeRequestConfirm}
+        loading={saving}
       />
     </div>
   )

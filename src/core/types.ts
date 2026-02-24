@@ -620,6 +620,12 @@ export interface ActionContext {
     canWithdraw: boolean
     canSubmit: boolean
   }
+  /** 活跃的产品变更记录 (仅产品类型单据) */
+  activeChange?: {
+    id: string
+    originalData: Record<string, unknown>
+    changeReason: string
+  } | null
 }
 
 /** 单据表单操作定义 */

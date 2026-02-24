@@ -21,7 +21,10 @@ const EMPTY_PERMISSIONS = new Set<string>()
  * @returns visibleActions - 可见的操作列表 (已按 order 排序)
  *          isDisabled - 判断某个操作是否禁用
  */
-export function useDocumentFormActions(doc: DocumentData | undefined) {
+export function useDocumentFormActions(
+  doc: DocumentData | undefined,
+  activeChange?: { id: string; originalData: Record<string, unknown>; changeReason: string } | null,
+) {
   const currentUser = useAuthStore((s) => s.currentUser)
   const { permissions } = useUserPermissions()
   const { canApproveDoc, canWithdraw, canSubmit } = useApprovalPermission(
@@ -47,8 +50,9 @@ export function useDocumentFormActions(doc: DocumentData | undefined) {
         canWithdraw,
         canSubmit,
       },
+      activeChange,
     }
-  }, [doc, currentUser?.id, permissions, canApproveDoc, canWithdraw, canSubmit])
+  }, [doc, currentUser?.id, permissions, canApproveDoc, canWithdraw, canSubmit, activeChange])
 
   // 过滤并排序可见操作
   const visibleActions = useMemo<DocumentFormActionDef[]>(() => {

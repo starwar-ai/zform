@@ -1449,7 +1449,19 @@ const standardProductFormActions: DocumentFormActionConfig = {
       id: "withdraw", label: "撤回", icon: "Undo2", variant: "outline", allowedStatuses: ["submitted"], order: 5,
       visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
     },
-    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["draft"], order: 7 },
+    {
+      id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["draft"], order: 7,
+      visible: (ctx) => !ctx.activeChange,
+    },
+    {
+      id: "cancelChange", label: "取消变更", icon: "Undo2", variant: "destructive",
+      allowedStatuses: ["draft"], permission: "standard_product:change", order: 8,
+      visible: (ctx) => !!ctx.activeChange,
+    },
+    {
+      id: "requestChange", label: "申请变更", icon: "FileEdit", variant: "outline",
+      allowedStatuses: ["approved"], permission: "standard_product:change", order: 9,
+    },
     {
       id: "push-down:0", label: "生成客户产品", icon: "ArrowDownToLine", variant: "outline",
       allowedStatuses: ["approved"], permission: "standard_product:push_down", order: 10,
@@ -1481,7 +1493,19 @@ const customerProductFormActions: DocumentFormActionConfig = {
       id: "withdraw", label: "撤回", icon: "Undo2", variant: "outline", allowedStatuses: ["submitted"], order: 5,
       visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
     },
-    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["draft"], order: 7 },
+    {
+      id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["draft"], order: 7,
+      visible: (ctx) => !ctx.activeChange,
+    },
+    {
+      id: "cancelChange", label: "取消变更", icon: "Undo2", variant: "destructive",
+      allowedStatuses: ["draft"], permission: "customer_product:change", order: 8,
+      visible: (ctx) => !!ctx.activeChange,
+    },
+    {
+      id: "requestChange", label: "申请变更", icon: "FileEdit", variant: "outline",
+      allowedStatuses: ["approved"], permission: "customer_product:change", order: 9,
+    },
   ],
 }
 
@@ -1505,7 +1529,19 @@ const selfOwnedProductFormActions: DocumentFormActionConfig = {
       id: "withdraw", label: "撤回", icon: "Undo2", variant: "outline", allowedStatuses: ["submitted"], order: 5,
       visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
     },
-    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["draft"], order: 7 },
+    {
+      id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["draft"], order: 7,
+      visible: (ctx) => !ctx.activeChange,
+    },
+    {
+      id: "cancelChange", label: "取消变更", icon: "Undo2", variant: "destructive",
+      allowedStatuses: ["draft"], permission: "self_owned_product:change", order: 8,
+      visible: (ctx) => !!ctx.activeChange,
+    },
+    {
+      id: "requestChange", label: "申请变更", icon: "FileEdit", variant: "outline",
+      allowedStatuses: ["approved"], permission: "self_owned_product:change", order: 9,
+    },
   ],
 }
 

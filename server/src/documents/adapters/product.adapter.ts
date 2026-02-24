@@ -483,6 +483,30 @@ export const standardProductAdapter: DocumentTypeAdapter = {
         throw new Error('只有已提交的产品才能审核');
       }
 
+      // 检查是否有活跃的 ProductChange（变更审批场景）
+      const activeChange = await prisma.productChange.findFirst({
+        where: {
+          productId: id,
+          changeStatus: 'PENDING',
+        },
+      });
+
+      if (activeChange) {
+        // 变更审批：获取当前产品数据作为 changeData，标记变更为 COMPLETED
+        const currentProduct = await prisma.product.findUnique({ where: { id } });
+        await prisma.productChange.update({
+          where: { id: activeChange.id },
+          data: {
+            changeData: currentProduct as any,
+            changeStatus: 'COMPLETED',
+            approvedBy: userId,
+            approvedAt: new Date(),
+            approvalComment: comment,
+            updatedBy: userId,
+          },
+        });
+      }
+
       const updated = await prisma.product.update({
         where: { id },
         data: {
@@ -498,7 +522,7 @@ export const standardProductAdapter: DocumentTypeAdapter = {
         data: {
           productId: id,
           version: updated.version,
-          changeType: 'APPROVE',
+          changeType: activeChange ? 'CHANGE_APPROVED' : 'APPROVE',
           changedBy: userId,
           changeDetails: comment ? { comment } : undefined,
         },
@@ -595,8 +619,22 @@ export const standardProductAdapter: DocumentTypeAdapter = {
       const product = await prisma.product.findUnique({
         where: { id },
         include: {
-          bomItems: true,
-          accessories: true,
+          category: true,
+          brand: true,
+          department: true,
+          hsCode: true,
+          packageMethod: true,
+          baseProduct: true,
+          bomItems: {
+            include: {
+              childProduct: { select: { id: true, code: true, name: true, unit: true } },
+            },
+          },
+          accessories: {
+            include: {
+              accessory: { select: { id: true, code: true, name: true, unit: true } },
+            },
+          },
         },
       });
       if (!product) {
@@ -606,14 +644,17 @@ export const standardProductAdapter: DocumentTypeAdapter = {
         throw new Error('只有已审核通过的产品才能申请变更');
       }
 
-      const { changeData, changeReason } = body;
+      const { changeReason } = body;
+
+      // 快照当前产品完整数据为 originalData
+      const originalData = { ...product };
 
       // 创建产品变更记录
       const changeRequest = await prisma.productChange.create({
         data: {
           productId: id,
-          originalData: product as any,
-          changeData,
+          originalData: originalData as any,
+          changeData: {}, // 审批时填充
           changeReason,
           changeStatus: 'PENDING',
           requestedBy: userId,
@@ -622,7 +663,28 @@ export const standardProductAdapter: DocumentTypeAdapter = {
         },
       });
 
-      return { data: changeRequest, message: '产品变更申请已创建' };
+      // 设产品为草稿状态，允许编辑
+      const updated = await prisma.product.update({
+        where: { id },
+        data: {
+          approvalStatus: 'PENDING',
+          status: 'DRAFT',
+          updatedBy: userId,
+        },
+      });
+
+      // 记录变更日志
+      await prisma.productChangeLog.create({
+        data: {
+          productId: id,
+          version: product.version,
+          changeType: 'REQUEST_CHANGE',
+          changedBy: userId,
+          changeDetails: { changeReason, changeId: changeRequest.id },
+        },
+      });
+
+      return { data: { ...changeRequest, product: updated }, message: '产品变更申请已创建，产品已解锁可编辑' };
     },
 
     /** 提交产品变更 */
@@ -787,6 +849,94 @@ export const standardProductAdapter: DocumentTypeAdapter = {
       });
 
       return { data: null, message: '产品变更已删除' };
+    },
+
+    /** 获取活跃的变更记录 */
+    async getActiveChange({ id, prisma }) {
+      const activeChange = await prisma.productChange.findFirst({
+        where: {
+          productId: id,
+          changeStatus: 'PENDING',
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      return { data: activeChange, message: 'Success' };
+    },
+
+    /** 取消变更，恢复产品到审批前状态 */
+    async cancelChange({ id, userId, prisma }) {
+      const activeChange = await prisma.productChange.findFirst({
+        where: {
+          productId: id,
+          changeStatus: 'PENDING',
+        },
+      });
+
+      if (!activeChange) {
+        throw new Error('没有活跃的变更申请');
+      }
+
+      const originalData = activeChange.originalData as any;
+
+      // 用 originalData 恢复产品数据
+      await prisma.product.update({
+        where: { id },
+        data: {
+          approvalStatus: 'APPROVED',
+          status: 'ACTIVE',
+          // 恢复关键字段
+          name: originalData.name,
+          nameEn: originalData.nameEn,
+          barcode: originalData.barcode,
+          unit: originalData.unit,
+          material: originalData.material,
+          salePrice: originalData.salePrice,
+          companyPrice: originalData.companyPrice,
+          skuType: originalData.skuType,
+          isAdvantage: originalData.isAdvantage,
+          isAgent: originalData.isAgent,
+          isOnShelf: originalData.isOnShelf,
+          categoryId: originalData.categoryId,
+          brandId: originalData.brandId,
+          departmentId: originalData.departmentId,
+          hsCodeId: originalData.hsCodeId,
+          packageMethodId: originalData.packageMethodId,
+          baseProductId: originalData.baseProductId,
+          remark: originalData.remark,
+          updatedBy: userId,
+        },
+      });
+
+      // 标记变更为 CANCELLED
+      await prisma.productChange.update({
+        where: { id: activeChange.id },
+        data: {
+          changeStatus: 'CANCELLED',
+          updatedBy: userId,
+        },
+      });
+
+      // 记录变更日志
+      await prisma.productChangeLog.create({
+        data: {
+          productId: id,
+          version: originalData.version,
+          changeType: 'CANCEL_CHANGE',
+          changedBy: userId,
+        },
+      });
+
+      // 返回恢复后的产品
+      const restored = await prisma.product.findUnique({
+        where: { id },
+        include: {
+          category: true,
+          brand: true,
+        },
+      });
+
+      return { data: restored, message: '变更已取消，产品已恢复到变更前状态' };
     },
   },
 };

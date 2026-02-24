@@ -560,10 +560,10 @@ export const standardProductSchema: DocumentSchema = {
   typeId: "standard_product",
   typeName: "标准产品",
   masterFields: [
-    // === 产品分类（优先选择，决定后续录入内容）===
+    // === 产品类型（优先选择，决定后续录入内容）===
     {
       id: "skuType",
-      label: "产品分类",
+      label: "产品类型",
       type: "select",
       required: true,
       defaultValue: "GENERAL_PRODUCTS",
