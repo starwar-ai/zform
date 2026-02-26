@@ -108,10 +108,10 @@ export class MenuService {
     return ids;
   }
 
-  /** 获取全部菜单（扁平列表） */
+  /** 获取全部菜单（扁平列表，排除 button 类型） */
   async findAll(): Promise<SysMenu[]> {
     return prisma.sysMenu.findMany({
-      where: { deletedAt: null },
+      where: { deletedAt: null, menuType: { not: 'button' } },
       orderBy: [{ orderNum: 'asc' }, { createdAt: 'asc' }],
     });
   }
@@ -146,12 +146,13 @@ export class MenuService {
     const menuIds = [...new Set(roleMenus.map((rm) => rm.menuId))];
     if (menuIds.length === 0) return [];
 
-    // 获取这些菜单（仅可见的）
+    // 获取这些菜单（仅可见的、非按钮类型）
     const menus = await prisma.sysMenu.findMany({
       where: {
         id: { in: menuIds },
         status: 'visible',
         deletedAt: null,
+        menuType: { not: 'button' },
       },
       orderBy: [{ orderNum: 'asc' }, { createdAt: 'asc' }],
     });

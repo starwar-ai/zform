@@ -9,6 +9,10 @@ import {
   fetchRoleMenuIdsApi,
   assignRoleMenusApi,
 } from "@/apis/role-api"
+import {
+  fetchRolePermissionIdsApi,
+  assignRolePermissionsApi,
+} from "@/apis/permission-api"
 
 interface RoleStoreState {
   roles: Role[]
@@ -22,6 +26,8 @@ interface RoleStoreState {
   deleteRole: (id: string) => Promise<void>
   assignMenus: (roleId: string, menuIds: string[]) => Promise<void>
   getRoleMenuIds: (roleId: string) => Promise<string[]>
+  assignPermissions: (roleId: string, permissionIds: string[]) => Promise<void>
+  getRolePermissionIds: (roleId: string) => Promise<string[]>
 
   // 辅助方法
   getRole: (id: string) => Role | undefined
@@ -85,6 +91,14 @@ export const useRoleStore = create<RoleStoreState>()(
 
     getRoleMenuIds: async (roleId) => {
       return fetchRoleMenuIdsApi(roleId)
+    },
+
+    assignPermissions: async (roleId, permissionIds) => {
+      await assignRolePermissionsApi(roleId, permissionIds)
+    },
+
+    getRolePermissionIds: async (roleId) => {
+      return fetchRolePermissionIdsApi(roleId)
     },
 
     getRole: (id) => {

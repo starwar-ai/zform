@@ -9,5 +9,7 @@ router.put('/:id', roleController.update);
 router.delete('/:id', roleController.delete);
 router.get('/:id/menus', roleController.getMenus);
 router.put('/:id/menus', roleController.assignMenus);
+router.get('/:id/permissions', roleController.getPermissions);
+router.put('/:id/permissions', roleController.assignPermissions);
 
 export default router;

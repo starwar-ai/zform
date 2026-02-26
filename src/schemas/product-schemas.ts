@@ -664,44 +664,20 @@ export const standardProductSchema: DocumentSchema = {
       group: "基本信息",
     },
 
-    // === 分类与品牌（辅料不需要）===
+    // === 产品分类 ===
     {
       id: "categoryId",
       label: "产品分类",
       type: "combobox",
       required: true,
       placeholder: "搜索或选择产品分类",
-      group: "分类信息",
+      group: "基本信息",
       comboboxConfig: {
         fetchOptions: fetchProductCategoryOptions,
         isTree: true,
       },
       visibleWhen: notAuxiliary,
     },
-    {
-      id: "brandId",
-      label: "品牌",
-      type: "combobox",
-      placeholder: "搜索或选择品牌",
-      group: "分类信息",
-      comboboxConfig: {
-        fetchOptions: fetchBrandOptions,
-      },
-      visibleWhen: isFullInputMode,
-    },
-    {
-      id: "departmentId",
-      label: "所属部门",
-      type: "combobox",
-      placeholder: "搜索或选择部门",
-      group: "分类信息",
-      comboboxConfig: {
-        fetchOptions: fetchDepartmentOptions,
-        isTree: true,
-      },
-      visibleWhen: isFullInputMode,
-    },
-
     // === 描述与备注 ===
     {
       id: "description",
@@ -786,7 +762,7 @@ export const standardProductSchema: DocumentSchema = {
     },
     {
       id: "netWeight",
-      label: "净重 (kg)",
+      label: "单品净重(g)",
       type: "number",
       placeholder: "0.000",
       group: "其他信息",
@@ -915,7 +891,7 @@ export const standardProductSchema: DocumentSchema = {
       id: "remark",
       label: "备注",
       type: "textarea",
-      span: 4,
+      span: 6,
       group: "其他信息",
     },
   ],
@@ -1228,7 +1204,7 @@ export const customerProductSchema: DocumentSchema = {
     },
     {
       id: "netWeight",
-      label: "净重 (kg)",
+      label: "单品净重(g)",
       type: "number",
       placeholder: "0.000",
       group: "其他信息",
@@ -1272,7 +1248,7 @@ export const customerProductSchema: DocumentSchema = {
       id: "remark",
       label: "备注",
       type: "textarea",
-      span: 4,
+      span: 6,
       group: "其他信息",
     },
   ],
@@ -1568,7 +1544,7 @@ export const selfOwnedProductSchema: DocumentSchema = {
     },
     {
       id: "netWeight",
-      label: "净重 (kg)",
+      label: "单品净重(g)",
       type: "number",
       placeholder: "0.000",
       group: "其他信息",
@@ -1622,7 +1598,7 @@ export const selfOwnedProductSchema: DocumentSchema = {
       id: "remark",
       label: "备注",
       type: "textarea",
-      span: 4,
+      span: 6,
       group: "其他信息",
     },
 

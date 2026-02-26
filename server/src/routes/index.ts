@@ -11,6 +11,7 @@ import roleRoutes from './roles';
 import userRoutes from './users';
 import departmentRoutes from './departments';
 import dataPermissionRoutes from './data-permissions';
+import permissionRoutes from './permissions';
 import docPermissionRoutes from './document-permissions';
 import categoryRoutes from './parameters';
 import companyRoutes from './companies';
@@ -63,6 +64,7 @@ router.use('/users', userRoutes);
 router.use('/employees', employeeRoutes);
 router.use('/departments', departmentRoutes);
 router.use('/data-permissions', dataPermissionRoutes);
+router.use('/permissions', permissionRoutes);
 router.use('/document-permissions', docPermissionRoutes);
 // ---- 参数配置 API（统一 /parameters 前缀）----
 // 注意：更具体的路径需先注册，否则会被 /parameters 吞掉

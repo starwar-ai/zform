@@ -105,4 +105,31 @@ export class RoleService {
     });
     return roleMenus.map((rm) => rm.menuId);
   }
+
+  /** 分配操作权限 */
+  async assignPermissions(roleId: string, permissionIds: string[]): Promise<void> {
+    // 先删除旧的关联
+    await prisma.sysRolePermission.deleteMany({
+      where: { roleId },
+    });
+
+    // 创建新的关联
+    if (permissionIds.length > 0) {
+      await prisma.sysRolePermission.createMany({
+        data: permissionIds.map((permissionId) => ({
+          roleId,
+          permissionId,
+        })),
+      });
+    }
+  }
+
+  /** 获取角色已分配的操作权限 ID 列表 */
+  async getRolePermissionIds(roleId: string): Promise<string[]> {
+    const rolePerms = await prisma.sysRolePermission.findMany({
+      where: { roleId },
+      select: { permissionId: true },
+    });
+    return rolePerms.map((rp) => rp.permissionId);
+  }
 }

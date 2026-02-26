@@ -3,7 +3,7 @@
  * 角色管理组件（接入后端 API + 菜单权限分配）
  */
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { useRoleStore } from "@/stores/role-store"
 import { useUserStore } from "@/stores/user-store"
 import { useMenuStore } from "@/stores/menu-store"
@@ -15,6 +15,10 @@ import type { DepartmentTreeNode } from "@/types/department"
 import { fetchRoleDataPermissionsApi, saveRoleDataPermissionsApi } from "@/apis/data-permission-api"
 import { fetchDepartmentTreeApi } from "@/apis/department-api"
 import { fetchDocumentTypesApi, type DocumentTypeMeta } from "@/apis/document-api"
+import {
+  fetchPermissionsGroupedApi,
+  type PermissionGroup,
+} from "@/apis/permission-api"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -72,6 +76,8 @@ import {
   KeyRound,
   Database,
   X,
+  Menu as MenuIcon,
+  Search,
 } from "lucide-react"
 
 const statusLabels = {
@@ -205,6 +211,8 @@ export function RoleManagement() {
     deleteRole,
     assignMenus,
     getRoleMenuIds,
+    assignPermissions,
+    getRolePermissionIds,
     getAllRoles,
   } = useRoleStore()
   const { users, fetchUsers, getUsersByRole } = useUserStore()
@@ -221,6 +229,14 @@ export function RoleManagement() {
   const [menuAssignRoleId, setMenuAssignRoleId] = useState<string | null>(null)
   const [checkedMenuIds, setCheckedMenuIds] = useState<Set<string>>(new Set())
   const [menuLoading, setMenuLoading] = useState(false)
+
+  // 操作权限分配
+  const [permDialogOpen, setPermDialogOpen] = useState(false)
+  const [permAssignRoleId, setPermAssignRoleId] = useState<string | null>(null)
+  const [permGroups, setPermGroups] = useState<PermissionGroup[]>([])
+  const [selectedPermIds, setSelectedPermIds] = useState<Set<string>>(new Set())
+  const [permLoading, setPermLoading] = useState(false)
+  const [permSearch, setPermSearch] = useState("")
 
   // 数据权限配置
   const [dpDialogOpen, setDpDialogOpen] = useState(false)
@@ -407,6 +423,108 @@ export function RoleManagement() {
       setSaving(false)
     }
   }
+
+  // ---- 操作权限 ----
+
+  const CATEGORY_NAMES: Record<string, string> = {
+    business: "业务管理",
+    product: "产品管理",
+    finance: "财务管理",
+    shipping: "单证管理",
+    data: "资料管理",
+    quality: "质检管理",
+    warehouse: "仓库管理",
+    system: "系统管理",
+  }
+
+  /** 打开操作权限分配对话框 */
+  const handleOpenPermAssign = async (roleId: string) => {
+    setPermAssignRoleId(roleId)
+    setPermLoading(true)
+    setPermDialogOpen(true)
+    setPermSearch("")
+    try {
+      const [groups, permIds] = await Promise.all([
+        fetchPermissionsGroupedApi(),
+        getRolePermissionIds(roleId),
+      ])
+      setPermGroups(groups)
+      setSelectedPermIds(new Set(permIds))
+    } catch (err) {
+      console.error("获取操作权限失败:", err)
+    } finally {
+      setPermLoading(false)
+    }
+  }
+
+  /** 过滤后的权限组 */
+  const filteredPermGroups = useMemo(() => {
+    if (!permSearch.trim()) return permGroups
+    const q = permSearch.toLowerCase()
+    return permGroups
+      .map((group) => {
+        const groupMatch = group.name.toLowerCase().includes(q) || group.code.toLowerCase().includes(q)
+        const filteredPerms = group.permissions.filter(
+          (p) =>
+            p.name.toLowerCase().includes(q) ||
+            p.code.toLowerCase().includes(q) ||
+            p.action.toLowerCase().includes(q)
+        )
+        return { ...group, permissions: groupMatch ? group.permissions : filteredPerms }
+      })
+      .filter((group) => group.permissions.length > 0)
+  }, [permGroups, permSearch])
+
+  /** 按 category 分组 */
+  const groupedByCategory = useMemo(() => {
+    return filteredPermGroups.reduce((acc, group) => {
+      if (!acc[group.category]) acc[group.category] = []
+      acc[group.category].push(group)
+      return acc
+    }, {} as Record<string, PermissionGroup[]>)
+  }, [filteredPermGroups])
+
+  /** 切换单个权限 */
+  const togglePermission = (permId: string) => {
+    setSelectedPermIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(permId)) next.delete(permId)
+      else next.add(permId)
+      return next
+    })
+  }
+
+  /** 切换权限组全选 */
+  const toggleGroupAll = (group: PermissionGroup) => {
+    const ids = group.permissions.map((p) => p.id)
+    const allSelected = ids.every((id) => selectedPermIds.has(id))
+    setSelectedPermIds((prev) => {
+      const next = new Set(prev)
+      if (allSelected) {
+        ids.forEach((id) => next.delete(id))
+      } else {
+        ids.forEach((id) => next.add(id))
+      }
+      return next
+    })
+  }
+
+  /** 保存操作权限 */
+  const handleSavePermAssign = async () => {
+    if (!permAssignRoleId) return
+    setSaving(true)
+    try {
+      await assignPermissions(permAssignRoleId, Array.from(selectedPermIds))
+      setPermDialogOpen(false)
+    } catch (err) {
+      console.error("保存操作权限失败:", err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const selectedPermCount = selectedPermIds.size
+  const totalPermCount = filteredPermGroups.reduce((sum, g) => sum + g.permissions.length, 0)
 
   // ---- 数据权限 ----
 
@@ -595,10 +713,19 @@ export function RoleManagement() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleOpenMenuAssign(role.id)}
-                          title="分配菜单权限"
+                          title="菜单权限"
+                        >
+                          <MenuIcon className="h-3 w-3 mr-1" />
+                          菜单
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleOpenPermAssign(role.id)}
+                          title="操作权限"
                         >
                           <KeyRound className="h-3 w-3 mr-1" />
-                          权限
+                          操作权限
                         </Button>
                         <Button
                           variant="ghost"
@@ -726,7 +853,7 @@ export function RoleManagement() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <KeyRound className="h-4 w-4" />
+              <MenuIcon className="h-4 w-4" />
               分配菜单权限
             </DialogTitle>
             <DialogDescription>
@@ -756,6 +883,126 @@ export function RoleManagement() {
               取消
             </Button>
             <Button onClick={handleSaveMenuAssign} disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              保存
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 操作权限分配对话框 */}
+      <Dialog open={permDialogOpen} onOpenChange={setPermDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="h-4 w-4" />
+              操作权限设置
+            </DialogTitle>
+            <DialogDescription>
+              配置该角色可执行的操作权限，如新建、删除、审批等。
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center justify-between gap-4 py-2 border-b">
+            <div className="relative flex-1 max-w-xs">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
+              <Input
+                placeholder="搜索权限..."
+                value={permSearch}
+                onChange={(e) => setPermSearch(e.target.value)}
+                className="pl-9 h-9"
+              />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              已选择 <span className="font-medium text-primary">{selectedPermCount}</span> / {totalPermCount} 个权限
+            </p>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {permLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                <span className="ml-2 text-sm text-muted-foreground">加载中...</span>
+              </div>
+            ) : Object.keys(groupedByCategory).length === 0 ? (
+              <div className="text-center text-muted-foreground py-8">
+                {permSearch ? "没有找到匹配的权限" : "暂无可配置的权限"}
+              </div>
+            ) : (
+              <div className="border rounded-md">
+                <div className="overflow-y-auto" style={{ maxHeight: "400px" }}>
+                  <Table>
+                    <TableHeader className="sticky top-0 z-10 bg-background">
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="w-[120px]">分类</TableHead>
+                        <TableHead className="w-[140px]">权限组</TableHead>
+                        <TableHead className="w-[40px]"></TableHead>
+                        <TableHead className="w-[160px]">权限名称</TableHead>
+                        <TableHead className="w-[70px]">操作</TableHead>
+                        <TableHead>说明</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {Object.entries(groupedByCategory).map(([category, groups]) =>
+                        groups.map((group, groupIndex) =>
+                          group.permissions.map((permission, permIndex) => {
+                            const isFirstInCategory = groupIndex === 0 && permIndex === 0
+                            const isFirstInGroup = permIndex === 0
+                            const categoryRowSpan = groups.reduce((sum, g) => sum + g.permissions.length, 0)
+
+                            return (
+                              <TableRow key={permission.id}>
+                                {isFirstInCategory && (
+                                  <TableCell
+                                    rowSpan={categoryRowSpan}
+                                    className="font-medium align-top bg-blue-50 dark:bg-blue-950/30"
+                                  >
+                                    {CATEGORY_NAMES[category] || category}
+                                  </TableCell>
+                                )}
+                                {isFirstInGroup && (
+                                  <TableCell
+                                    rowSpan={group.permissions.length}
+                                    className="align-top bg-muted/30"
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <Checkbox
+                                        checked={group.permissions.every((p) => selectedPermIds.has(p.id))}
+                                        onCheckedChange={() => toggleGroupAll(group)}
+                                      />
+                                      <span className="font-medium text-sm">{group.name}</span>
+                                    </div>
+                                  </TableCell>
+                                )}
+                                <TableCell className="text-center">
+                                  <Checkbox
+                                    checked={selectedPermIds.has(permission.id)}
+                                    onCheckedChange={() => togglePermission(permission.id)}
+                                  />
+                                </TableCell>
+                                <TableCell className="text-sm">{permission.name}</TableCell>
+                                <TableCell>
+                                  <Badge variant="outline" className="text-xs">
+                                    {permission.action}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-sm text-muted-foreground">
+                                  {permission.description || "-"}
+                                </TableCell>
+                              </TableRow>
+                            )
+                          })
+                        )
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPermDialogOpen(false)}>
+              取消
+            </Button>
+            <Button onClick={handleSavePermAssign} disabled={saving}>
               {saving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
               保存
             </Button>

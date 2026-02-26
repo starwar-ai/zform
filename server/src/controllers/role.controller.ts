@@ -75,4 +75,25 @@ export const roleController = {
       next(error);
     }
   },
+
+  /** GET /roles/:id/permissions - 获取角色操作权限 ID 列表 */
+  async getPermissions(req: Request, res: Response, next: NextFunction) {
+    try {
+      const permissionIds = await roleService.getRolePermissionIds(ensureString(req.params.id));
+      res.json(successResponse(permissionIds));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** PUT /roles/:id/permissions - 分配操作权限 */
+  async assignPermissions(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { permissionIds } = req.body; // string[]
+      await roleService.assignPermissions(ensureString(req.params.id), permissionIds);
+      res.json(successResponse(null, '操作权限分配成功'));
+    } catch (error) {
+      next(error);
+    }
+  },
 };

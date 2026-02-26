@@ -1500,173 +1500,126 @@ async function main() {
     },
   });
 
-  // ---- 按钮级权限菜单 (menuType = 'button') ----
-  // 这些不会在侧边栏显示，仅用于权限标识
+  // ---- 操作权限（SysPermissionGroup + SysPermission） ----
+  // 清除旧数据
+  await prisma.sysRolePermission.deleteMany();
+  await prisma.sysPermission.deleteMany();
+  await prisma.sysPermissionGroup.deleteMany();
 
-  /** 批量创建某个单据类型的按钮权限 */
-  async function createDocPermButtons(
-    parentId: string,
-    typeId: string,
-    actions: { perm: string; title: string }[]
-  ) {
-    const result: string[] = [];
-    for (let i = 0; i < actions.length; i++) {
-      const btn = await prisma.sysMenu.create({
-        data: {
-          title: actions[i].title,
-          parentId,
-          orderNum: i + 1,
-          menuType: 'button',
-          permission: `${typeId}:${actions[i].perm}`,
-          status: 'visible',
-        },
-      });
-      result.push(btn.id);
-    }
-    return result;
+  // 权限组定义
+  const permissionGroupDefs: {
+    code: string; name: string; category: string; sortOrder: number;
+  }[] = [
+    // 业务管理
+    { code: 'sales_contract', name: '销售合同', category: 'business', sortOrder: 1 },
+    { code: 'quotation', name: '客户报价', category: 'business', sortOrder: 2 },
+    { code: 'purchase_plan', name: '采购计划', category: 'business', sortOrder: 3 },
+    { code: 'purchase_contract', name: '采购合同', category: 'business', sortOrder: 4 },
+    { code: 'processing_order', name: '产品加工', category: 'business', sortOrder: 5 },
+    // 产品管理
+    { code: 'standard_product', name: '标准产品', category: 'product', sortOrder: 1 },
+    { code: 'customer_product', name: '客户产品', category: 'product', sortOrder: 2 },
+    { code: 'self_owned_product', name: '自主品牌', category: 'product', sortOrder: 3 },
+    // 财务管理
+    { code: 'payment_apply', name: '付款申请', category: 'finance', sortOrder: 1 },
+    { code: 'payment', name: '付款单', category: 'finance', sortOrder: 2 },
+    { code: 'receipt_registration', name: '收款登记', category: 'finance', sortOrder: 3 },
+    { code: 'payment_claim', name: '回款认领', category: 'finance', sortOrder: 4 },
+    { code: 'invoicing_notice', name: '开票通知', category: 'finance', sortOrder: 5 },
+    { code: 'invoice_registration', name: '发票登记', category: 'finance', sortOrder: 6 },
+    // 单证管理
+    { code: 'shipping_plan', name: '出运计划', category: 'shipping', sortOrder: 1 },
+    { code: 'shipping_order', name: '出运单', category: 'shipping', sortOrder: 2 },
+    { code: 'customs_declaration', name: '报关单', category: 'shipping', sortOrder: 3 },
+    { code: 'inspection_declaration', name: '商检单', category: 'shipping', sortOrder: 4 },
+    // 资料管理
+    { code: 'customer', name: '客户管理', category: 'data', sortOrder: 1 },
+    { code: 'supplier', name: '供应商管理', category: 'data', sortOrder: 2 },
+    // 质检管理
+    { code: 'inspection_order', name: '验货单', category: 'quality', sortOrder: 1 },
+    { code: 'concession_acceptance', name: '让步接收单', category: 'quality', sortOrder: 2 },
+    // 仓库管理
+    { code: 'warehouse_inbound', name: '入库单', category: 'warehouse', sortOrder: 1 },
+    { code: 'warehouse_outbound', name: '出库单', category: 'warehouse', sortOrder: 2 },
+    { code: 'warehouse_inbound_notice', name: '入库通知', category: 'warehouse', sortOrder: 3 },
+    { code: 'warehouse_outbound_notice', name: '出库通知', category: 'warehouse', sortOrder: 4 },
+    // 系统管理
+    { code: 'user', name: '用户管理', category: 'system', sortOrder: 1 },
+    { code: 'role', name: '角色管理', category: 'system', sortOrder: 2 },
+    { code: 'menu', name: '菜单管理', category: 'system', sortOrder: 3 },
+    { code: 'department', name: '部门管理', category: 'system', sortOrder: 4 },
+  ];
+
+  for (const g of permissionGroupDefs) {
+    await prisma.sysPermissionGroup.create({ data: g });
   }
 
-  // 通用按钮权限定义
-  const fullDocActions = [
-    { perm: 'create', title: '新建' },
-    { perm: 'delete', title: '删除' },
-    { perm: 'submit', title: '提交' },
-    { perm: 'approve', title: '审批' },
-    { perm: 'close', title: '关闭' },
-    { perm: 'void', title: '作废' },
-    { perm: 'push_down', title: '下推' },
-  ];
+  // 权限动作模板
+  const actionLabels: Record<string, string> = {
+    create: '新建', delete: '删除', submit: '提交', approve: '审批',
+    close: '关闭', void: '作废', push_down: '下推', change: '变更',
+    read: '查看', write: '编辑',
+  };
 
-  const basicDocActions = [
-    { perm: 'create', title: '新建' },
-    { perm: 'delete', title: '删除' },
-    { perm: 'submit', title: '提交' },
-    { perm: 'approve', title: '审批' },
-  ];
+  // 每个权限组对应的动作列表
+  const groupActions: Record<string, string[]> = {
+    sales_contract: ['create', 'delete', 'submit', 'approve', 'close', 'void', 'push_down'],
+    quotation: ['create', 'delete', 'submit', 'approve', 'close', 'void', 'push_down'],
+    purchase_plan: ['create', 'delete', 'submit', 'approve', 'close', 'void', 'push_down'],
+    purchase_contract: ['create', 'delete', 'submit', 'approve', 'close', 'void'],
+    processing_order: ['create', 'delete', 'submit', 'approve', 'close', 'void'],
+    standard_product: ['create', 'delete', 'submit', 'approve', 'change', 'push_down'],
+    customer_product: ['create', 'delete', 'submit', 'approve', 'change'],
+    self_owned_product: ['create', 'delete', 'submit', 'approve', 'change'],
+    payment_apply: ['create', 'delete', 'submit', 'approve', 'close', 'void'],
+    payment: ['create', 'delete', 'submit', 'approve', 'close', 'void', 'push_down'],
+    receipt_registration: ['create', 'delete', 'submit', 'approve', 'close'],
+    payment_claim: ['create', 'delete', 'submit', 'approve', 'close'],
+    invoicing_notice: ['create', 'delete', 'submit', 'approve', 'close', 'void'],
+    invoice_registration: ['create', 'delete', 'submit', 'approve', 'close', 'void'],
+    shipping_plan: ['create', 'delete', 'submit', 'approve', 'close', 'void', 'push_down'],
+    shipping_order: ['create', 'delete', 'submit', 'approve', 'close', 'void'],
+    customs_declaration: ['create', 'delete', 'submit', 'approve', 'close', 'void'],
+    inspection_declaration: ['create', 'delete', 'submit', 'approve', 'close', 'void'],
+    customer: ['create', 'delete', 'submit', 'approve', 'close'],
+    supplier: ['create', 'delete', 'submit', 'approve', 'close'],
+    inspection_order: ['create', 'delete', 'submit', 'approve', 'close', 'void'],
+    concession_acceptance: ['create', 'delete', 'submit', 'approve'],
+    warehouse_inbound: ['create', 'delete', 'submit', 'approve'],
+    warehouse_outbound: ['create', 'delete', 'submit', 'approve'],
+    warehouse_inbound_notice: ['create', 'delete', 'submit', 'approve'],
+    warehouse_outbound_notice: ['create', 'delete', 'submit', 'approve'],
+    user: ['read', 'write'],
+    role: ['read', 'write'],
+    menu: ['read', 'write'],
+    department: ['read', 'write'],
+  };
 
-  const salesContractBtnIds = await createDocPermButtons(salesContractMenu.id, 'sales_contract', fullDocActions);
-  const purchasePlanBtnIds = await createDocPermButtons(purchasePlanMenu.id, 'purchase_plan', fullDocActions);
-  const purchaseContractBtnIds = await createDocPermButtons(purchaseContractMenu.id, 'purchase_contract', [
-    ...basicDocActions,
-    { perm: 'close', title: '关闭' },
-    { perm: 'void', title: '作废' },
-  ]);
-  const customerBtnIds = await createDocPermButtons(customerMenu.id, 'customer', [
-    ...basicDocActions,
-    { perm: 'close', title: '关闭' },
-  ]);
-  const supplierBtnIds = await createDocPermButtons(supplierMenu.id, 'supplier', [
-    ...basicDocActions,
-    { perm: 'close', title: '关闭' },
-  ]);
+  // 批量创建权限记录
+  const allPermissionIds: string[] = [];
+  const basicPermissionIds: string[] = []; // create/delete/submit only (for user role)
 
-  // 产品类型按钮权限（挂在产品管理菜单下）
-  const stdProductBtnIds = await createDocPermButtons(productManagementMenu.id, 'standard_product', [
-    ...basicDocActions,
-    { perm: 'push_down', title: '下推' },
-  ]);
-  const custProductBtnIds = await createDocPermButtons(productManagementMenu.id, 'customer_product', basicDocActions);
-  const selfProductBtnIds = await createDocPermButtons(productManagementMenu.id, 'self_owned_product', basicDocActions);
-
-  // 仓库管理按钮权限（挂在入库管理菜单下）
-  const warehouseInboundBtnIds = await createDocPermButtons(warehouseInboundMenu.id, 'warehouse_inbound', basicDocActions);
-  const warehouseOutboundBtnIds = await createDocPermButtons(warehouseOutboundMenu.id, 'warehouse_outbound', basicDocActions);
-  const warehouseInboundNoticeBtnIds = await createDocPermButtons(warehouseInboundMenu.id, 'warehouse_inbound_notice', basicDocActions);
-  const warehouseOutboundNoticeBtnIds = await createDocPermButtons(warehouseOutboundMenu.id, 'warehouse_outbound_notice', basicDocActions);
-
-  // 汇总仓库按钮权限
-  const warehouseBtnIds = [
-    ...warehouseInboundBtnIds,
-    ...warehouseOutboundBtnIds,
-    ...warehouseInboundNoticeBtnIds,
-    ...warehouseOutboundNoticeBtnIds,
-  ];
-
-  // 验货单按钮权限
-  const inspectionOrderBtnIds = await createDocPermButtons(inspectionOrderMenu.id, 'inspection_order', [
-    ...basicDocActions,
-    { perm: 'close', title: '关闭' },
-    { perm: 'void', title: '作废' },
-  ]);
-
-  // 让步接收单按钮权限
-  const concessionAcceptanceBtnIds = await createDocPermButtons(concessionAcceptanceMenu.id, 'concession_acceptance', basicDocActions);
-
-  // 开票通知按钮权限
-  const invoicingNoticeBtnIds = await createDocPermButtons(invoicingNoticeMenu.id, 'invoicing_notice', [
-    ...basicDocActions,
-    { perm: 'close', title: '关闭' },
-    { perm: 'void', title: '作废' },
-  ]);
-
-  // 付款申请按钮权限
-  const paymentApplyBtnIds = await createDocPermButtons(paymentApplyMenu.id, 'payment_apply', [
-    ...basicDocActions,
-    { perm: 'close', title: '关闭' },
-    { perm: 'void', title: '作废' },
-  ]);
-
-  // 付款单按钮权限
-  const paymentBtnIds = await createDocPermButtons(paymentMenu.id, 'payment', [
-    ...basicDocActions,
-    { perm: 'close', title: '关闭' },
-    { perm: 'void', title: '作废' },
-    { perm: 'push_down', title: '下推' },
-  ]);
-
-  // 收款登记按钮权限
-  const receiptRegistrationBtnIds = await createDocPermButtons(receiptRegistrationMenu.id, 'receipt_registration', [
-    ...basicDocActions,
-    { perm: 'close', title: '关闭' },
-  ]);
-
-  // 回款认领按钮权限
-  const paymentClaimBtnIds = await createDocPermButtons(paymentClaimMenu.id, 'payment_claim', [
-    ...basicDocActions,
-    { perm: 'close', title: '关闭' },
-  ]);
-
-  // 发票登记按钮权限
-  const invoiceRegistrationBtnIds = await createDocPermButtons(invoiceRegistrationMenu.id, 'invoice_registration', [
-    ...basicDocActions,
-    { perm: 'close', title: '关闭' },
-    { perm: 'void', title: '作废' },
-  ]);
-
-  // 加工单按钮权限
-  const processingOrderBtnIds = await createDocPermButtons(processingOrderMenu.id, 'processing_order', [
-    ...basicDocActions,
-    { perm: 'close', title: '关闭' },
-    { perm: 'void', title: '作废' },
-  ]);
-
-  // 报价单按钮权限
-  const quotationBtnIds = await createDocPermButtons(quotationMenu.id, 'quotation', [
-    ...fullDocActions,
-  ]);
-
-  // 所有按钮权限 ID 汇总
-  const allBtnIds = [
-    ...salesContractBtnIds,
-    ...purchasePlanBtnIds,
-    ...purchaseContractBtnIds,
-    ...customerBtnIds,
-    ...supplierBtnIds,
-    ...stdProductBtnIds,
-    ...custProductBtnIds,
-    ...selfProductBtnIds,
-    ...warehouseBtnIds,
-    ...inspectionOrderBtnIds,
-    ...concessionAcceptanceBtnIds,
-    ...invoicingNoticeBtnIds,
-    ...paymentApplyBtnIds,
-    ...paymentBtnIds,
-    ...receiptRegistrationBtnIds,
-    ...paymentClaimBtnIds,
-    ...invoiceRegistrationBtnIds,
-    ...processingOrderBtnIds,
-    ...quotationBtnIds,
-  ];
+  for (const g of permissionGroupDefs) {
+    const actions = groupActions[g.code] || [];
+    for (const action of actions) {
+      const code = `${g.code}:${action}`;
+      const groupDef = permissionGroupDefs.find((pg) => pg.code === g.code)!;
+      const perm = await prisma.sysPermission.create({
+        data: {
+          code,
+          name: `${groupDef.name}-${actionLabels[action] || action}`,
+          resource: g.code,
+          action,
+          groupCode: g.code,
+          description: `${groupDef.name} ${actionLabels[action] || action}`,
+        },
+      });
+      allPermissionIds.push(perm.id);
+      if (['create', 'delete', 'submit'].includes(action)) {
+        basicPermissionIds.push(perm.id);
+      }
+    }
+  }
 
   // 顶级菜单：系统管理
   const sysMenu = await prisma.sysMenu.create({
@@ -1814,8 +1767,8 @@ async function main() {
     },
   });
 
-  // -- 角色-菜单关联 --
-  // 管理员角色：拥有全部菜单 + 全部按钮权限
+  // -- 角色-菜单关联（仅菜单，不含按钮权限） --
+  // 管理员角色：拥有全部菜单
   const allMenuIds = [
     businessEntryMenu.id,
     salesContractMenu.id,
@@ -1856,7 +1809,6 @@ async function main() {
     businessConfigMenu.id,
     approvalFlowMenu.id,
     oaEntryMenu.id,
-    ...allBtnIds,
   ];
 
   await prisma.sysRoleMenu.createMany({
@@ -1866,7 +1818,7 @@ async function main() {
     })),
   });
 
-  // 业务经理角色：业务入口菜单 + 资料入口菜单 + 仓库入口菜单 + 全部按钮权限（含审批）
+  // 业务经理角色：业务入口菜单 + 资料入口菜单 + 仓库入口菜单
   const managerMenuIds = [
     businessEntryMenu.id,
     salesContractMenu.id,
@@ -1898,7 +1850,6 @@ async function main() {
     warehouseInventoryMenu.id,
     warehouseInboundMenu.id,
     warehouseOutboundMenu.id,
-    ...allBtnIds,
   ];
 
   await prisma.sysRoleMenu.createMany({
@@ -1908,33 +1859,7 @@ async function main() {
     })),
   });
 
-  // 普通用户角色：业务入口菜单 + 基础操作按钮权限 (新建/删除/提交，不含审批/关闭/作废/下推)
-  // 从每种类型的按钮中，只取 create/delete/submit (前3个)
-  const userBtnIds = [
-    ...salesContractBtnIds.slice(0, 3),
-    ...purchasePlanBtnIds.slice(0, 3),
-    ...purchaseContractBtnIds.slice(0, 3),
-    ...customerBtnIds.slice(0, 3),
-    ...supplierBtnIds.slice(0, 3),
-    ...stdProductBtnIds.slice(0, 3),
-    ...custProductBtnIds.slice(0, 3),
-    ...selfProductBtnIds.slice(0, 3),
-    ...warehouseInboundBtnIds.slice(0, 3),
-    ...warehouseOutboundBtnIds.slice(0, 3),
-    ...warehouseInboundNoticeBtnIds.slice(0, 3),
-    ...warehouseOutboundNoticeBtnIds.slice(0, 3),
-    ...inspectionOrderBtnIds.slice(0, 3),
-    ...concessionAcceptanceBtnIds.slice(0, 3),
-    ...invoicingNoticeBtnIds.slice(0, 3),
-    ...paymentApplyBtnIds.slice(0, 3),
-    ...paymentBtnIds.slice(0, 3),
-    ...receiptRegistrationBtnIds.slice(0, 3),
-    ...paymentClaimBtnIds.slice(0, 3),
-    ...invoiceRegistrationBtnIds.slice(0, 3),
-    ...processingOrderBtnIds.slice(0, 3),
-    ...quotationBtnIds.slice(0, 3),
-  ];
-
+  // 普通用户角色：业务入口菜单
   const userMenuIds = [
     businessEntryMenu.id,
     salesContractMenu.id,
@@ -1967,13 +1892,37 @@ async function main() {
     warehouseInboundMenu.id,
     warehouseOutboundMenu.id,
     oaEntryMenu.id,
-    ...userBtnIds,
   ];
 
   await prisma.sysRoleMenu.createMany({
     data: userMenuIds.map((menuId) => ({
       roleId: userRole.id,
       menuId,
+    })),
+  });
+
+  // -- 角色-操作权限关联（SysRolePermission） --
+  // 管理员：全部操作权限
+  await prisma.sysRolePermission.createMany({
+    data: allPermissionIds.map((permissionId) => ({
+      roleId: adminRole.id,
+      permissionId,
+    })),
+  });
+
+  // 业务经理：全部操作权限
+  await prisma.sysRolePermission.createMany({
+    data: allPermissionIds.map((permissionId) => ({
+      roleId: managerRole.id,
+      permissionId,
+    })),
+  });
+
+  // 普通用户：仅 create/delete/submit 基础操作权限
+  await prisma.sysRolePermission.createMany({
+    data: basicPermissionIds.map((permissionId) => ({
+      roleId: userRole.id,
+      permissionId,
     })),
   });
 
@@ -1986,7 +1935,8 @@ async function main() {
   console.log(`Departments: ${companyDept.code} -> ${salesDept.code}, ${purchaseDept.code}, ${techDept.code}, ${financeDept.code}`);
   console.log(`Roles: ${adminRole.code}, ${managerRole.code}, ${userRole.code}`);
   console.log(`Users: admin (password: admin123, dept: ${techDept.code}), demo (password: 123456, dept: ${salesDept.code})`);
-  console.log(`Menus: ${allMenuIds.length} menus (incl. ${allBtnIds.length} button permissions)`);
+  console.log(`Menus: ${allMenuIds.length} menus`);
+  console.log(`Permissions: ${allPermissionIds.length} total, ${basicPermissionIds.length} basic`);
   console.log(`System management menus: ${userMgmtMenu.title}, ${roleMgmtMenu.title}, ${menuMgmtMenu.title}, ${deptMgmtMenu.title}, ${businessParametersMenu.title}, ${businessConfigMenu.title}`);
   console.log(`Data Entry menus: ${dataEntryMenu.title} (${productManagementMenu.title}, ${customerMenu.title}, ${supplierMenu.title})`);
   console.log(`Warehouse & Quality menus: ${warehouseEntryMenu.title} (${warehouseInventoryMenu.title}, ${warehouseInboundMenu.title}, ${warehouseOutboundMenu.title})`);

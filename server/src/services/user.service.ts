@@ -183,26 +183,24 @@ export class UserService {
     return { ...rest, roleIds };
   }
 
-  /** 获取用户所有权限标识 (userId -> roles -> menus -> permission) */
+  /** 获取用户所有权限标识 (userId -> roles -> rolePermissions -> permission.code) */
   async getPermissions(userId: string): Promise<string[]> {
-    const roleMenus = await prisma.sysRoleMenu.findMany({
+    const rolePermissions = await prisma.sysRolePermission.findMany({
       where: {
         role: {
           userRoles: { some: { userId } },
           status: 'active',
+          deletedAt: null,
         },
       },
       include: {
-        menu: {
-          select: { permission: true, status: true },
+        permission: {
+          select: { code: true },
         },
       },
     });
 
-    const permissions = roleMenus
-      .filter((rm) => rm.menu.status === 'visible' && rm.menu.permission)
-      .map((rm) => rm.menu.permission!);
-
+    const permissions = rolePermissions.map((rp) => rp.permission.code);
     return [...new Set(permissions)];
   }
 
