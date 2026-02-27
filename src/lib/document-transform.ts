@@ -97,17 +97,39 @@ export function normalizeDocumentData(
     masterData.isAgent = rawDoc.baseProduct.isAgent ?? false
   }
 
+  // 产品类型：status 是业务生命周期状态（ACTIVE/INACTIVE/DRAFT），
+  // 操作可见性判断应使用 approvalStatus（审批流状态）
+  const productTypes = ['standard_product', 'customer_product', 'self_owned_product']
+  const rawStatus = productTypes.includes(typeId)
+    ? resolveProductApprovalStatus(rawDoc.approvalStatus)
+    : rawDoc.status?.toLowerCase() || 'draft'
+
   return {
     id: rawDoc.id,
     typeId,
-    code: rawDoc.code || '', // 直接使用 code 字段
+    code: rawDoc.code || '',
     masterData,
     detailTables,
-    status: rawDoc.status?.toLowerCase() || 'draft',
+    status: rawStatus as DocumentData['status'],
     createdBy: rawDoc.createdBy,
     updatedBy: rawDoc.updatedBy,
     createdAt: rawDoc.createdAt,
     updatedAt: rawDoc.updatedAt,
+  }
+}
+
+/**
+ * 产品 approvalStatus 映射到 DocumentStatus
+ *
+ * 产品的 approvalStatus 是审批流状态，需要映射到通用单据状态
+ */
+function resolveProductApprovalStatus(approvalStatus?: string): string {
+  switch (approvalStatus?.toUpperCase()) {
+    case 'SUBMITTED': return 'submitted'
+    case 'APPROVED':  return 'approved'
+    case 'REJECTED':  return 'draft'
+    case 'PENDING':
+    default:          return 'draft'
   }
 }
 

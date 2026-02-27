@@ -645,6 +645,19 @@ export const standardProductSchema: DocumentSchema = {
       visibleWhen: notAuxiliary,
     },
     {
+      id: "approvalStatus",
+      label: "审核状态",
+      type: "select",
+      options: [
+        { label: "待审核", value: "PENDING" },
+        { label: "已审核", value: "APPROVED" },
+        { label: "已拒绝", value: "REJECTED" },
+      ],
+      defaultValue: "PENDING",
+      required: true,
+      group: "基本信息",
+    },
+    {
       id: "unit",
       label: "计量单位",
       type: "combobox",
@@ -1096,6 +1109,19 @@ export const customerProductSchema: DocumentSchema = {
       required: true,
       group: "基本信息",
     },
+    {
+      id: "approvalStatus",
+      label: "审核状态",
+      type: "select",
+      options: [
+        { label: "待审核", value: "PENDING" },
+        { label: "已审核", value: "APPROVED" },
+        { label: "已拒绝", value: "REJECTED" },
+      ],
+      defaultValue: "PENDING",
+      required: true,
+      group: "基本信息",
+    },
 
     // === 客户信息（客户产品专用字段）===
     {
@@ -1430,6 +1456,19 @@ export const selfOwnedProductSchema: DocumentSchema = {
         { label: "停产", value: "DISCONTINUED" },
       ],
       defaultValue: "ACTIVE",
+      required: true,
+      group: "基本信息",
+    },
+    {
+      id: "approvalStatus",
+      label: "审核状态",
+      type: "select",
+      options: [
+        { label: "待审核", value: "PENDING" },
+        { label: "已审核", value: "APPROVED" },
+        { label: "已拒绝", value: "REJECTED" },
+      ],
+      defaultValue: "PENDING",
       required: true,
       group: "基本信息",
     },

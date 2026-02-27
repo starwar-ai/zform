@@ -514,7 +514,6 @@ export const standardProductAdapter: DocumentTypeAdapter = {
         where: { id },
         data: {
           approvalStatus: 'SUBMITTED',
-          status: 'PENDING_APPROVAL',
           updatedBy: userId,
         },
       });

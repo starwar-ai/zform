@@ -79,12 +79,12 @@ model Country {
   id        String    @id @default(cuid())
   name      String
   code      String    @unique
-  regionId  String?   @map("region_id")
   createdBy String?   @map("created_by")
   createdAt DateTime  @default(now()) @map("created_at")
   updatedBy String?   @map("updated_by")
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
+  regionId  String?   @map("region_id")
   region    Region?   @relation(fields: [regionId], references: [id])
   ports     Port[]
 
@@ -117,11 +117,11 @@ model Department {
   id        String       @id @default(cuid())
   code      String       @unique
   name      String
-  parentId  String?      @map("parent_id")
-  orderNum  Int          @default(0) @map("order_num")
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
   deletedAt DateTime?
+  orderNum  Int          @default(0) @map("order_num")
+  parentId  String?      @map("parent_id")
   parent    Department?  @relation("DepartmentTree", fields: [parentId], references: [id])
   children  Department[] @relation("DepartmentTree")
   products  Product[]
@@ -188,13 +188,13 @@ model Brand {
   type          String?
   description   String?
   descriptionEn String?   @map("description_en")
-  isCommon      Boolean   @default(false) @map("is_common")
   isSelfOwned   Boolean   @default(false) @map("is_self_owned")
   createdBy     String?   @map("created_by")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedBy     String?   @map("updated_by")
   updatedAt     DateTime  @updatedAt @map("updated_at")
   deletedAt     DateTime? @map("deleted_at")
+  isCommon      Boolean   @default(false) @map("is_common")
   products      Product[]
 
   @@map("brands")
@@ -221,8 +221,13 @@ model ProductCategory {
 model HsCode {
   id            String    @id @default(cuid())
   code          String    @unique
-  hsCode        String    @map("hs_code")
   name          String
+  hsCode        String    @map("hs_code")
+  createdBy     String?   @map("created_by")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedBy     String?   @map("updated_by")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
   customsUnit   String    @map("customs_unit")
   taxRefundRate Decimal   @map("tax_refund_rate") @db.Decimal(5, 2)
   taxRate       Decimal?  @map("tax_rate") @db.Decimal(5, 2)
@@ -230,11 +235,6 @@ model HsCode {
   fullName      String?   @map("full_name")
   levyRate      Decimal?  @map("levy_rate") @db.Decimal(5, 2)
   secondUnit    String?   @map("second_unit")
-  createdBy     String?   @map("created_by")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedBy     String?   @map("updated_by")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
-  deletedAt     DateTime? @map("deleted_at")
   isCommon      Boolean   @default(false) @map("is_common")
   sortOrder     Int       @default(0) @map("sort_order")
   products      Product[]
@@ -278,7 +278,6 @@ model ExhibitionCategory {
 
 model CustomerSourceTag {
   id        String    @id @default(cuid())
-  code      String    @unique
   name      String
   isCommon  Boolean   @default(false) @map("is_common")
   createdBy String?   @map("created_by")
@@ -286,6 +285,7 @@ model CustomerSourceTag {
   updatedBy String?   @map("updated_by")
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
+  code      String    @unique
   sortOrder Int       @default(0) @map("sort_order")
 
   @@map("customer_source_tags")
@@ -323,7 +323,6 @@ model Product {
   descriptionEn       String?            @map("description_en")
   isSelfBrand         Boolean            @default(false) @map("is_self_brand")
   isAdvantage         Boolean            @default(false) @map("is_advantage")
-  source              MaterialSource?
   material            String?
   accessoryMaterial   String?            @map("accessory_material")
   unit                String             @default("PCS")
@@ -363,8 +362,9 @@ model Product {
   updatedBy           String?            @map("updated_by")
   updatedAt           DateTime           @updatedAt @map("updated_at")
   deletedAt           DateTime?          @map("deleted_at")
-  isOnShelf           Boolean            @default(false) @map("is_on_shelf")
+  source              MaterialSource?
   currency            String?            @default("USD")
+  isOnShelf           Boolean            @default(false) @map("is_on_shelf")
   skuType             SkuType?           @map("sku_type")
   usedAsAccessory     ProductAccessory[] @relation("AccessoryProduct")
   accessories         ProductAccessory[] @relation("ProductAccessories")
@@ -621,57 +621,57 @@ model SupplierQuotation {
 }
 
 model Customer {
-  id                   String                @id @default(cuid())
-  code                 String                @unique
+  id                   String                     @id @default(cuid())
+  code                 String                     @unique
   name                 String
-  shortName            String?               @map("short_name")
-  countryCode          String?               @map("country_code")
+  shortName            String?                    @map("short_name")
+  countryCode          String?                    @map("country_code")
   website              String?
   email                String?
-  stage                CustomerStage         @default(POTENTIAL)
-  isForeign            Boolean               @default(false) @map("is_foreign")
-  isAgent              Boolean               @default(false) @map("is_agent")
-  shippingMethod       ShippingMethod?       @map("shipping_method")
-  paymentMethodId      String?               @map("payment_method_id")
-  businessAddress      String?               @map("business_address")
-  mailingAddress       String?               @map("mailing_address")
+  stage                CustomerStage              @default(POTENTIAL)
+  isForeign            Boolean                    @default(false) @map("is_foreign")
+  isAgent              Boolean                    @default(false) @map("is_agent")
+  shippingMethod       ShippingMethod?            @map("shipping_method")
+  paymentMethodId      String?                    @map("payment_method_id")
+  businessAddress      String?                    @map("business_address")
+  mailingAddress       String?                    @map("mailing_address")
   phone                String?
-  exhibitionSeriesId   String?               @map("exhibition_series_id")
-  exhibitionId         String?               @map("exhibition_id")
-  frontMark            String?               @map("front_mark")
-  sideMark             String?               @map("side_mark")
+  exhibitionSeriesId   String?                    @map("exhibition_series_id")
+  exhibitionId         String?                    @map("exhibition_id")
+  frontMark            String?                    @map("front_mark")
+  sideMark             String?                    @map("side_mark")
   consignee            String?
-  notifyParty          String?               @map("notify_party")
-  enableCreditLimit    Boolean               @default(false) @map("enable_credit_limit")
-  creditLimit          Decimal?              @map("credit_limit") @db.Decimal(15, 2)
-  isSinosure           Boolean               @default(false) @map("is_sinosure")
-  paymentType          String?               @map("payment_type")
-  invoiceTitle         String?               @map("invoice_title")
-  taxRate              Decimal?              @map("tax_rate") @db.Decimal(5, 2)
-  customerSource       String?               @map("customer_source")
-  approvalStatus       ApprovalStatus        @default(PENDING) @map("approval_status")
-  isFormal             Boolean               @default(false) @map("is_formal")
-  formalTime           DateTime?             @map("formal_time")
-  isEnabled            Boolean               @default(true) @map("is_enabled")
-  isInternalEnterprise Boolean               @default(false) @map("is_internal_enterprise")
-  internalEnterprisePk String?               @map("internal_enterprise_pk")
-  relatedCustomerCode  String?               @map("related_customer_code")
+  notifyParty          String?                    @map("notify_party")
+  enableCreditLimit    Boolean                    @default(false) @map("enable_credit_limit")
+  creditLimit          Decimal?                   @map("credit_limit") @db.Decimal(15, 2)
+  isSinosure           Boolean                    @default(false) @map("is_sinosure")
+  paymentType          String?                    @map("payment_type")
+  invoiceTitle         String?                    @map("invoice_title")
+  taxRate              Decimal?                   @map("tax_rate") @db.Decimal(5, 2)
+  customerSource       String?                    @map("customer_source")
+  approvalStatus       ApprovalStatus             @default(PENDING) @map("approval_status")
+  isFormal             Boolean                    @default(false) @map("is_formal")
+  formalTime           DateTime?                  @map("formal_time")
+  isEnabled            Boolean                    @default(true) @map("is_enabled")
+  isInternalEnterprise Boolean                    @default(false) @map("is_internal_enterprise")
+  internalEnterprisePk String?                    @map("internal_enterprise_pk")
+  relatedCustomerCode  String?                    @map("related_customer_code")
   attachments          Json?
   images               Json?
   remark               String?
-  createdBy            String?               @map("created_by")
-  createdAt            DateTime              @default(now()) @map("created_at")
-  updatedBy            String?               @map("updated_by")
-  updatedAt            DateTime              @updatedAt @map("updated_at")
-  deletedAt            DateTime?             @map("deleted_at")
-  customerCategoryId   String?               @map("customer_category_id")
+  createdBy            String?                    @map("created_by")
+  createdAt            DateTime                   @default(now()) @map("created_at")
+  updatedBy            String?                    @map("updated_by")
+  updatedAt            DateTime                   @updatedAt @map("updated_at")
+  deletedAt            DateTime?                  @map("deleted_at")
+  customerCategoryId   String?                    @map("customer_category_id")
   bankAccounts         CustomerBankAccount[]
   contacts             CustomerContact[]
-  shippingAddresses    CustomerShippingAddress[]
-  salesReps            CustomerSalesRep[]
-  paymentPlans         SalesContractPaymentPlan[]
   customerPaymentTerms CustomerPaymentTerm[]
-  customerCategory     CustomerCategory?     @relation(fields: [customerCategoryId], references: [id])
+  salesReps            CustomerSalesRep[]
+  shippingAddresses    CustomerShippingAddress[]
+  customerCategory     CustomerCategory?          @relation(fields: [customerCategoryId], references: [id])
+  paymentPlans         SalesContractPaymentPlan[]
 
   @@index([code])
   @@index([stage])
@@ -759,7 +759,7 @@ model CustomerShippingAddress {
   customerVersion Int       @default(1) @map("customer_version")
   contact         String?
   address         String?
-  addressType     String?   @map("address_type") // 大件地址 or 快递地址
+  addressType     String?   @map("address_type")
   postalCode      String?   @map("postal_code")
   phone           String?
   email           String?
@@ -812,21 +812,21 @@ model SupplierPaymentTermStep {
 }
 
 model PaymentTerm {
-  id                   String                    @id @default(cuid())
-  code                 String                    @unique
+  id                   String                         @id @default(cuid())
+  code                 String                         @unique
   name                 String
-  nameEng              String                    @map("name_eng")
-  dateType             Int?                      @map("date_type")
+  nameEng              String                         @map("name_eng")
+  dateType             Int?                           @map("date_type")
   duration             Int?
-  sortOrder            Int                       @default(0) @map("sort_order")
-  createdBy            String?                   @map("created_by")
-  createdAt            DateTime                  @default(now()) @map("created_at")
-  updatedBy            String?                   @map("updated_by")
-  updatedAt            DateTime                  @updatedAt @map("updated_at")
-  deleted              Int                       @default(0)
-  planItems            SalesContractPaymentPlanItem[]
+  sortOrder            Int                            @default(0) @map("sort_order")
+  createdBy            String?                        @map("created_by")
+  createdAt            DateTime                       @default(now()) @map("created_at")
+  updatedBy            String?                        @map("updated_by")
+  updatedAt            DateTime                       @updatedAt @map("updated_at")
+  deleted              Int                            @default(0)
   customerPaymentTerms CustomerPaymentTerm[]
   steps                PaymentTermStep[]
+  planItems            SalesContractPaymentPlanItem[]
 
   @@map("payment_terms")
 }
@@ -863,31 +863,31 @@ model CustomerPaymentTerm {
 }
 
 model SalesContractPaymentPlan {
-  id         String                    @id @default(cuid())
-  customerId String                    @map("customer_id")
+  id         String                         @id @default(cuid())
+  customerId String                         @map("customer_id")
   name       String
-  isDefault  Boolean                   @default(false) @map("is_default")
+  isDefault  Boolean                        @default(false) @map("is_default")
   remark     String?
-  createdBy  String?                   @map("created_by")
-  createdAt  DateTime                  @default(now()) @map("created_at")
-  updatedBy  String?                   @map("updated_by")
-  updatedAt  DateTime                  @updatedAt @map("updated_at")
-  deleted    Int                       @default(0)
+  createdBy  String?                        @map("created_by")
+  createdAt  DateTime                       @default(now()) @map("created_at")
+  updatedBy  String?                        @map("updated_by")
+  updatedAt  DateTime                       @updatedAt @map("updated_at")
+  deleted    Int                            @default(0)
+  customer   Customer                       @relation(fields: [customerId], references: [id], onDelete: Cascade)
   items      SalesContractPaymentPlanItem[]
-  customer   Customer                  @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   @@index([customerId])
   @@map("sales_contract_payment_plans")
 }
 
 model SalesContractPaymentPlanItem {
-  id            String              @id @default(cuid())
-  planId        String              @map("plan_id")
-  periodIndex   Int                 @map("period_index")
-  paymentTermId String?             @map("payment_term_id")
-  createdAt     DateTime            @default(now()) @map("created_at")
-  updatedAt     DateTime            @updatedAt @map("updated_at")
-  paymentTerm   PaymentTerm?        @relation(fields: [paymentTermId], references: [id])
+  id            String                   @id @default(cuid())
+  planId        String                   @map("plan_id")
+  periodIndex   Int                      @map("period_index")
+  paymentTermId String?                  @map("payment_term_id")
+  createdAt     DateTime                 @default(now()) @map("created_at")
+  updatedAt     DateTime                 @updatedAt @map("updated_at")
+  paymentTerm   PaymentTerm?             @relation(fields: [paymentTermId], references: [id])
   plan          SalesContractPaymentPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
 
   @@index([planId])
@@ -1012,7 +1012,6 @@ model SalesContract {
   signBackAttachments     Json?               @map("sign_back_attachments")
   isAgent                 Boolean             @default(false) @map("is_agent")
   isBookingSpace          Boolean             @default(false) @map("is_booking_space")
-  isRepeatOrder           Boolean             @default(false) @map("is_repeat_order")
   autoCreated             Boolean             @default(false) @map("auto_created")
   syncFlag                String?             @map("sync_flag")
   toPurchasePlan          Boolean             @default(false) @map("to_purchase_plan")
@@ -1027,6 +1026,7 @@ model SalesContract {
   updatedBy               String?             @map("updated_by")
   updatedAt               DateTime            @updatedAt @map("updated_at")
   deletedAt               DateTime?           @map("deleted_at")
+  isRepeatOrder           Boolean             @default(false) @map("is_repeat_order")
   collectionPlans         SmsCollectionPlan[] @relation("SalesContractCollectionPlans")
   items                   SalesContractItem[] @relation("SalesContractItems")
 
@@ -1393,13 +1393,13 @@ model SysUser {
   email        String?
   phone        String?
   department   String?
-  departmentId String?       @map("department_id")
   status       String        @default("active")
   createdBy    String?       @map("created_by")
   createdAt    DateTime      @default(now()) @map("created_at")
   updatedBy    String?       @map("updated_by")
   updatedAt    DateTime      @updatedAt @map("updated_at")
   deletedAt    DateTime?     @map("deleted_at")
+  departmentId String?       @map("department_id")
   isAdmin      Boolean       @default(false) @map("is_admin")
   userRoles    SysUserRole[]
   dept         Department?   @relation("UserDepartment", fields: [departmentId], references: [id])
@@ -1455,15 +1455,14 @@ model SysPermissionGroup {
 }
 
 model SysPermission {
-  id          String    @id @default(cuid())
-  code        String    @unique
-  name        String
-  resource    String
-  action      String
-  groupCode   String?   @map("group_code")
-  description String?
-  createdAt   DateTime  @default(now()) @map("created_at")
-
+  id              String              @id @default(cuid())
+  code            String              @unique
+  name            String
+  resource        String
+  action          String
+  groupCode       String?             @map("group_code")
+  description     String?
+  createdAt       DateTime            @default(now()) @map("created_at")
   group           SysPermissionGroup? @relation(fields: [groupCode], references: [code])
   rolePermissions SysRolePermission[]
 
@@ -1472,13 +1471,12 @@ model SysPermission {
 }
 
 model SysRolePermission {
-  id           String   @id @default(cuid())
-  roleId       String   @map("role_id")
-  permissionId String   @map("permission_id")
-  createdAt    DateTime @default(now()) @map("created_at")
-
-  role       SysRole       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission SysPermission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  id           String        @id @default(cuid())
+  roleId       String        @map("role_id")
+  permissionId String        @map("permission_id")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  permission   SysPermission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         SysRole       @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@unique([roleId, permissionId])
   @@index([roleId])
@@ -3823,11 +3821,11 @@ enum ApprovalStatus {
 enum ChangeStatus {
   PENDING
   IN_PROGRESS
+  COMPLETED
+  CANCELLED
   SUBMITTED
   APPROVED
   REJECTED
-  COMPLETED
-  CANCELLED
 }
 
 enum CompanyNature {
