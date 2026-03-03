@@ -6,7 +6,26 @@
  */
 
 import type { DocumentTypeAdapter } from '../types';
-import { transformFromFrontend } from '../data-transform';
+import { transformFromFrontend, transformToFrontend } from '../data-transform';
+
+/**
+ * 产品通用 transformToFrontend
+ *
+ * 产品的 status 是业务生命周期（ACTIVE/INACTIVE/DRAFT），
+ * 前端 DocumentData.status 使用 approvalStatus（审批流状态），直接透传。
+ */
+function productTransformToFrontend(prismaData: any, typeId: string, adapter: DocumentTypeAdapter) {
+  const result = transformToFrontend(prismaData, typeId, adapter);
+  if (!result) return result;
+
+  // 直接使用 approvalStatus 作为 status（PENDING/SUBMITTED/APPROVED/REJECTED）
+  result.status = prismaData.approvalStatus || 'PENDING';
+
+  // 保留原 status 到 masterData.productStatus 供 UI 显示
+  result.masterData.productStatus = prismaData.status || 'DRAFT';
+
+  return result;
+}
 
 /**
  * 检测 BOM 循环依赖
@@ -124,6 +143,11 @@ export const standardProductAdapter: DocumentTypeAdapter = {
       brandName: row.brand?.name,
       remark: row.remark,
     };
+  },
+
+  // ---- 详情转换 (approvalStatus → status) ----
+  transformToFrontend(prismaData, typeId) {
+    return productTransformToFrontend(prismaData, typeId, standardProductAdapter);
   },
 
   // ---- 自定义创建 (带变更日志) ----
@@ -1019,6 +1043,11 @@ export const customerProductAdapter: DocumentTypeAdapter = {
   typeName: '客户产品',
   baseWhere: { productType: 'CUSTOMER' },
 
+  // ---- 详情转换 (approvalStatus → status) ----
+  transformToFrontend(prismaData, typeId) {
+    return productTransformToFrontend(prismaData, typeId, customerProductAdapter);
+  },
+
   async onCreate(data, userId, prisma) {
     // 使用白名单模式转换数据
     const flatData = transformFromFrontend(data, { prismaModel: 'Product' });
@@ -1055,6 +1084,11 @@ export const selfOwnedProductAdapter: DocumentTypeAdapter = {
   typeId: 'self_owned_product',
   typeName: '自营产品',
   baseWhere: { productType: 'SELF_OWNED' },
+
+  // ---- 详情转换 (approvalStatus → status) ----
+  transformToFrontend(prismaData, typeId) {
+    return productTransformToFrontend(prismaData, typeId, selfOwnedProductAdapter);
+  },
 
   async onCreate(data, userId, prisma) {
     // 使用通用工具转换前端数据结构

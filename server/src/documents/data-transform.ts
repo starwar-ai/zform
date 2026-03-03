@@ -246,9 +246,8 @@ export function transformToFrontend(
     masterData[key] = value;
   }
 
-  // status 大写 → 小写
-  const rawStatus = data.status as string;
-  const status = rawStatus ? rawStatus.toLowerCase() : 'draft';
+  // status 直接使用后端大写值，与前端 DocumentStatus 统一
+  const status = (data.status as string) || 'DRAFT';
 
   return {
     id: data.id,

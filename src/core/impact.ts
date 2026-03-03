@@ -46,7 +46,7 @@ export function assessImpact(
 
   // 4. 自动检测: 如果有下游单据且状态非草稿, 发出警告
   if (downstreamDocs.length > 0) {
-    const nonDraftDownstream = downstreamDocs.filter((d) => d.status !== "draft")
+    const nonDraftDownstream = downstreamDocs.filter((d) => d.status !== "DRAFT")
 
     // 检查主数据变更
     const changedMasterFields = findChangedFields(

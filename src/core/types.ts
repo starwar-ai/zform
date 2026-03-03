@@ -322,7 +322,7 @@ export interface DocumentData {
 }
 
 /** 单据状态 */
-export type DocumentStatus = "draft" | "submitted" | "approved" | "closed" | "cancelled"
+export type DocumentStatus = "PENDING" | "DRAFT" | "SUBMITTED" | "APPROVED" | "REJECTED" | "CLOSED" | "CANCELLED"
 
 // ============================================================
 // 追溯关系 (Traceability)

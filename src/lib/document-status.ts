@@ -7,20 +7,24 @@
 import type { DocumentStatus } from "@/core/types"
 
 export const statusLabels: Record<DocumentStatus, string> = {
-  draft: "草稿",
-  submitted: "已提交",
-  approved: "已审批",
-  closed: "已关闭",
-  cancelled: "已取消",
+  PENDING: "待提交",
+  DRAFT: "草稿",
+  SUBMITTED: "已提交",
+  APPROVED: "已审批",
+  REJECTED: "已拒绝",
+  CLOSED: "已关闭",
+  CANCELLED: "已取消",
 }
 
 export const statusColors: Record<
   DocumentStatus,
   "default" | "secondary" | "destructive" | "outline"
 > = {
-  draft: "secondary",
-  submitted: "default",
-  approved: "default",
-  closed: "outline",
-  cancelled: "destructive",
+  PENDING: "secondary",
+  DRAFT: "secondary",
+  SUBMITTED: "default",
+  APPROVED: "default",
+  REJECTED: "destructive",
+  CLOSED: "outline",
+  CANCELLED: "destructive",
 }

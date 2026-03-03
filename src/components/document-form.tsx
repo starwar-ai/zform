@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/resizable"
 import {
   Save, Send, ArrowDownToLine, FileText, PanelRightClose, PanelRightOpen,
-  Check, X, Undo2, Lock, Ban, Trash2, FileEdit,
+  Check, X, Undo2, Lock, Ban, Trash2, FileEdit, RotateCcw,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -49,7 +49,7 @@ import { getExtraTab } from "@/lib/extra-tab-registry"
 
 /** 图标名称 → 组件映射 */
 const iconMap: Record<string, LucideIcon> = {
-  Save, Send, ArrowDownToLine, Check, X, Undo2, Lock, Ban, Trash2, FileEdit,
+  Save, Send, ArrowDownToLine, Check, X, Undo2, Lock, Ban, Trash2, FileEdit, RotateCcw,
 }
 
 /** 根据图标名称渲染图标 */
@@ -242,7 +242,7 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
           initialDocSnapshot.current = JSON.stringify({
             masterData: { ...docData.masterData },
             detailTables: docData.detailTables,
-            status: "draft",
+            status: "DRAFT"
           })
         } else {
           // 已有文档 → 调用 update API
@@ -354,8 +354,12 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
     )
   }
 
-  const isEditable = doc.status === "draft"
+  const isEditable = doc.status === "DRAFT" || doc.status === "PENDING" || doc.status === "REJECTED"
   const isNew = Boolean(doc._isNew)
+
+  // 产品类型使用 PENDING，其他类型使用 DRAFT 作为"可编辑"初始状态
+  const productTypes = ['standard_product', 'customer_product', 'self_owned_product']
+  const editableStatus = productTypes.includes(doc.typeId) ? 'PENDING' : 'DRAFT'
 
   const handleSave = () => {
     // 1. 前端验证必填字段
@@ -404,8 +408,8 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
       if (doc._isNew) {
         // 新建文档提交: 先创建再更新状态
         const { _isNew, ...payload } = doc
-        await createDocumentApi(doc.typeId, { ...payload, status: "submitted" })
-        saveDocument({ ...doc, _isNew: undefined, status: "submitted" })
+        await createDocumentApi(doc.typeId, { ...payload, status: "SUBMITTED" })
+        saveDocument({ ...doc, _isNew: undefined, status: "SUBMITTED" })
       } else {
         // 先保存当前数据
         const { _isNew, ...payload } = doc
@@ -416,16 +420,16 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
 
         if (result?.data?.autoApproved) {
           // 无审批流：后端已自动审批
-          updateStatus(docId, "approved")
+          updateStatus(docId, "APPROVED")
           setActiveChange(null)
           // 更新快照
           initialDocSnapshot.current = JSON.stringify({
             masterData: doc.masterData,
             detailTables: doc.detailTables,
-            status: "approved",
+            status: "APPROVED"
           })
         } else {
-          updateStatus(docId, "submitted")
+          updateStatus(docId, "SUBMITTED")
         }
       }
     } catch (err) {
@@ -462,8 +466,8 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
       )
 
       if (result?.data) {
-        // 更新本地状态为草稿（可编辑）
-        updateStatus(docId, "draft")
+        // 更新本地状态为可编辑状态
+        updateStatus(docId, editableStatus)
         // 设置活跃变更记录
         setActiveChange({
           id: result.data.id,
@@ -474,7 +478,7 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
         initialDocSnapshot.current = JSON.stringify({
           masterData: doc.masterData,
           detailTables: doc.detailTables,
-          status: "draft",
+          status: "DRAFT"
         })
         setChangeRequestOpen(false)
       }
@@ -502,7 +506,7 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
 
       if (result?.data) {
         // 恢复本地状态为已审批
-        updateStatus(docId, "approved")
+        updateStatus(docId, "APPROVED")
         setActiveChange(null)
 
         // 刷新文档数据：从服务器重新获取
@@ -530,7 +534,7 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
     try {
       const result = await approval.approve()
       if (result?.success) {
-        updateStatus(docId, "approved")
+        updateStatus(docId, "APPROVED")
         approval.refresh()
       } else {
         alert(`审批失败: ${result?.message ?? "未知错误"}`)
@@ -543,13 +547,33 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
     }
   }
 
+  /** 反审核 (产品专用) */
+  const handleRevertAudit = async () => {
+    if (!doc) return
+    if (!confirm("确认反审核？产品将恢复为草稿状态。")) return
+    setSaving(true)
+    try {
+      const result = await executeDocumentAction(doc.typeId, doc.id, "revertAudit")
+      if (result?.success !== false) {
+        updateStatus(docId, editableStatus)
+      } else {
+        alert(`反审核失败: ${result?.message ?? "未知错误"}`)
+      }
+    } catch (err) {
+      console.error("反审核失败:", err)
+      alert(`反审核失败: ${err instanceof Error ? err.message : String(err)}`)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   /** 拒绝 */
   const handleReject = async () => {
     setSaving(true)
     try {
       const result = await approval.reject()
       if (result?.success) {
-        updateStatus(docId, "draft")
+        updateStatus(docId, "REJECTED")
         approval.refresh()
       } else {
         alert(`拒绝失败: ${result?.message ?? "未知错误"}`)
@@ -568,7 +592,7 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
     try {
       const result = await approval.withdraw()
       if (result?.success) {
-        updateStatus(docId, "draft")
+        updateStatus(docId, editableStatus)
         approval.refresh()
       } else {
         alert(`撤回失败: ${result?.message ?? "未知错误"}`)
@@ -585,8 +609,8 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
   const handleClose = async () => {
     setSaving(true)
     try {
-      await updateDocumentApi(doc.typeId, doc.id, { ...doc, status: "closed" })
-      updateStatus(docId, "closed")
+      await updateDocumentApi(doc.typeId, doc.id, { ...doc, status: "CLOSED" })
+      updateStatus(docId, "CLOSED")
     } catch (err) {
       console.error("关闭失败:", err)
       alert(`关闭失败: ${err instanceof Error ? err.message : String(err)}`)
@@ -599,8 +623,8 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
   const handleCancel = async () => {
     setSaving(true)
     try {
-      await updateDocumentApi(doc.typeId, doc.id, { ...doc, status: "cancelled" })
-      updateStatus(docId, "cancelled")
+      await updateDocumentApi(doc.typeId, doc.id, { ...doc, status: "CANCELLED" })
+      updateStatus(docId, "CANCELLED")
     } catch (err) {
       console.error("取消失败:", err)
       alert(`取消失败: ${err instanceof Error ? err.message : String(err)}`)
@@ -613,8 +637,8 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
   const handleVoid = async () => {
     setSaving(true)
     try {
-      await updateDocumentApi(doc.typeId, doc.id, { ...doc, status: "cancelled" })
-      updateStatus(docId, "cancelled")
+      await updateDocumentApi(doc.typeId, doc.id, { ...doc, status: "CANCELLED" })
+      updateStatus(docId, "CANCELLED")
     } catch (err) {
       console.error("作废失败:", err)
       alert(`作废失败: ${err instanceof Error ? err.message : String(err)}`)
@@ -661,6 +685,9 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
         break
       case "cancelChange":
         handleCancelChange()
+        break
+      case "revert-audit":
+        handleRevertAudit()
         break
       default:
         console.warn(`[DocumentForm] 未处理的操作: "${actionId}"`)
