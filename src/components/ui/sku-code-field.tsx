@@ -68,7 +68,8 @@ export function SkuCodeField({
   }
 
   const handleAfterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const v = e.target.value
+    // 过滤中文字符（\u4e00-\u9fff 及常用扩展区）
+    const v = e.target.value.replace(/[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]/g, "")
     onChange(afterCodeFieldId, v)
     onChange(codeFieldId, formatSkuCode(preCode, xhCode, v))
   }
