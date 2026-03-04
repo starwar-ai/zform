@@ -835,8 +835,8 @@ const processingOrderActionConfig: DocumentListActionConfig = {
 const salesContractFormActions: DocumentFormActionConfig = {
   typeId: "sales_contract",
   actions: [
-    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["DRAFT"], order: 1 },
-    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["DRAFT"], permission: "sales_contract:submit", order: 2 },
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["PENDING"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["PENDING"], permission: "sales_contract:submit", order: 2 },
     {
       id: "approve", label: "审批", icon: "Check", allowedStatuses: ["SUBMITTED"],
       permission: "sales_contract:approve", order: 3,
@@ -852,7 +852,7 @@ const salesContractFormActions: DocumentFormActionConfig = {
       visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
     },
     { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["APPROVED"], permission: "sales_contract:close", order: 6 },
-    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["DRAFT"], order: 7 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["PENDING"], order: 7 },
     { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["APPROVED"], permission: "sales_contract:void", order: 8 },
     {
       id: "push-down:0", label: "生成采购计划", icon: "ArrowDownToLine", variant: "outline",
@@ -865,8 +865,8 @@ const salesContractFormActions: DocumentFormActionConfig = {
 const purchasePlanFormActions: DocumentFormActionConfig = {
   typeId: "purchase_plan",
   actions: [
-    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["DRAFT"], order: 1 },
-    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["DRAFT"], permission: "purchase_plan:submit", order: 2 },
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["PENDING"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["PENDING"], permission: "purchase_plan:submit", order: 2 },
     {
       id: "approve", label: "审批", icon: "Check", allowedStatuses: ["SUBMITTED"],
       permission: "purchase_plan:approve", order: 3,
@@ -882,7 +882,7 @@ const purchasePlanFormActions: DocumentFormActionConfig = {
       visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
     },
     { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["APPROVED"], permission: "purchase_plan:close", order: 6 },
-    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["DRAFT"], order: 7 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["PENDING"], order: 7 },
     { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["APPROVED"], permission: "purchase_plan:void", order: 8 },
     {
       id: "push-down:0", label: "生成采购合同", icon: "ArrowDownToLine", variant: "outline",
@@ -895,8 +895,8 @@ const purchasePlanFormActions: DocumentFormActionConfig = {
 const productPurchasePlanFormActions: DocumentFormActionConfig = {
   typeId: "product_purchase_plan",
   actions: [
-    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["DRAFT"], order: 1 },
-    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["DRAFT"], permission: "purchase_plan:submit", order: 2 },
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["PENDING"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["PENDING"], permission: "purchase_plan:submit", order: 2 },
     {
       id: "approve", label: "审批", icon: "Check", allowedStatuses: ["SUBMITTED"],
       permission: "purchase_plan:approve", order: 3,
@@ -912,7 +912,7 @@ const productPurchasePlanFormActions: DocumentFormActionConfig = {
       visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
     },
     { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["APPROVED"], permission: "purchase_plan:close", order: 6 },
-    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["DRAFT"], order: 7 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["PENDING"], order: 7 },
     { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["APPROVED"], permission: "purchase_plan:void", order: 8 },
     {
       id: "push-down:0", label: "生成采购合同", icon: "ArrowDownToLine", variant: "outline",
@@ -925,8 +925,8 @@ const productPurchasePlanFormActions: DocumentFormActionConfig = {
 const packagingPurchasePlanFormActions: DocumentFormActionConfig = {
   typeId: "packaging_purchase_plan",
   actions: [
-    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["DRAFT"], order: 1 },
-    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["DRAFT"], permission: "purchase_plan:submit", order: 2 },
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["PENDING"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["PENDING"], permission: "purchase_plan:submit", order: 2 },
     {
       id: "approve", label: "审批", icon: "Check", allowedStatuses: ["SUBMITTED"],
       permission: "purchase_plan:approve", order: 3,
@@ -942,7 +942,7 @@ const packagingPurchasePlanFormActions: DocumentFormActionConfig = {
       visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
     },
     { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["APPROVED"], permission: "purchase_plan:close", order: 6 },
-    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["DRAFT"], order: 7 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["PENDING"], order: 7 },
     { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["APPROVED"], permission: "purchase_plan:void", order: 8 },
     {
       id: "push-down:0", label: "生成采购合同", icon: "ArrowDownToLine", variant: "outline",
@@ -955,8 +955,8 @@ const packagingPurchasePlanFormActions: DocumentFormActionConfig = {
 const purchaseContractFormActions: DocumentFormActionConfig = {
   typeId: "purchase_contract",
   actions: [
-    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["DRAFT"], order: 1 },
-    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["DRAFT"], permission: "purchase_contract:submit", order: 2 },
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["PENDING"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["PENDING"], permission: "purchase_contract:submit", order: 2 },
     {
       id: "approve", label: "审批", icon: "Check", allowedStatuses: ["SUBMITTED"],
       permission: "purchase_contract:approve", order: 3,
@@ -972,7 +972,7 @@ const purchaseContractFormActions: DocumentFormActionConfig = {
       visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
     },
     { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["APPROVED"], permission: "purchase_contract:close", order: 6 },
-    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["DRAFT"], order: 7 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["PENDING"], order: 7 },
     { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["APPROVED"], permission: "purchase_contract:void", order: 8 },
   ],
 }
@@ -981,8 +981,8 @@ const purchaseContractFormActions: DocumentFormActionConfig = {
 const productPurchaseContractFormActions: DocumentFormActionConfig = {
   typeId: "product_purchase_contract",
   actions: [
-    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["DRAFT"], order: 1 },
-    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["DRAFT"], permission: "purchase_contract:submit", order: 2 },
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["PENDING"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["PENDING"], permission: "purchase_contract:submit", order: 2 },
     {
       id: "approve", label: "审批", icon: "Check", allowedStatuses: ["SUBMITTED"],
       permission: "purchase_contract:approve", order: 3,
@@ -998,7 +998,7 @@ const productPurchaseContractFormActions: DocumentFormActionConfig = {
       visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
     },
     { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["APPROVED"], permission: "purchase_contract:close", order: 6 },
-    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["DRAFT"], order: 7 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["PENDING"], order: 7 },
     { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["APPROVED"], permission: "purchase_contract:void", order: 8 },
   ],
 }
@@ -1007,8 +1007,8 @@ const productPurchaseContractFormActions: DocumentFormActionConfig = {
 const packagingPurchaseContractFormActions: DocumentFormActionConfig = {
   typeId: "packaging_purchase_contract",
   actions: [
-    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["DRAFT"], order: 1 },
-    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["DRAFT"], permission: "purchase_contract:submit", order: 2 },
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["PENDING"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["PENDING"], permission: "purchase_contract:submit", order: 2 },
     {
       id: "approve", label: "审批", icon: "Check", allowedStatuses: ["SUBMITTED"],
       permission: "purchase_contract:approve", order: 3,
@@ -1024,7 +1024,7 @@ const packagingPurchaseContractFormActions: DocumentFormActionConfig = {
       visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
     },
     { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["APPROVED"], permission: "purchase_contract:close", order: 6 },
-    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["DRAFT"], order: 7 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["PENDING"], order: 7 },
     { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["APPROVED"], permission: "purchase_contract:void", order: 8 },
   ],
 }
@@ -1033,8 +1033,8 @@ const packagingPurchaseContractFormActions: DocumentFormActionConfig = {
 const shippingPlanFormActions: DocumentFormActionConfig = {
   typeId: "shipping_plan",
   actions: [
-    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["DRAFT"], order: 1 },
-    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["DRAFT"], permission: "shipping_plan:submit", order: 2 },
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["PENDING"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["PENDING"], permission: "shipping_plan:submit", order: 2 },
     {
       id: "approve", label: "审批", icon: "Check", allowedStatuses: ["SUBMITTED"],
       permission: "shipping_plan:approve", order: 3,
@@ -1050,7 +1050,7 @@ const shippingPlanFormActions: DocumentFormActionConfig = {
       visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
     },
     { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["APPROVED"], permission: "shipping_plan:close", order: 6 },
-    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["DRAFT"], order: 7 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["PENDING"], order: 7 },
     { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["APPROVED"], permission: "shipping_plan:void", order: 8 },
     {
       id: "push-down:0", label: "生成出运单", icon: "ArrowDownToLine", variant: "outline",
@@ -1063,8 +1063,8 @@ const shippingPlanFormActions: DocumentFormActionConfig = {
 const shippingOrderFormActions: DocumentFormActionConfig = {
   typeId: "shipping_order",
   actions: [
-    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["DRAFT"], order: 1 },
-    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["DRAFT"], permission: "shipping_order:submit", order: 2 },
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["PENDING"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["PENDING"], permission: "shipping_order:submit", order: 2 },
     {
       id: "approve", label: "审批", icon: "Check", allowedStatuses: ["SUBMITTED"],
       permission: "shipping_order:approve", order: 3,
@@ -1080,7 +1080,7 @@ const shippingOrderFormActions: DocumentFormActionConfig = {
       visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
     },
     { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["APPROVED"], permission: "shipping_order:close", order: 6 },
-    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["DRAFT"], order: 7 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["PENDING"], order: 7 },
     { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["APPROVED"], permission: "shipping_order:void", order: 8 },
   ],
 }
@@ -1089,8 +1089,8 @@ const shippingOrderFormActions: DocumentFormActionConfig = {
 const inspectionDeclarationFormActions: DocumentFormActionConfig = {
   typeId: "inspection_declaration",
   actions: [
-    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["DRAFT"], order: 1 },
-    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["DRAFT"], permission: "inspection_declaration:submit", order: 2 },
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["PENDING"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["PENDING"], permission: "inspection_declaration:submit", order: 2 },
     {
       id: "approve", label: "审批", icon: "Check", allowedStatuses: ["SUBMITTED"],
       permission: "inspection_declaration:approve", order: 3,
@@ -1106,7 +1106,7 @@ const inspectionDeclarationFormActions: DocumentFormActionConfig = {
       visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
     },
     { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["APPROVED"], permission: "inspection_declaration:close", order: 6 },
-    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["DRAFT"], order: 7 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["PENDING"], order: 7 },
     { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["APPROVED"], permission: "inspection_declaration:void", order: 8 },
   ],
 }
@@ -1115,8 +1115,8 @@ const inspectionDeclarationFormActions: DocumentFormActionConfig = {
 const customsDeclarationFormActions: DocumentFormActionConfig = {
   typeId: "customs_declaration",
   actions: [
-    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["DRAFT"], order: 1 },
-    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["DRAFT"], permission: "customs_declaration:submit", order: 2 },
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["PENDING"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["PENDING"], permission: "customs_declaration:submit", order: 2 },
     {
       id: "approve", label: "审批", icon: "Check", allowedStatuses: ["SUBMITTED"],
       permission: "customs_declaration:approve", order: 3,
@@ -1132,7 +1132,7 @@ const customsDeclarationFormActions: DocumentFormActionConfig = {
       visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
     },
     { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["APPROVED"], permission: "customs_declaration:close", order: 6 },
-    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["DRAFT"], order: 7 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["PENDING"], order: 7 },
     { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["APPROVED"], permission: "customs_declaration:void", order: 8 },
   ],
 }
@@ -1141,8 +1141,8 @@ const customsDeclarationFormActions: DocumentFormActionConfig = {
 const exchangeSettlementFormActions: DocumentFormActionConfig = {
   typeId: "exchange_settlement",
   actions: [
-    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["DRAFT"], order: 1 },
-    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["DRAFT"], permission: "exchange_settlement:submit", order: 2 },
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["PENDING"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["PENDING"], permission: "exchange_settlement:submit", order: 2 },
     {
       id: "approve", label: "审批", icon: "Check", allowedStatuses: ["SUBMITTED"],
       permission: "exchange_settlement:approve", order: 3,
@@ -1158,7 +1158,7 @@ const exchangeSettlementFormActions: DocumentFormActionConfig = {
       visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
     },
     { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["APPROVED"], permission: "exchange_settlement:close", order: 6 },
-    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["DRAFT"], order: 7 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["PENDING"], order: 7 },
     { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["APPROVED"], permission: "exchange_settlement:void", order: 8 },
   ],
 }
@@ -1167,8 +1167,8 @@ const exchangeSettlementFormActions: DocumentFormActionConfig = {
 const invoicingNoticeFormActions: DocumentFormActionConfig = {
   typeId: "invoicing_notice",
   actions: [
-    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["DRAFT"], order: 1 },
-    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["DRAFT"], permission: "invoicing_notice:submit", order: 2 },
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["PENDING"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["PENDING"], permission: "invoicing_notice:submit", order: 2 },
     {
       id: "approve", label: "审批", icon: "Check", allowedStatuses: ["SUBMITTED"],
       permission: "invoicing_notice:approve", order: 3,
@@ -1184,7 +1184,7 @@ const invoicingNoticeFormActions: DocumentFormActionConfig = {
       visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
     },
     { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["APPROVED"], permission: "invoicing_notice:close", order: 6 },
-    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["DRAFT"], order: 7 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["PENDING"], order: 7 },
     { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["APPROVED"], permission: "invoicing_notice:void", order: 8 },
   ],
 }
@@ -1193,8 +1193,8 @@ const invoicingNoticeFormActions: DocumentFormActionConfig = {
 const paymentApplyFormActions: DocumentFormActionConfig = {
   typeId: "payment_apply",
   actions: [
-    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["DRAFT"], order: 1 },
-    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["DRAFT"], permission: "payment_apply:submit", order: 2 },
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["PENDING"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["PENDING"], permission: "payment_apply:submit", order: 2 },
     {
       id: "approve", label: "审批", icon: "Check", allowedStatuses: ["SUBMITTED"],
       permission: "payment_apply:approve", order: 3,
@@ -1210,7 +1210,7 @@ const paymentApplyFormActions: DocumentFormActionConfig = {
       visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
     },
     { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["APPROVED"], permission: "payment_apply:close", order: 6 },
-    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["DRAFT"], order: 7 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["PENDING"], order: 7 },
     { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["APPROVED"], permission: "payment_apply:void", order: 8 },
   ],
 }
@@ -1239,8 +1239,8 @@ const paymentActionConfig: DocumentListActionConfig = {
 const paymentFormActions: DocumentFormActionConfig = {
   typeId: "payment",
   actions: [
-    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["DRAFT"], order: 1 },
-    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["DRAFT"], permission: "payment:submit", order: 2 },
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["PENDING"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["PENDING"], permission: "payment:submit", order: 2 },
     {
       id: "approve", label: "审批", icon: "Check", allowedStatuses: ["SUBMITTED"],
       permission: "payment:approve", order: 3,
@@ -1256,7 +1256,7 @@ const paymentFormActions: DocumentFormActionConfig = {
       visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
     },
     { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["APPROVED"], permission: "payment:close", order: 6 },
-    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["DRAFT"], order: 7 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["PENDING"], order: 7 },
     { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["APPROVED"], permission: "payment:void", order: 8 },
     {
       id: "push-down:0", label: "确认付款", icon: "CheckCircle", variant: "outline",
@@ -1289,8 +1289,8 @@ const receiptRegistrationActionConfig: DocumentListActionConfig = {
 const receiptRegistrationFormActions: DocumentFormActionConfig = {
   typeId: "receipt_registration",
   actions: [
-    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["DRAFT"], order: 1 },
-    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["DRAFT"], permission: "receipt_registration:submit", order: 2 },
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["PENDING"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["PENDING"], permission: "receipt_registration:submit", order: 2 },
     {
       id: "approve", label: "审批", icon: "Check", allowedStatuses: ["SUBMITTED"],
       permission: "receipt_registration:approve", order: 3,
@@ -1305,7 +1305,7 @@ const receiptRegistrationFormActions: DocumentFormActionConfig = {
       id: "withdraw", label: "撤回", icon: "Undo2", variant: "outline", allowedStatuses: ["SUBMITTED"], order: 5,
       visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
     },
-    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["DRAFT"], order: 7 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["PENDING"], order: 7 },
   ],
 }
 
@@ -1333,8 +1333,8 @@ const paymentClaimActionConfig: DocumentListActionConfig = {
 const paymentClaimFormActions: DocumentFormActionConfig = {
   typeId: "payment_claim",
   actions: [
-    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["DRAFT"], order: 1 },
-    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["DRAFT"], permission: "payment_claim:submit", order: 2 },
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["PENDING"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["PENDING"], permission: "payment_claim:submit", order: 2 },
     {
       id: "approve", label: "审批", icon: "Check", allowedStatuses: ["SUBMITTED"],
       permission: "payment_claim:approve", order: 3,
@@ -1349,7 +1349,7 @@ const paymentClaimFormActions: DocumentFormActionConfig = {
       id: "withdraw", label: "撤回", icon: "Undo2", variant: "outline", allowedStatuses: ["SUBMITTED"], order: 5,
       visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
     },
-    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["DRAFT"], order: 7 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["PENDING"], order: 7 },
   ],
 }
 
@@ -1377,8 +1377,8 @@ const invoiceRegistrationActionConfig: DocumentListActionConfig = {
 const invoiceRegistrationFormActions: DocumentFormActionConfig = {
   typeId: "invoice_registration",
   actions: [
-    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["DRAFT"], order: 1 },
-    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["DRAFT"], permission: "invoice_registration:submit", order: 2 },
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["PENDING"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["PENDING"], permission: "invoice_registration:submit", order: 2 },
     {
       id: "approve", label: "审批", icon: "Check", allowedStatuses: ["SUBMITTED"],
       permission: "invoice_registration:approve", order: 3,
@@ -1394,7 +1394,7 @@ const invoiceRegistrationFormActions: DocumentFormActionConfig = {
       visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
     },
     { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["APPROVED"], permission: "invoice_registration:close", order: 6 },
-    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["DRAFT"], order: 7 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["PENDING"], order: 7 },
     { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["APPROVED"], permission: "invoice_registration:void", order: 8 },
   ],
 }
@@ -1403,8 +1403,8 @@ const invoiceRegistrationFormActions: DocumentFormActionConfig = {
 const processingOrderFormActions: DocumentFormActionConfig = {
   typeId: "processing_order",
   actions: [
-    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["DRAFT"], order: 1 },
-    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["DRAFT"], permission: "processing_order:submit", order: 2 },
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["PENDING"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["PENDING"], permission: "processing_order:submit", order: 2 },
     {
       id: "approve", label: "审批", icon: "Check", allowedStatuses: ["SUBMITTED"],
       permission: "processing_order:approve", order: 3,
@@ -1420,7 +1420,7 @@ const processingOrderFormActions: DocumentFormActionConfig = {
       visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
     },
     { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["APPROVED"], permission: "processing_order:close", order: 6 },
-    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["DRAFT"], order: 7 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["PENDING"], order: 7 },
     { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["APPROVED"], permission: "processing_order:void", order: 8 },
   ],
 }
@@ -1449,8 +1449,8 @@ const quotationActionConfig: DocumentListActionConfig = {
 const quotationFormActions: DocumentFormActionConfig = {
   typeId: "quotation",
   actions: [
-    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["DRAFT"], order: 1 },
-    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["DRAFT"], permission: "quotation:submit", order: 2 },
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["PENDING"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["PENDING"], permission: "quotation:submit", order: 2 },
     {
       id: "approve", label: "审批", icon: "Check", allowedStatuses: ["SUBMITTED"],
       permission: "quotation:approve", order: 3,
@@ -1466,7 +1466,7 @@ const quotationFormActions: DocumentFormActionConfig = {
       visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
     },
     { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["APPROVED"], permission: "quotation:close", order: 6 },
-    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["DRAFT"], order: 7 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["PENDING"], order: 7 },
     { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["APPROVED"], permission: "quotation:void", order: 8 },
     {
       id: "push-down:0", label: "生成销售合同", icon: "ArrowDownToLine", variant: "outline",
@@ -1479,8 +1479,8 @@ const quotationFormActions: DocumentFormActionConfig = {
 const inspectionOrderFormActions: DocumentFormActionConfig = {
   typeId: "inspection_order",
   actions: [
-    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["DRAFT"], order: 1 },
-    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["DRAFT"], permission: "inspection_order:submit", order: 2 },
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["PENDING"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["PENDING"], permission: "inspection_order:submit", order: 2 },
     {
       id: "approve", label: "审批", icon: "Check", allowedStatuses: ["SUBMITTED"],
       permission: "inspection_order:approve", order: 3,
@@ -1496,7 +1496,7 @@ const inspectionOrderFormActions: DocumentFormActionConfig = {
       visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
     },
     { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["APPROVED"], permission: "inspection_order:close", order: 6 },
-    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["DRAFT"], order: 7 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["PENDING"], order: 7 },
     { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["APPROVED"], permission: "inspection_order:void", order: 8 },
   ],
 }
@@ -1505,8 +1505,8 @@ const inspectionOrderFormActions: DocumentFormActionConfig = {
 const concessionAcceptanceFormActions: DocumentFormActionConfig = {
   typeId: "concession_acceptance",
   actions: [
-    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["DRAFT"], order: 1 },
-    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["DRAFT"], permission: "concession_acceptance:submit", order: 2 },
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["PENDING"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["PENDING"], permission: "concession_acceptance:submit", order: 2 },
     {
       id: "approve", label: "审批", icon: "Check", allowedStatuses: ["SUBMITTED"],
       permission: "concession_acceptance:approve", order: 3,
@@ -1521,7 +1521,7 @@ const concessionAcceptanceFormActions: DocumentFormActionConfig = {
       id: "withdraw", label: "撤回", icon: "Undo2", variant: "outline", allowedStatuses: ["SUBMITTED"], order: 5,
       visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
     },
-    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["DRAFT"], order: 7 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["PENDING"], order: 7 },
   ],
 }
 
@@ -1558,10 +1558,8 @@ const standardProductFormActions: DocumentFormActionConfig = {
       id: "requestChange", label: "申请变更", icon: "FileEdit", variant: "outline",
       allowedStatuses: ["APPROVED"], permission: "standard_product:change", order: 9,
     },
-    {
-      id: "revert-audit", label: "反审核", icon: "RotateCcw", variant: "outline",
-      allowedStatuses: ["APPROVED"], permission: "standard_product:approve", order: 12,
-    },
+    { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["APPROVED"], permission: "standard_product:close", order: 10 },
+    { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["APPROVED"], permission: "standard_product:void", order: 11 },
     {
       id: "push-down:0", label: "生成客户产品", icon: "ArrowDownToLine", variant: "outline",
       allowedStatuses: ["APPROVED"], permission: "standard_product:push_down", order: 13,
@@ -1606,10 +1604,8 @@ const customerProductFormActions: DocumentFormActionConfig = {
       id: "requestChange", label: "申请变更", icon: "FileEdit", variant: "outline",
       allowedStatuses: ["APPROVED"], permission: "customer_product:change", order: 9,
     },
-    {
-      id: "revert-audit", label: "反审核", icon: "RotateCcw", variant: "outline",
-      allowedStatuses: ["APPROVED"], permission: "customer_product:approve", order: 12,
-    },
+    { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["APPROVED"], permission: "customer_product:close", order: 10 },
+    { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["APPROVED"], permission: "customer_product:void", order: 11 },
   ],
 }
 
@@ -1646,10 +1642,8 @@ const selfOwnedProductFormActions: DocumentFormActionConfig = {
       id: "requestChange", label: "申请变更", icon: "FileEdit", variant: "outline",
       allowedStatuses: ["APPROVED"], permission: "self_owned_product:change", order: 9,
     },
-    {
-      id: "revert-audit", label: "反审核", icon: "RotateCcw", variant: "outline",
-      allowedStatuses: ["APPROVED"], permission: "self_owned_product:approve", order: 12,
-    },
+    { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["APPROVED"], permission: "self_owned_product:close", order: 10 },
+    { id: "void", label: "作废", icon: "Trash2", variant: "destructive", allowedStatuses: ["APPROVED"], permission: "self_owned_product:void", order: 11 },
   ],
 }
 
@@ -1657,8 +1651,8 @@ const selfOwnedProductFormActions: DocumentFormActionConfig = {
 const customerFormActionsDef = (typeId: string): DocumentFormActionConfig => ({
   typeId,
   actions: [
-    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["DRAFT"], order: 1 },
-    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["DRAFT"], permission: `${typeId}:submit`, order: 2 },
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["PENDING"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["PENDING"], permission: `${typeId}:submit`, order: 2 },
     {
       id: "approve", label: "审批", icon: "Check", allowedStatuses: ["SUBMITTED"],
       permission: `${typeId}:approve`, order: 3,
@@ -1674,7 +1668,7 @@ const customerFormActionsDef = (typeId: string): DocumentFormActionConfig => ({
       visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
     },
     { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["APPROVED"], permission: `${typeId}:close`, order: 6 },
-    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["DRAFT"], order: 7 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["PENDING"], order: 7 },
   ],
 })
 
@@ -1682,8 +1676,8 @@ const customerFormActionsDef = (typeId: string): DocumentFormActionConfig => ({
 const supplierFormActionsDef = (typeId: string): DocumentFormActionConfig => ({
   typeId,
   actions: [
-    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["DRAFT"], order: 1 },
-    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["DRAFT"], permission: `${typeId}:submit`, order: 2 },
+    { id: "save", label: "保存", icon: "Save", variant: "outline", allowedStatuses: ["PENDING"], order: 1 },
+    { id: "submit", label: "提交", icon: "Send", allowedStatuses: ["PENDING"], permission: `${typeId}:submit`, order: 2 },
     {
       id: "approve", label: "审批", icon: "Check", allowedStatuses: ["SUBMITTED"],
       permission: `${typeId}:approve`, order: 3,
@@ -1699,7 +1693,7 @@ const supplierFormActionsDef = (typeId: string): DocumentFormActionConfig => ({
       visible: (ctx) => ctx.approvalState?.canWithdraw ?? false,
     },
     { id: "close", label: "关闭", icon: "Lock", variant: "outline", allowedStatuses: ["APPROVED"], permission: `${typeId}:close`, order: 6 },
-    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["DRAFT"], order: 7 },
+    { id: "cancel", label: "取消", icon: "Ban", variant: "destructive", allowedStatuses: ["PENDING"], order: 7 },
   ],
 })
 

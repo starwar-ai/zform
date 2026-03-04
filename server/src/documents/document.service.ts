@@ -7,7 +7,6 @@
 
 import prisma from '../config/database';
 import { documentTypeRegistry } from './registry';
-import { transformToFrontend, transformFromFrontend, isFrontendFormat } from './data-transform';
 import type {
   DocumentTypeAdapter,
   DocumentListParams,
@@ -16,6 +15,127 @@ import type {
   SortingItem,
   AggregateResult,
 } from './types';
+
+// ============================================================
+// 数据转换辅助函数
+// ============================================================
+
+/** 系统字段（不放入 masterData） */
+const SYSTEM_FIELDS = new Set([
+  'id', 'code', 'status', 'createdAt', 'updatedAt', 'createdBy', 'updatedBy',
+  'deletedAt', 'version',
+]);
+
+/** 递归地将 Prisma Decimal 转为 number */
+function convertDecimals(value: unknown): unknown {
+  if (value === null || value === undefined) return value;
+
+  if (typeof value === 'object' && value !== null && 'toNumber' in value && typeof (value as any).toNumber === 'function') {
+    return (value as any).toNumber();
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(convertDecimals);
+  }
+
+  if (value instanceof Date) {
+    return value;
+  }
+
+  if (typeof value === 'object') {
+    const result: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      result[k] = convertDecimals(v);
+    }
+    return result;
+  }
+
+  return value;
+}
+
+/** 从 adapter.detailIncludes 的 key 推导出所有关系字段名 */
+function getDetailRelationKeys(adapter: DocumentTypeAdapter): Set<string> {
+  const keys = new Set<string>();
+  if (adapter.detailIncludes) {
+    for (const key of Object.keys(adapter.detailIncludes)) {
+      keys.add(key);
+    }
+  }
+  return keys;
+}
+
+/**
+ * 将 Prisma 查询结果转为前端 DocumentData 格式
+ */
+export function transformToFrontend(
+  prismaData: any,
+  typeId: string,
+  adapter: DocumentTypeAdapter,
+): any {
+  if (!prismaData) return prismaData;
+
+  const data = convertDecimals(prismaData) as Record<string, unknown>;
+  const relationKeys = getDetailRelationKeys(adapter);
+  const mapping = adapter.detailTableMapping || {};
+
+  // 构建 detailTables
+  const detailTables: Array<{ tableId: string; rows: any[] }> = [];
+  for (const relationKey of relationKeys) {
+    const rawItems = data[relationKey];
+    if (!Array.isArray(rawItems)) continue;
+
+    const tableId = mapping[relationKey] || relationKey;
+
+    detailTables.push({
+      tableId,
+      rows: rawItems.map((item: any) => {
+        const { id: itemId, ...itemFields } = item;
+        const rowData: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(itemFields)) {
+          if (k === 'deletedAt' || k === 'createdAt' || k === 'updatedAt' ||
+              k === 'createdBy' || k === 'updatedBy' || k === 'version') {
+            continue;
+          }
+          rowData[k] = v;
+        }
+        return { id: itemId, data: rowData };
+      }),
+    });
+  }
+
+  // 构建 masterData（排除系统字段和关系字段）
+  const masterData: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (SYSTEM_FIELDS.has(key) || relationKeys.has(key)) continue;
+    masterData[key] = value;
+  }
+
+  const status = (data.status as string) || 'DRAFT';
+
+  return {
+    id: data.id,
+    typeId,
+    code: data.code || '',
+    masterData,
+    detailTables,
+    status,
+    createdBy: data.createdBy,
+    updatedBy: data.updatedBy,
+    createdAt: data.createdAt,
+    updatedAt: data.updatedAt,
+  };
+}
+
+/** 展开前端 masterData 到顶层扁平结构 */
+function flattenFrontendData(data: any): Record<string, unknown> {
+  const { masterData, detailTables, ...topLevelFields } = data;
+  return { ...topLevelFields, ...(masterData || {}) };
+}
+
+/** 判断是否包含前端数据结构特征 */
+function isFrontendFormat(data: any): boolean {
+  return data && (typeof data.masterData === 'object' || Array.isArray(data.detailTables));
+}
 
 // ============================================================
 // 辅助：获取 Prisma model delegate
@@ -395,7 +515,7 @@ export class DocumentService {
 
     // 通用路径：统一转换前端格式
     const cleanData = isFrontendFormat(data)
-      ? transformFromFrontend(data, { prismaModel: adapter.prismaModel })
+      ? flattenFrontendData(data)
       : data;
 
     const model = getModelDelegate(adapter.prismaModel);
@@ -425,7 +545,7 @@ export class DocumentService {
 
     // 通用路径：统一转换前端格式
     const cleanData = isFrontendFormat(data)
-      ? transformFromFrontend(data, { prismaModel: adapter.prismaModel })
+      ? flattenFrontendData(data)
       : data;
 
     const model = getModelDelegate(adapter.prismaModel);

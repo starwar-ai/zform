@@ -1,12 +1,34 @@
 /**
  * 产品 Adapter
  *
- * 产品没有传统的“明细行”(items)，但有 BOM 和辅料关联。
+ * 产品没有传统的"明细行"(items)，但有 BOM 和辅料关联。
  * BOM/辅料通过自定义 actions 操作。
  */
 
 import type { DocumentTypeAdapter } from '../types';
-import { transformFromFrontend, transformToFrontend } from '../data-transform';
+import { transformToFrontend } from '../document.service';
+
+/** 产品字段白名单 */
+const PRODUCT_FIELDS = new Set([
+  'code', 'name', 'nameEn', 'barcode', 'productType', 'skuType', 'unit',
+  'material', 'salePrice', 'companyPrice', 'status', 'categoryId', 'brandId',
+  'departmentId', 'hsCodeId', 'packageMethodId', 'baseProductId', 'isAgent',
+  'length', 'width', 'height', 'netWeight', 'grossWeight', 'volume', 'remark'
+]);
+
+/** 展开前端数据并过滤产品字段 */
+function flattenProductData(data: any): Record<string, unknown> {
+  const { masterData, detailTables, ...topLevelFields } = data;
+  const flatData = { ...topLevelFields, ...(masterData || {}) };
+  
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(flatData)) {
+    if (PRODUCT_FIELDS.has(key)) {
+      result[key] = value;
+    }
+  }
+  return result;
+}
 
 /**
  * 产品通用 transformToFrontend
@@ -154,7 +176,7 @@ export const standardProductAdapter: DocumentTypeAdapter = {
   async onCreate(data, userId, prisma) {
     // 使用白名单模式：只保留 Product schema 中定义的字段
     const createData = {
-      ...transformFromFrontend(data, { prismaModel: 'Product' }),
+      ...flattenProductData(data),
       productType: 'STANDARD',
       createdBy: userId,
       updatedBy: userId,
@@ -189,7 +211,7 @@ export const standardProductAdapter: DocumentTypeAdapter = {
 
     // 使用白名单模式：只保留 Product schema 中定义的字段
     const updateData = {
-      ...transformFromFrontend(data, { prismaModel: 'Product' }),
+      ...flattenProductData(data),
       updatedBy: userId,
       version: { increment: 1 },
     };
@@ -372,7 +394,7 @@ export const standardProductAdapter: DocumentTypeAdapter = {
         const productData = products[i];
         try {
           // 使用白名单模式转换数据
-          const flatData = transformFromFrontend(productData, { prismaModel: 'Product' });
+          const flatData = flattenProductData(productData);
           
           // 检查产品编码是否重复
           const existing = await prisma.product.findUnique({
@@ -1050,7 +1072,7 @@ export const customerProductAdapter: DocumentTypeAdapter = {
 
   async onCreate(data, userId, prisma) {
     // 使用白名单模式转换数据
-    const flatData = transformFromFrontend(data, { prismaModel: 'Product' });
+    const flatData = flattenProductData(data);
     
     // 从基础产品继承 skuType/isAgent
     const createData = await inheritSkuTypeFromBase(flatData, prisma);
@@ -1092,7 +1114,7 @@ export const selfOwnedProductAdapter: DocumentTypeAdapter = {
 
   async onCreate(data, userId, prisma) {
     // 使用通用工具转换前端数据结构
-    const flatData = transformFromFrontend(data);
+    const flatData = flattenProductData(data);
     
     // 从基础产品继承 skuType/isAgent
     const createData = await inheritSkuTypeFromBase(flatData, prisma);

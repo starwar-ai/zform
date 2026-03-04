@@ -357,9 +357,8 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
   const isEditable = doc.status === "DRAFT" || doc.status === "PENDING" || doc.status === "REJECTED"
   const isNew = Boolean(doc._isNew)
 
-  // 产品类型使用 PENDING，其他类型使用 DRAFT 作为"可编辑"初始状态
-  const productTypes = ['standard_product', 'customer_product', 'self_owned_product']
-  const editableStatus = productTypes.includes(doc.typeId) ? 'PENDING' : 'DRAFT'
+  // 所有文档类型使用 PENDING 作为"可编辑"初始状态
+  const editableStatus = 'PENDING'
 
   const handleSave = () => {
     // 1. 前端验证必填字段
@@ -547,26 +546,6 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
     }
   }
 
-  /** 反审核 (产品专用) */
-  const handleRevertAudit = async () => {
-    if (!doc) return
-    if (!confirm("确认反审核？产品将恢复为草稿状态。")) return
-    setSaving(true)
-    try {
-      const result = await executeDocumentAction(doc.typeId, doc.id, "revertAudit")
-      if (result?.success !== false) {
-        updateStatus(docId, editableStatus)
-      } else {
-        alert(`反审核失败: ${result?.message ?? "未知错误"}`)
-      }
-    } catch (err) {
-      console.error("反审核失败:", err)
-      alert(`反审核失败: ${err instanceof Error ? err.message : String(err)}`)
-    } finally {
-      setSaving(false)
-    }
-  }
-
   /** 拒绝 */
   const handleReject = async () => {
     setSaving(true)
@@ -685,9 +664,6 @@ export function DocumentForm({ docId, typeId, onNavigate }: DocumentFormProps) {
         break
       case "cancelChange":
         handleCancelChange()
-        break
-      case "revert-audit":
-        handleRevertAudit()
         break
       default:
         console.warn(`[DocumentForm] 未处理的操作: "${actionId}"`)

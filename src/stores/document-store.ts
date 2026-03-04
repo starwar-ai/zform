@@ -82,9 +82,8 @@ export const useDocumentStore = create<DocumentStoreState>()(
         rows: [],
       }))
 
-      // 产品类型使用 PENDING 作为初始状态，其他类型使用 DRAFT
-      const productTypes = ['standard_product', 'customer_product', 'self_owned_product']
-      const initialStatus = productTypes.includes(typeId) ? 'PENDING' : 'DRAFT'
+      // 所有文档类型使用 PENDING 作为初始状态
+      const initialStatus = 'PENDING'
 
       const doc: DocumentData = {
         id: nanoid(),
